@@ -21,12 +21,13 @@ conda activate /opt/conda
 # get whisper-jax working before continuing with this project
 pip install --upgrade --no-deps --force-reinstall git+https://github.com/sanchit-gandhi/whisper-jax.git
 pip install numpy
+pip install ffmpeg
 # for record.py
 pip install pygobject
 git clone https://github.com/themanyone/whisper_dictation
 ```
 
-There may be other dependencies not listed, such as `xdotool`. Go ahead and install that.
+There may be other dependencies not listed, such as `xdotool`. Go ahead and install whatever it asks for.
 
 Modify `dictate.py` and set your threshold audio level and device. Use `gst-inspect-1.0` to get a list of sources. The default `autoaudiosrc` should work in most cases.
 
@@ -40,6 +41,10 @@ Now we are ready to try a dictation.
 cd whisper_dictation
 ./whisper_dictation.py
 ```
+
+## Bonus app.
+
+This project includes `record.py` which does hands-free recording of an mp3 audio clip from the microphone. It waits for audio of a certain level, usually -20dB, and quits when audio drops below that level for a couple seconds. You can run it separately. It creates a file named `audio.mp3`. Or you can supply an output file name on the command line.
 
 ## Issues
 
