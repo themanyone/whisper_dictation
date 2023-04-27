@@ -1,4 +1,5 @@
 #!/opt/conda/bin/python3.10
+# -*- coding: utf-8 -*-
 ##
 ## Copyright 2023 Henry Kroll <nospam@thenerdshow.com>
 ## 

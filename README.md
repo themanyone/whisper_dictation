@@ -1,12 +1,12 @@
 # Whisper Dictation
 
-Fast, keyboard-emulated dictation for Linux with using [whisper-jax](https://github.com/openai/whisper_jax) with threading. https://github.com/themanyone/whisper_dictation.git
+Fast, keyboard-emulated dictation for Linux with using [whisper-jax](https://github.com/sanchit-gandhi/whisper-jax) and threading. https://github.com/themanyone/whisper_dictation.git
 
 These experimental scripts are intended for working offline, on systems that have a powerful video card. For smaller, connected devices, you might want to look at whisper cloud solutions.
 
 ## Advantages and tradeoffs.
 
-Whisper AI is currently the state of the art for open-source voice transcription software. With this app, [Whisper](https://github.com/openai/whisper) does not have to load up each time you speak, so dictation can be responsive and fast. Threading enables you to continue speaking while it is still decoding your last sentence. The tradeoff with running Whisper-jax continuously in the background is that video RAM is not cleared between each spoken interaction. Depending on hardware and workflow, you might not be able to play some games, run AI models, or even watch videos while this is running.
+Whisper AI is currently the state of the art for open-source voice transcription software. With this app, [Whisper](https://github.com/openai/whisper) does not have to load up each time you speak, so dictation can be responsive and fast. Threading enables you to continue speaking while it is still decoding your last sentence. The tradeoff with running Whisper-jax continuously in the background is that video RAM is not cleared between each spoken interaction. Depending on hardware and workflow, you might experience issues with other video-intensive tasks while this is running.
 
 For slower continuous dictation that unloads itself when not speaking, try my [voice_typing project](https://github.com/themanyone/voice_typing), which uses the bash shell to separately record and load up whisper only when spoken to. Or try my older, much less-accurate [Freespeech](https://github.com/themanyone/freespeech-vr/tree/python3) project, which uses Pocketsphinx, but is very light on resources.
 
@@ -47,6 +47,9 @@ This is a fairly new project. There are bound to be some issues. Share them on t
 
 Thanks for trying out Whisper Dictation.
 
-Chat with Themanyone on various platforms
-GitHub https://github.com/themanyone
-YouTube https://www.youtube.com/themanyone
+Browse Themanyone
+- GitHub https://github.com/themanyone
+- YouTube https://www.youtube.com/themanyone
+- Mastodon https://mastodon.social/@themanyone
+- Linkedin https://www.linkedin.com/in/henry-kroll-iii-93860426/
+- [TheNerdShow.com](http://thenerdshow.com/)
