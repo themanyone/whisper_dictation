@@ -31,7 +31,7 @@ There may be other dependencies not listed, such as `xdotool`. Go ahead and inst
 
 Modify `dictate.py` and set your threshold audio level and device. Use `gst-inspect-1.0` to get a list of sources. The default `autoaudiosrc` should work in most cases.
 
-Modify `whisper_dictation.py` and, in the first line, set the location of Python to the one inside the virtual environment works with Whisper-JAX. The one you installed everything in. The default for our usage is `/opt/conda/bin/`. You can also change the FlaxWhisperPipline to use "openai/whisper-large-v2" if your video card has more than the 4Gb RAM that ours does.
+Modify `whisper_dictation.py` and, in the first line, set the location of Python to the one inside the virtual environment works with Whisper-JAX. The one you installed everything in. The default for our usage is `/opt/conda/bin/`. You can also change the FlaxWhisperPipline to change the language, or use "openai/whisper-large-v2" if your video card has more than the 4Gb RAM that ours does.
 
 Try the examples on the [Whisper-Jax](https://github.com/openai/whisper_jax) page and make sure that is working first.
 

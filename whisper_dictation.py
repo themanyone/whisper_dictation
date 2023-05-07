@@ -30,14 +30,14 @@ pipeline = FlaxWhisperPipline("openai/whisper-small.en", \
    dtype = jnp.float16, batch_size=16)
 
 # cache the function for subsequent speedup
-pipeline("click.wav",  task="transcribe", return_timestamps=False)
+pipeline("click.wav",  task="transcribe", language="English")
 
 print("Start speaking. Text should appear in current window.")
 def transcribe(f):
     # transcribe it
     try:
         outputs = pipeline(f,  task="transcribe", \
-        return_timestamps=False)
+        language="English")
         txt = shlex.quote(outputs['text'])
         if outputs['text'] != ' you':
             print('\r' + outputs['text'])

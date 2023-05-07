@@ -40,7 +40,7 @@ src = "autoaudiosrc" # audio source (alsasrc, pulsesrc, autoaudiosrc, etc.)
 def on_sound_level(bus, message):
     global dB
     if message.get_structure().get_name() == 'level':
-        rms = message.get_structure()['rms'][0]
+        rms = message.get_structure().get_value('rms')[0]
         global rec_pipe, silence
         
         # if not recording
