@@ -12,14 +12,17 @@ For slower continuous dictation that unloads itself when not speaking, try my [v
 
 ## Downloading and using.
 
+Go to https://github.com/google/jax#installation and follow through the steps to install cuda, cudnn, and jax, or whatever is missing.
+
+Install [whisper-jax](https://git
+hub.com/sanchit-gandhi/whisper-jax), and make sure the examples work.
+
 ```shell
 # activate conda or venv
 # Can be anywhere you want to install whisper-jax, and everythnig under
 conda activate /opt/conda
 
 # install dependencies
-# get whisper-jax working before continuing with this project
-pip install --upgrade --no-deps --force-reinstall git+https://github.com/sanchit-gandhi/whisper-jax.git
 pip install numpy
 pip install ffmpeg
 # for record.py
