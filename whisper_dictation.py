@@ -1,4 +1,4 @@
-#!/opt/conda/bin/python3.10
+#!/usr/bin/env python
 # -*- coding: utf-8 -*-
 ##
 ## Copyright 2023 Henry Kroll <nospam@thenerdshow.com>
@@ -18,7 +18,7 @@
 ## Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
 ## MA 02110-1301, USA.
 ##
-import os, shlex
+import os, shlex, time
 import tempfile
 import threading
 
@@ -33,30 +33,48 @@ pipeline = FlaxWhisperPipline("openai/whisper-small.en", \
 pipeline("click.wav",  task="transcribe", language="English")
 
 print("Start speaking. Text should appear in current window.")
-def transcribe(f):
-    # transcribe it
-    try:
-        outputs = pipeline(f,  task="transcribe", \
-        language="English")
-        txt = shlex.quote(outputs['text'])
-        if outputs['text'] != ' you':
-            print('\r' + outputs['text'])
-            os.system("xdotool type --clearmodifiers " + txt)
-    except Exception as e: print(e)
-    # cleanup
-    os.remove(f)
-    
-while (1):
-    # record some (more) audio
-    temp_name = tempfile.gettempdir() + '/' \
-    + next(tempfile._get_candidate_names()) + ".mp3"
-    os.system("./record.py " + temp_name)
-    
-    if not os.path.getsize(temp_name):
-        if os.path.exists(temp_name):
-            os.remove(temp_name)
-        exit()
+
+# fix race conditions
+audio_queue = queue.Queue()
+typing_queue = queue.Queue()
+
+def transcribe():
+    while True:
+        # transcribe audio from queue
+        if f := audio_queue.get():
+            try:
+                outputs = pipeline(f,  task="transcribe", \
+                language="English")
+                txt = shlex.quote(outputs['text'])
+                if outputs['text'] != ' you':
+                    print('\r' + outputs['text'])
+                    typing_queue.put(txt)
+            except Exception as e: print(e)
+            # cleanup
+            os.remove(f)
+        else: time.sleep(1)
         
-    # transcribe and remove
-    t1 = threading.Thread(target=transcribe, args=[temp_name])
-    t1.start()
+def record():
+    while True:
+        # record some (more) audio to queue
+        temp_name = tempfile.gettempdir() + '/' \
+        + next(tempfile._get_candidate_names()) + ".mp3"
+        os.system("./record.py " + temp_name)
+        if not os.path.getsize(temp_name):
+            if os.path.exists(temp_name):
+                os.remove(temp_name)
+            exit()
+        else: audio_queue.put(temp_name)
+
+transcribe_thread = threading.Thread(target=transcribe)
+record_thread = threading.Thread(target=record)
+
+# start background threads only once
+transcribe_thread.start()
+record_thread.start()
+
+# type out messages as they apppear in queue
+while True:
+    time.sleep(1)
+    if message := typing_queue.get():
+        os.system("xdotool type --clearmodifiers " + txt)
