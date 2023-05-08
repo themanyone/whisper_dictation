@@ -12,7 +12,13 @@ For slower continuous dictation that unloads itself when not speaking, try my [v
 
 ## Downloading and using.
 
-Go to https://github.com/google/jax#installation and follow through the steps to install cuda, cudnn, and jax, or whatever is missing.
+Go to https://github.com/google/jax#installation and follow through the steps to install cuda, cudnn, or whatever is missing.
+
+We got the following command to install jax for GPU(CUDA) [from here](https://jax.readthedocs.io/en/latest/index.html).
+
+```
+pip install "jax[cuda]" -f https://storage.googleapis.com/jax-releases/jax_cuda_releases.html
+```
 
 Install [whisper-jax](https://git
 hub.com/sanchit-gandhi/whisper-jax), and make sure the examples work.
