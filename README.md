@@ -35,7 +35,9 @@ sudo dnf install python-devel gobject-introspection-devel python3-gobject-devel 
 
 Modify `dictate.py` and set your threshold audio level and device. Use `gst-inspect-1.0` to get a list of sources. The default `autoaudiosrc` should work in most cases.
 
-Modify `whisper_dictation.py` and, in the first line, set the location of Python to the one inside the virtual environment works with Whisper-JAX. The one you installed everything in. The default for our usage is `/opt/conda/bin/`. You can also change the FlaxWhisperPipline to change the language, or use "openai/whisper-large-v2" if your video card has more than the 4Gb RAM that ours does.
+If it complains about missing files, modify `whisper_dictation.py` and, in the first line, set the location of Python to the one inside the virtual environment works with Whisper-JAX. The one you installed everything in. The default for our usage is `/usr/bin/env python` which should load the one the current environment is using. But if you set this to the version of python inside the conda or venv environment, then you don't have to source or activate the virtual environment. You can just run it.
+
+Also feel free to change the FlaxWhisperPipline to change the language, or use "openai/whisper-large-v2" if your video card has more than the 4Gb RAM that ours does.
 
 Try the examples on the [Whisper-Jax](https://github.com/openai/whisper_jax) page and make sure that is working first.
 
@@ -52,7 +54,19 @@ This project includes `record.py` which does hands-free recording of an mp3 audi
 
 ## Issues
 
-This is a fairly new project. There are bound to be some issues. Share them on the issues section on GitHub. Or fork the project, create a new branch with proposed changes. And submit a pull request.
+### GPU memory usage.
+
+According to a post by [sanchit-gandhi](https://github.com/sanchit-gandhi/whisper-jax/issues/7#issuecomment-1531124418), JAX using 90% of GPU RAM is probably unnecessary, but intended to prevent fragmentation. You can disable that with an environment variable, e.g. `XLA_PYTHON_CLIENT_PREALLOCATE=false ./whisper_dictation.py`.
+
+You can monitor JAX memory usage with [jax-smi](https://github.com/ayaka14732/jax-smi) or by installing GreenWithEnvy (gwe) for Nvidia cards.
+
+### Race conditions.
+
+Currently, there are problems where text is recognized or typed out-of-order. A queue solution has been worked-out as a milestone and is being tested on the `queue` branch if you want to contribute. It should be ready by May 10th.
+
+### Issue tracker.
+
+This is a fairly new project. There are bound to be more issues. Share them on the [issues section on GitHub](https://github.com/themanyone/whisper_dictation/issues). Or fork the project, create a new branch with proposed changes. And submit a pull request.
 
 Thanks for trying out Whisper Dictation.
 
