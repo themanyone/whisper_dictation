@@ -6,13 +6,13 @@ These experimental scripts are intended for working offline, on systems that hav
 
 ## Advantages and tradeoffs.
 
-Whisper AI is currently the state of the art for open-source voice transcription software. With this app, [Whisper](https://github.com/openai/whisper) does not have to load up each time you speak, so dictation can be responsive and fast. Threading allows audio recording to proceed in the background while whisper decodes speech in the order in which it appears. The tradeoff with running Whisper-jax continuously in the foreground is that a large chunk of video RAM stays reserved until shutting down this application by saying "Stop listening." Or by pressing `CTRL` - `C`. Depending on hardware and workflow, you might experience issues with other video-intensive tasks while this is running.
+Whisper AI is currently the state of the art for open-source voice transcription software. With this app, [whisper-jax](https://github.com/sanchit-gandhi/whisper-jax) does not have to load up each time you speak, and functions are compiled to machine code, so dictation can be responsive and fast--easily 10x as fast as other solutions. Threading allows audio recording to proceed in the background while whisper decodes speech in the order in which it appears. The tradeoff with running Whisper-jax continuously in the foreground is that a large chunk of video RAM stays reserved until shutting down this application by saying "Stop listening." Or by pressing `CTRL` - `C`. Depending on hardware and workflow, you might experience issues with other video-intensive tasks while this is running.
 
-For slower continuous dictation that unloads itself when not speaking, try my [voice_typing project](https://github.com/themanyone/voice_typing), which uses the bash shell to separately record and load up whisper only when spoken to. Or try my older, much less-accurate [Freespeech](https://github.com/themanyone/freespeech-vr/tree/python3) project, which uses Pocketsphinx, but is very light on resources.
+For much-slower continuous dictation that unloads itself when not speaking, try my [voice_typing project](https://github.com/themanyone/voice_typing), which uses the bash shell to separately record and load up whisper only when spoken to. Or try my older, less-accurate [Freespeech](https://github.com/themanyone/freespeech-vr/tree/python3) project, which uses Pocketsphinx, but is very light on resources.
 
 ## Downloading and using.
 
-Go to https://github.com/google/jax#installation and follow through the steps to install cuda, cudnn, or whatever is missing. All these  [whisper-jax](https://github.com/sanchit-gandhi/whisper-jax) dependencies can be quite bulky, requiring about 5.6GiB of downloads. The original, [OpenAI Whisper](https://github.com/openai/whisper) project does not require near as much to be installed. So those with limited storage space available might just want to give up on this and use that, along with the [voice_typing project](https://github.com/themanyone/voice_typing) script.
+Go to https://github.com/google/jax#installation and follow through the steps to install cuda, cudnn, or whatever is missing. All these  [whisper-jax](https://github.com/sanchit-gandhi/whisper-jax) dependencies can be quite bulky, requiring about 5.6GiB of downloads. Our original,[voice_typing project](https://github.com/themanyone/voice_typing) script is significantly easier on internet usage.
 
 We got the following command to install jax for GPU(CUDA) [from here](https://jax.readthedocs.io/en/latest/index.html).
 
@@ -44,7 +44,7 @@ There may be other dependencies not listed. Go ahead and install whatever it ask
 sudo dnf install python-devel gobject-introspection-devel python3-gobject-devel cairo-gobject-devel
 ```
 
-Modify `dictate.py` and set your threshold audio level and device. Use `gst-inspect-1.0` to get a list of sources. The default `autoaudiosrc` should work in most cases.
+Modify `dictate.py` and set the preferred threshold audio level and device which might require some experimentation. If the microphone isn't detected, open Control Center and choose the preferred audio device for the mic, whether it is a Bluetooth, USB microphone, or whatever. You can also use `gst-inspect-1.0` to get a list of audio sources to try. The default `autoaudiosrc` should work in most cases. 
 
 Try the examples on the [Whisper-Jax](https://github.com/openai/whisper_jax) page and make sure that is working first.
 
