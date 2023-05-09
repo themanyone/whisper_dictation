@@ -37,7 +37,7 @@ import jax.numpy as jnp
 # openai/whisper-medium.en  769M
 # openai/whisper-large      1550M
 # openai/whisper-large-v2   1550M
-pipeline = FlaxWhisperPipline("openai/whisper-base", dtype = jnp.float16, batch_size=16)
+pipeline = FlaxWhisperPipline("openai/whisper-small.en", dtype = jnp.float16, batch_size=16)
 
 # cache the function for subsequent speedup
 print("Loading. Please wait...")
@@ -53,7 +53,7 @@ def transcribe():
             # try:
             outputs = pipeline(f,  task="transcribe", language="English")
             t = outputs['text']
-            if t.endswith("listening.") and len(t) < 16:
+            if t.endswith("listening.") and len(t) < 20:
                 print("Stopping... Make some noise to return to command prompt.")
                 global listening
                 global record_thread

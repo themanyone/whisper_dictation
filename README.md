@@ -17,13 +17,11 @@ Go to https://github.com/google/jax#installation and follow through the steps to
 We got the following command to install jax for GPU(CUDA) [from here](https://jax.readthedocs.io/en/latest/index.html).
 
 ```
+pip install  nvidia-cudnn-cu11
 pip install "jax[cuda]" -f https://storage.googleapis.com/jax-releases/jax_cuda_releases.html
 ```
 
-Install [whisper-jax](https://git
-hub.com/sanchit-gandhi/whisper-jax), and make sure the examples work.
-
-Nowhere does it say it requires torch, but for some reason, the above examples wouldn't work until running `pip install torch`, which pulled in nvidia-cudnn-cu11==8.5.0.96 (from torch).
+Install [whisper-jax](https://github.com/sanchit-gandhi/whisper-jax) and make sure the examples work.
 
 ```shell
 # activate conda or venv
@@ -38,7 +36,9 @@ pip install pygobject
 git clone https://github.com/themanyone/whisper_dictation
 ```
 
-There may be other dependencies not listed, such as `xdotool`. Go ahead and install whatever it asks for.
+Install  `xdotool`.
+
+There may be other dependencies not listed. Go ahead and install whatever it asks for.
 
 ```
 sudo dnf install python-devel gobject-introspection-devel python3-gobject-devel cairo-gobject-devel
