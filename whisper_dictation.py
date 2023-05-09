@@ -32,16 +32,21 @@ import jax.numpy as jnp
 
 # https://huggingface.co/models?sort=downloads&search=whisper
 # openai/whisper-tiny       39M Parameters
+# openai/whisper-tiny.en    39M Parameters
 # openai/whisper-base       74M
 # openai/whisper-small.en   244M
 # openai/whisper-medium.en  769M
 # openai/whisper-large      1550M
 # openai/whisper-large-v2   1550M
-pipeline = FlaxWhisperPipline("openai/whisper-small.en", dtype = jnp.float16, batch_size=16)
+pipeline = FlaxWhisperPipline("openai/whisper-small.en")
 
-# cache the function for subsequent speedup
+def gettext(f):
+    outputs = pipeline(f,  task="transcribe", language="English")
+    return outputs['text']
+
+# preload the function for subsequent speedup
 print("Loading. Please wait...")
-pipeline("click.wav",  task="transcribe", language="English")
+gettext("click.wav")
 
 print("Start speaking. Text should appear in the window you are working in.")
 print("Say \"Stop listening.\" or press CTRL-C to stop.")
@@ -51,8 +56,7 @@ def transcribe():
         # transcribe audio serially, from queue
         if f := audio_queue.get():
             # try:
-            outputs = pipeline(f,  task="transcribe", language="English")
-            t = outputs['text']
+            t = gettext(f)
             if t.endswith("listening.") and len(t) < 20:
                 print("Stopping... Make some noise to return to command prompt.")
                 global listening

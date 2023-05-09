@@ -46,10 +46,6 @@ sudo dnf install python-devel gobject-introspection-devel python3-gobject-devel 
 
 Modify `dictate.py` and set your threshold audio level and device. Use `gst-inspect-1.0` to get a list of sources. The default `autoaudiosrc` should work in most cases.
 
-If it complains about missing files, modify `whisper_dictation.py` and, in the first line, set the location of Python to the one inside the virtual environment works with Whisper-JAX. The one you installed everything in. The default for our usage is `/usr/bin/env python` which should load the one the current environment is using. But if you set this to the version of python inside the conda or venv environment, then you don't have to source or activate the virtual environment. You can just run it.
-
-Also feel free to change the FlaxWhisperPipline to change the language, or use "openai/whisper-large-v2" if your video card has more than the 4Gb RAM that ours does.
-
 Try the examples on the [Whisper-Jax](https://github.com/openai/whisper_jax) page and make sure that is working first.
 
 Now we are ready to try dictation.
@@ -58,6 +54,10 @@ Now we are ready to try dictation.
 cd whisper_dictation
 ./whisper_dictation.py
 ```
+
+If it complains about missing files, modify `whisper_dictation.py` and, in the first line, set the location of Python to the one inside the virtual environment that works with Whisper-JAX. The one you installed everything in. The default for our usage is `/usr/bin/env python` which should load the correct one. But if it doesn't, you can change this to the path of python inside the conda or venv environment. Then you don't have to source or activate the virtual environment. You can just run it.
+
+Also, feel free to change the FlaxWhisperPipline language, or use "openai/whisper-large-v2" if your video card has more than the 4Gb RAM that ours does. It defaults to `openai/whisper-small.en` which hogs just over 2 gigs of video RAM. But in fact, we get *fantastic* results even with `openai/whisper-tiny.en` So you might want to go tiny instead.
 
 ## Bonus app.
 
