@@ -18,44 +18,61 @@
 ## Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
 ## MA 02110-1301, USA.
 ##
-import os, shlex, time
+import os, shlex, time, queue, sys
 import tempfile
 import threading
+
+# fix race conditions
+audio_queue = queue.Queue()
+listening = True
 
 # init whisper_jax
 from whisper_jax import FlaxWhisperPipline
 import jax.numpy as jnp
 
-pipeline = FlaxWhisperPipline("openai/whisper-small.en", \
-   dtype = jnp.float16, batch_size=16)
+# https://huggingface.co/models?sort=downloads&search=whisper
+# openai/whisper-tiny       39M Parameters
+# openai/whisper-base       74M
+# openai/whisper-small.en   244M
+# openai/whisper-medium.en  769M
+# openai/whisper-large      1550M
+# openai/whisper-large-v2   1550M
+pipeline = FlaxWhisperPipline("openai/whisper-base", dtype = jnp.float16, batch_size=16)
 
 # cache the function for subsequent speedup
+print("Loading. Please wait...")
 pipeline("click.wav",  task="transcribe", language="English")
 
-print("Start speaking. Text should appear in current window.")
-
-# fix race conditions
-audio_queue = queue.Queue()
-typing_queue = queue.Queue()
+print("Start speaking. Text should appear in the window you are working in.")
+print("Say \"Stop listening.\" or press CTRL-C to stop.")
 
 def transcribe():
     while True:
-        # transcribe audio from queue
+        # transcribe audio serially, from queue
         if f := audio_queue.get():
-            try:
-                outputs = pipeline(f,  task="transcribe", \
-                language="English")
-                txt = shlex.quote(outputs['text'])
-                if outputs['text'] != ' you':
-                    print('\r' + outputs['text'])
-                    typing_queue.put(txt)
-            except Exception as e: print(e)
+            # try:
+            outputs = pipeline(f,  task="transcribe", language="English")
+            t = outputs['text']
+            if t.endswith("listening.") and len(t) < 16:
+                print("Stopping... Make some noise to return to command prompt.")
+                global listening
+                global record_thread
+                os.remove(f)
+                listening = False
+                record_thread.join()
+                break
+            if t != ' you':
+                print('\r' + t)
+                txt = shlex.quote(t)
+                os.system("xdotool type --clearmodifiers " + txt)
+            # except Exception as e: print(e)
             # cleanup
             os.remove(f)
         else: time.sleep(1)
         
 def record():
-    while True:
+    global listening
+    while listening:
         # record some (more) audio to queue
         temp_name = tempfile.gettempdir() + '/' \
         + next(tempfile._get_candidate_names()) + ".mp3"
@@ -66,15 +83,7 @@ def record():
             exit()
         else: audio_queue.put(temp_name)
 
-transcribe_thread = threading.Thread(target=transcribe)
 record_thread = threading.Thread(target=record)
-
-# start background threads only once
-transcribe_thread.start()
 record_thread.start()
 
-# type out messages as they apppear in queue
-while True:
-    time.sleep(1)
-    if message := typing_queue.get():
-        os.system("xdotool type --clearmodifiers " + txt)
+transcribe()

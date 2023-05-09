@@ -6,11 +6,24 @@ These experimental scripts are intended for working offline, on systems that hav
 
 ## Advantages and tradeoffs.
 
-Whisper AI is currently the state of the art for open-source voice transcription software. With this app, [Whisper](https://github.com/openai/whisper) does not have to load up each time you speak, so dictation can be responsive and fast. Threading enables you to continue speaking while it is still decoding your last sentence. The tradeoff with running Whisper-jax continuously in the background is that a large chunk of video RAM stays reserved until shutting down this application. Depending on hardware and workflow, you might experience issues with other video-intensive tasks while this is running.
+Whisper AI is currently the state of the art for open-source voice transcription software. With this app, [Whisper](https://github.com/openai/whisper) does not have to load up each time you speak, so dictation can be responsive and fast. Threading allows audio recording to proceed in the background while whisper decodes speech in the order in which it appears. The tradeoff with running Whisper-jax continuously in the foreground is that a large chunk of video RAM stays reserved until shutting down this application by saying "Stop listening." Or by pressing `CTRL` - `C`. Depending on hardware and workflow, you might experience issues with other video-intensive tasks while this is running.
 
 For slower continuous dictation that unloads itself when not speaking, try my [voice_typing project](https://github.com/themanyone/voice_typing), which uses the bash shell to separately record and load up whisper only when spoken to. Or try my older, much less-accurate [Freespeech](https://github.com/themanyone/freespeech-vr/tree/python3) project, which uses Pocketsphinx, but is very light on resources.
 
 ## Downloading and using.
+
+Go to https://github.com/google/jax#installation and follow through the steps to install cuda, cudnn, or whatever is missing. All these  [whisper-jax](https://github.com/sanchit-gandhi/whisper-jax) dependencies can be quite bulky, requiring about 5.6GiB of downloads. The original, [OpenAI Whisper](https://github.com/openai/whisper) project does not require near as much to be installed. So those with limited storage space available might just want to give up on this and use that, along with the [voice_typing project](https://github.com/themanyone/voice_typing) script.
+
+We got the following command to install jax for GPU(CUDA) [from here](https://jax.readthedocs.io/en/latest/index.html).
+
+```
+pip install "jax[cuda]" -f https://storage.googleapis.com/jax-releases/jax_cuda_releases.html
+```
+
+Install [whisper-jax](https://git
+hub.com/sanchit-gandhi/whisper-jax), and make sure the examples work.
+
+Nowhere does it say it requires torch, but for some reason, the above examples wouldn't work until running `pip install torch`, which pulled in nvidia-cudnn-cu11==8.5.0.96 (from torch).
 
 ```shell
 # activate conda or venv
@@ -18,8 +31,6 @@ For slower continuous dictation that unloads itself when not speaking, try my [v
 conda activate /opt/conda
 
 # install dependencies
-# get whisper-jax working before continuing with this project
-pip install --upgrade --no-deps --force-reinstall git+https://github.com/sanchit-gandhi/whisper-jax.git
 pip install numpy
 pip install ffmpeg
 # for record.py
@@ -41,7 +52,7 @@ Also feel free to change the FlaxWhisperPipline to change the language, or use "
 
 Try the examples on the [Whisper-Jax](https://github.com/openai/whisper_jax) page and make sure that is working first.
 
-Now we are ready to try a dictation.
+Now we are ready to try dictation.
 
 ```shell
 cd whisper_dictation
@@ -50,7 +61,7 @@ cd whisper_dictation
 
 ## Bonus app.
 
-This project includes `record.py` which does hands-free recording of an mp3 audio clip from the microphone. It waits for audio of a certain level, usually -20dB, and quits when audio drops below that level for a couple seconds. You can run it separately. It creates a file named `audio.mp3`. Or you can supply an output file name on the command line.
+This project includes `record.py` which does hands-free recording of an mp3 audio clip from the microphone. It waits for a minimum threshold sound level of, -20dB, but you can edit the script and change that. It stops recording when audio drops below that level for a couple seconds. You can run it separately. It creates a file named `audio.mp3`. Or you can supply an output file name on the command line.
 
 ## Issues
 
@@ -62,7 +73,7 @@ You can monitor JAX memory usage with [jax-smi](https://github.com/ayaka14732/ja
 
 ### Race conditions.
 
-Currently, there are problems where text is recognized or typed out-of-order. A queue solution has been worked-out as a milestone and is being tested. It should be ready by May 10th.
+The race conditions have been fixed by using queues. Text...will no longer appear out of order.
 
 ### Issue tracker.
 
