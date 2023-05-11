@@ -57,9 +57,11 @@ hotkeys = {
 
 # search text for hotkeys
 def process_hotkeys(txt):
+    global start
     for key,val in hotkeys.items():
         # if hotkey command
         if re.search(key, txt):
+            start = time.time() # reset editing timer
             # unpack list of key combos such as ctrl-v
             for x in val:
                 # press each key combo in turn
@@ -121,6 +123,7 @@ def chatGPT(prompt):
         os.system("mimic3 --length-scale 0.66 " + shlex.quote(completion))
 
 def transcribe():
+    global start
     while True:
         # transcribe audio from queue
         if f := audio_queue.get():
@@ -159,15 +162,11 @@ def transcribe():
             # Stop listening.
             elif re.search("^.{0,6}listening.?$", tl): break
             else:
-                # Check if we need to remove leading space
-                pyperclip.copy('')
-                pyautogui.hotkey("shift", "left")
-                pyautogui.hotkey("right")
-                # Get text to left of cursor
-                clipboard_contents = pyperclip.paste(primary=True)
-                if not clipboard_contents or clipboard_contents == '\n':
-                    # Remove leading space from paragraphs
+                now = time.time()
+                if now - start > 60:
+                    # Remove leading space from new paragraphs
                     t = t.strip()
+                    start = now
                 # Type text into active window.
                 pyautogui.typewrite(t)
                 
@@ -205,6 +204,8 @@ record_thread.start()
 # preload whisper_jax for subsequent speedup
 preload_thread = threading.Thread(target=preload)
 preload_thread.start()
+pyperclip.init_xsel_clipboard()
+start = 0
 
 transcribe()
 print("Stopping... Make some noise to return to command prompt.")
