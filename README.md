@@ -73,6 +73,7 @@ Try saying:
 - Page down.
 - Undo that.
 - Copy that.
+- Paste it.
 - New paragraph.
 - Peter, tell me about the benefits of relaxation.**
 

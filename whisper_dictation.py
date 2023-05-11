@@ -121,7 +121,6 @@ def chatGPT(prompt):
         os.system("mimic3 " + shlex.quote(completion))
 
 def transcribe():
-    global commands
     while True:
         # transcribe audio from queue
         if f := audio_queue.get():
@@ -135,18 +134,18 @@ def transcribe():
             if match := re.search(r"[^\w\s]$", tl):
                 tl = tl[:match.start()] # remove punctuation
             # Open terminal.
-            if s:=re.search("(peter|computer).? open ", tl):
+            if s:=re.search("^(peter|computer).? open ", tl):
                 q = tl[s.end():] # get program name
                 os.system(commands[sys.platform][q])
             # Close window.
-            elif s:=re.search("(peter|computer).? closed? window", tl):
+            elif s:=re.search("^(peter|computer).? closed? window", tl):
                 pyautogui.hotkey('alt', 'F4')
             # Search the web.
-            elif s:=re.search("(peter|computer).? search the web for ", tl):
+            elif s:=re.search("^(peter|computer).? search the web for ", tl):
                 q = tl[s.end():] # get search query
-                webbrowser.open('https://you.com/search?q=' + re.sub(' ','%20',q) + '"')
+                webbrowser.open('https://you.com/search?q=' + re.sub(' ','%20',q))
              # Unknown Computer command, ask Chat-GPT
-            elif s:=re.search("(peter|computer).? ", tl):
+            elif s:=re.search("^(peter|computer).? ", tl):
                 chatGPT(tl[s.end():])
 
             # Process hotkeys.
@@ -155,6 +154,17 @@ def transcribe():
             # Stop listening.
             elif re.search("^.{0,6}listening.?$", tl): break
             else:
+                # Check if we need to remove leading space
+                pyperclip.copy('')
+                pyautogui.hotkey("shift", "left")
+                pyautogui.hotkey("ctrl", "c")
+                pyautogui.hotkey("right")
+                # Get text to left of cursor
+                clipboard_contents = pyperclip.paste()
+                if not clipboard_contents or clipboard_contents == '\n':
+                    # Remove leading space from paragraphs
+                    t = t.strip()
+                # Paste text into active window.
                 pastetext(t)
                 
         else: time.sleep(1)
