@@ -36,14 +36,14 @@ commands = {
     "file manager":  "start explorer",
     "terminal":     "start cmd",
     "browser":      "start iexplore",
-    "a web browser":  "start iexplore",
+    "web browser":  "start iexplore",
     },
 
 "linux": {
     "file manager":  "nemo --no-desktop&",
     "terminal":     "xterm -bg gray20 -fg gray80 -fa 'Liberation Sans Mono' -fs 12 -rightbar&",
     "browser":      "htmlview&",
-    "a web browser":  "htmlview&",
+    "web browser":   "htmlview&",
     },
 }
 hotkeys = {
@@ -137,14 +137,14 @@ def transcribe():
             if match := re.search(r"[^\w\s]$", tl):
                 tl = tl[:match.start()] # remove punctuation
             # Open terminal.
-            if s:=re.search("^(peter|computer).? open ", tl):
+            if s:=re.search("^(peter|computer).? (run|open|start|launch)( a| the)? ", tl):
                 q = tl[s.end():] # get program name
                 os.system(commands[sys.platform][q])
             # Close window.
             elif s:=re.search("^(peter|computer).? closed? window", tl):
                 pyautogui.hotkey('alt', 'F4')
             # Search the web.
-            elif s:=re.search("^(peter|computer).? search( the)?( web| google| bing| online)? for ", tl):
+            elif s:=re.search("^(peter|computer).? search( the)?( you| web| google| bing| online)?(.com)? for ", tl):
                 q = tl[s.end():] # get search query
                 webbrowser.open('https://you.com/search?q=' + re.sub(' ','%20',q))
             # Go to Website.
