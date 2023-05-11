@@ -30,7 +30,7 @@ if (api_key):
     import openai
     openai.api_key = api_key
     
-# command launchers for various platforms
+# commands and hotkeys for various platforms
 commands = {
 "windows": {
     "file manager":  "start explorer",
@@ -46,7 +46,27 @@ commands = {
     "a web browser":  "htmlview&",
     },
 }
+hotkeys = {
+    "^new paragraph.?$": [['enter'],['enter']],
+    "^page up.?$":     [['pageup']],
+    "^page down.?$":    [['pagedown']],
+    "^undo that.?$":    [['ctrl', 'z']],
+    "^copy that.?$":    [['ctrl', 'c']],
+    "^paste it.?$":     [['ctrl', 'v']],
+    }
 
+# search text for hotkeys
+def process_hotkeys(txt):
+    for key,val in hotkeys.items():
+        # if hotkey command
+        if re.search(key, txt):
+            # unpack list of key combos such as ctrl-v
+            for x in val:
+                # press each key combo in turn
+                # The * unpacks x to separate args
+                pyautogui.hotkey(*x)
+            return True
+    return False
 
 def check_command(command):
     try:
@@ -60,6 +80,7 @@ audio_queue = queue.Queue()
 listening = True
 
 # init whisper_jax
+print("Loading... Please wait.")
 from whisper_jax import FlaxWhisperPipline
 
 # https://huggingface.co/models?sort=downloads&search=whisper
@@ -108,33 +129,34 @@ def transcribe():
             # delete temporary audio file
             os.remove(f)
             
-            # process spoken commands
+            # Computer commands
             # see list of commands at top of file :)
-            tl = t.lower()
+            tl = t.lower().strip()
             if match := re.search(r"[^\w\s]$", tl):
                 tl = tl[:match.start()] # remove punctuation
             # Open terminal.
             if s:=re.search("(peter|computer).? open ", tl):
                 q = tl[s.end():] # get program name
                 os.system(commands[sys.platform][q])
-            # Close window. Okay.
+            # Close window.
             elif s:=re.search("(peter|computer).? closed? window", tl):
                 pyautogui.hotkey('alt', 'F4')
             # Search the web.
             elif s:=re.search("(peter|computer).? search the web for ", tl):
                 q = tl[s.end():] # get search query
                 webbrowser.open('https://you.com/search?q=' + re.sub(' ','%20',q) + '"')
-             # Unknown command, ask Chat-GPT
+             # Unknown Computer command, ask Chat-GPT
             elif s:=re.search("(peter|computer).? ", tl):
                 chatGPT(tl[s.end():])
-            elif re.search("^.new paragraph.?$", tl):
-                pyautogui.hotkey('enter')
-                pyautogui.hotkey('enter')
+
+            # Process hotkeys.
+            elif process_hotkeys(tl):
+                continue
             # Stop listening.
-            elif re.search("listening", tl) and len(t) < 18:
-                break
+            elif re.search("^.{0,6}listening.?$", tl): break
             else:
                 pastetext(t)
+                
         else: time.sleep(1)
         
 def recorder():

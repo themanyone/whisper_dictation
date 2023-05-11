@@ -62,12 +62,18 @@ Also, feel free to change the FlaxWhisperPipline language, or use "openai/whispe
 ### Spoken commands and program launchers.
 
 The computer responds to commands. You can also call him Peter.
-These actions are defined in whisper_dictation.py. Feel free to edit them.
+
+These actions are defined in whisper_dictation.py. See the source code for the full list. Feel free to edit them too!
 
 Try saying:
 - Computer, open terminal.
 - Computer, open a web browser.
 - Computer, search the web for places to eat.
+- Page up.
+- Page down.
+- Undo that.
+- Copy that.
+- New paragraph.
 - Peter, tell me about the benefits of relaxation.**
 
 ** export your OPENAI_API_KEY to the environment if you want answers from ChatGPT.
@@ -75,6 +81,8 @@ Try saying:
 ```
 export OPENAI_API_KEY=<my API key>
 ```
+
+If you install the optional [mimic3](https://github.com/MycroftAI/mimic3), he will speak to you.
 
 ## Bonus app.
 
