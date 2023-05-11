@@ -118,7 +118,7 @@ def chatGPT(prompt):
     print(completion)
     pastetext(completion)
     if check_command("mimic3"):
-        os.system("mimic3 " + shlex.quote(completion))
+        os.system("mimic3 --length-scale 0.66 " + shlex.quote(completion))
 
 def transcribe():
     while True:
@@ -141,11 +141,11 @@ def transcribe():
             elif s:=re.search("^(peter|computer).? closed? window", tl):
                 pyautogui.hotkey('alt', 'F4')
             # Search the web.
-            elif s:=re.search("^(peter|computer).? search the web for ", tl):
+            elif s:=re.search("^(peter|computer).? search( the)?( web| google| bing| online)? for ", tl):
                 q = tl[s.end():] # get search query
                 webbrowser.open('https://you.com/search?q=' + re.sub(' ','%20',q))
             # Go to Website.
-            elif s:=re.search("^(peter|computer).? go to ", tl):
+            elif s:=re.search("^(peter|computer).? (go|open|browse|visit|navigate)( up| to| the| webbsite)* ", tl):
                 q = tl[s.end():] # get search query
                 if re.search("^[a-zA-Z0-9-]{1,63}(\.[a-zA-Z0-9-]{1,63})+$", q):
                     webbrowser.open('https://' + q.strip())
@@ -162,10 +162,9 @@ def transcribe():
                 # Check if we need to remove leading space
                 pyperclip.copy('')
                 pyautogui.hotkey("shift", "left")
-                pyautogui.hotkey("ctrl", "c")
                 pyautogui.hotkey("right")
                 # Get text to left of cursor
-                clipboard_contents = pyperclip.paste()
+                clipboard_contents = pyperclip.paste(primary=True)
                 if not clipboard_contents or clipboard_contents == '\n':
                     # Remove leading space from paragraphs
                     t = t.strip()
