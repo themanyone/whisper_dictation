@@ -144,6 +144,11 @@ def transcribe():
             elif s:=re.search("^(peter|computer).? search the web for ", tl):
                 q = tl[s.end():] # get search query
                 webbrowser.open('https://you.com/search?q=' + re.sub(' ','%20',q))
+            # Go to Website.
+            elif s:=re.search("^(peter|computer).? go to ", tl):
+                q = tl[s.end():] # get search query
+                if re.search("^[a-zA-Z0-9-]{1,63}(\.[a-zA-Z0-9-]{1,63})+$", q):
+                    webbrowser.open('https://' + q.strip())
              # Unknown Computer command, ask Chat-GPT
             elif s:=re.search("^(peter|computer).? ", tl):
                 chatGPT(tl[s.end():])

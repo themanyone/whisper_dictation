@@ -67,8 +67,9 @@ These actions are defined in whisper_dictation.py. See the source code for the f
 
 Try saying:
 - Computer, open terminal.
-- Computer, open a web browser.
-- Computer, search the web for places to eat.
+- Computer, go to <website>.com.
+- Computer, search the web for places to eat. (Browser need not be open).
+- Computer, open a web browser. (opens the default homepage).
 - Page up.
 - Page down.
 - Undo that.
