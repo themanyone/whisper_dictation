@@ -1,20 +1,20 @@
 # Whisper Dictation
 
-Fast, keyboard-emulated dictation for Linux with using [whisper-jax](https://github.com/sanchit-gandhi/whisper-jax) and threading. https://github.com/themanyone/whisper_dictation.git
+Star Trek computer control via voice. ChatGPT integration. Dictation. Web search. Fast keyboard emulation using [whisper-jax](https://github.com/sanchit-gandhi/whisper-jax) and threading. https://github.com/themanyone/whisper_dictation.git
 
 These experimental scripts are intended for working offline, on systems that have a powerful video card. For smaller, connected devices, you might want to look at whisper cloud solutions.
 
 ## Advantages and tradeoffs.
 
-Whisper AI is currently the state of the art for open-source voice transcription software. [Whisper jax](https://github.com/sanchit-gandhi/whisper-jax) caches compiled functions to to machine code, so dictation can be responsive and fast--easily 10x as fast as other solutions. Threading allows audio recording to proceed in the background while whisper decodes speech files in the foreground, in the order in which they appear. The tradeoff with running Whisper-jax continuously is that a large chunk of video RAM stays reserved until shutting down this application by saying "Stop listening." Or by pressing `CTRL` - `C`. Depending on hardware and workflow, you might experience issues with other video-intensive tasks while this is running.
+Whisper AI is currently the state of the art for open-source voice transcription software. [Whisper jax](https://github.com/sanchit-gandhi/whisper-jax) caches compiled functions to to machine code, so dictation can be responsive and fast--easily 10x as fast as other solutions. Threading allows audio recording to proceed in the background while whisper decodes speech in the foreground. The tradeoff with running Whisper-jax continuously is that a large chunk of video RAM stays reserved until shutting down this application by saying "Stop listening." Or by pressing `CTRL` - `C`. Depending on hardware and workflow, you might experience issues with other video-intensive tasks while this is running.
 
-For much-slower, continuous dictation that unloads itself when not speaking, try my [voice_typing project](https://github.com/themanyone/voice_typing), which uses the bash shell to separately record and load up whisper only when spoken to. Or try my older, less-accurate [Freespeech](https://github.com/themanyone/freespeech-vr/tree/python3) project, which uses Pocketsphinx, but is very light on resources.
+For a much-slower, dictation-only script, that unloads itself when not speaking, try my [voice_typing project](https://github.com/themanyone/voice_typing), which uses the bash shell to separately record and load up whisper only when spoken to. Or try my older, less-accurate [Freespeech](https://github.com/themanyone/freespeech-vr/tree/python3) project, which uses Pocketsphinx, but is very light on resources.
 
-## Downloading and using.
+## Dependencies.
 
 Go to https://github.com/google/jax#installation and follow through the steps to install cuda, cudnn, or whatever is missing. All these  [whisper-jax](https://github.com/sanchit-gandhi/whisper-jax) dependencies and video drivers can be quite bulky, requiring about 5.6GiB of downloads. Our original,[voice_typing project](https://github.com/themanyone/voice_typing) script is significantly easier on internet usage.
 
-Do not install `torch` or it will downgrade nvidia-cudnn-cu11 to an incompatible version. Then you will have to run `pip install --upgrade nvidia-cudnn-cu11`. This problem might be fixed in another update. But for now we will use conda or venv to eep things separate.
+Do not install `torch`. It downgrades nvidia-cudnn-cu11 to an incompatible version. Then you will have to run `pip install --upgrade nvidia-cudnn-cu11`. This problem might be fixed in another update. But for now we will use conda or venv to keep things separate.
 
 We got the commands to install jax for GPU(CUDA) [from here](https://jax.readthedocs.io/en/latest/index.html).
 
@@ -31,17 +31,16 @@ pip install "jax[cuda]" -f https://storage.googleapis.com/jax-releases/jax_cuda_
 
 pip install numpy
 pip install ffmpeg
-# for record.py
+pip install pyautogui
+pip install pyperclip
 pip install pygobject
 git clone https://github.com/themanyone/whisper_dictation
 ```
 
-Install  `xdotool`.
-
 There may be other dependencies not listed. Go ahead and install whatever it asks for.
 
 ```
-sudo dnf install python-devel gobject-introspection-devel python3-gobject-devel cairo-gobject-devel
+sudo dnf install python-devel gobject-introspection-devel python3-gobject-devel cairo-gobject-devel python3-tkinter python3-devel
 ```
 
 Modify `dictate.py` and set the preferred threshold audio level and device which might require some experimentation. If the microphone isn't detected, open Control Center and choose the preferred audio device for the mic, whether it is a Bluetooth, USB microphone, or whatever. You can also use `gst-inspect-1.0` to get a list of audio sources to try. The default `autoaudiosrc` should work in most cases. 
@@ -49,6 +48,8 @@ Modify `dictate.py` and set the preferred threshold audio level and device which
 Try the examples on the [Whisper-Jax](https://github.com/openai/whisper_jax) page and make sure that is working first.
 
 Now we are ready to try dictation.
+
+## Usage.
 
 ```shell
 cd whisper_dictation
@@ -58,6 +59,24 @@ cd whisper_dictation
 If it complains about missing files, modify `whisper_dictation.py` and, in the first line, set the location of Python to the one inside the virtual environment that works with Whisper-JAX. The one you installed everything in. The default for our usage is `/usr/bin/env python` which should load the correct one. But if it doesn't, you can change this to the path of python inside the conda or venv environment. Then you don't have to source or activate the virtual environment. You can just run it.
 
 Also, feel free to change the FlaxWhisperPipline language, or use "openai/whisper-large-v2" if your video card has more than the 4Gb RAM that ours does. It defaults to `openai/whisper-small.en` which hogs just over 2 gigs of video RAM. But in fact, we get *fantastic* results even with `openai/whisper-tiny.en` So you might want to go tiny instead.
+
+### Spoken commands and program launchers.
+
+The computer responds to commands. You can also call him Peter.
+These actions are defined in whisper_dictation.py. Feel free to edit them.
+
+Try saying:
+- Computer, open terminal.
+- Computer, open a web browser.
+- Computer, search the web for places to eat.
+- Peter, tell me about the benefits of relaxation.**
+
+** export your OPENAI_API_KEY to the environment if you want answers from ChatGPT.
+
+```
+export OPENAI_API_KEY=<my API key>
+```
+
 
 ## Bonus app.
 
@@ -71,9 +90,11 @@ According to a post by [sanchit-gandhi](https://github.com/sanchit-gandhi/whispe
 
 You can monitor JAX memory usage with [jax-smi](https://github.com/ayaka14732/jax-smi), `nvidia-smi`, or by installing GreenWithEnvy (gwe) for Nvidia cards.
 
-### Race conditions.
+### Improvements.
 
-The race conditions have been fixed by using queues. Text...will no longer appear out of order. Turns out spawning multiple, background threads for dictation was a bad idea. Apparently, each new `whisper-jax` instance had to be re-compiled each time. Dictation is many times faster with a single thread, runnnig in the foreground as intended. It now does audio recording in the background, which is handled very-smoothly usig Gstreamer-1.0.
+Moved audio recording to the background and dictation to the foreground. Turns out spawning multiple, background threads for dictation was a bad idea. Apparently, each new `whisper-jax` instance had to be re-compiled each time. Dictation is many times faster with a single thread, runnnig in the foreground as intended.
+
+Now using `pyperclip` and `pyautogui` to copy and paste text, instead of typing it out into the current window. The `pyautogui` module can automate everything, so this opens up the ability to add spoken commands, such as "close window."
 
 ### Issue tracker.
 
