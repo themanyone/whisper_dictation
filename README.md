@@ -1,8 +1,8 @@
 # Whisper Dictation
 
-Star Trek computer control via voice. ChatGPT integration. Dictation. Web search. Fast keyboard emulation using [whisper-jax](https://github.com/sanchit-gandhi/whisper-jax) and threading. https://github.com/themanyone/whisper_dictation.git
+Dictation and personal assistant with ChatGPT integration. Web search. Fast keyboard emulation using [whisper-jax](https://github.com/sanchit-gandhi/whisper-jax) and threading. https://github.com/themanyone/whisper_dictation.git
 
-These experimental scripts are intended for working offline, on systems that have a powerful video card. For smaller, connected devices, you might want to look at whisper cloud solutions.
+These experimental scripts are intended for working offline, on systems that have a modern graphics card. For smaller, connected devices, you might want to look at whisper cloud solutions.
 
 ## Advantages and tradeoffs.
 
@@ -39,7 +39,7 @@ git clone https://github.com/themanyone/whisper_dictation
 There may be other dependencies not listed. Go ahead and install whatever it asks for.
 
 ```
-sudo dnf install python-devel gobject-introspection-devel python3-gobject-devel cairo-gobject-devel python3-tkinter python3-devel
+sudo dnf install python-devel gobject-introspection-devel python3-gobject-devel cairo-gobject-devel python3-tkinter python3-devel xdotool
 ```
 
 Modify `dictate.py` and set the preferred threshold audio level and device which might require some experimentation. If the microphone isn't detected, open Control Center and choose the preferred audio device for the mic, whether it is a Bluetooth, USB microphone, or whatever. You can also use `gst-inspect-1.0` to get a list of audio sources to try. The default `autoaudiosrc` should work in most cases. 
@@ -78,13 +78,13 @@ Try saying:
 - New paragraph. (also submits chat forms :)
 - Peter, tell me about the benefits of relaxation.**
 
-** export your OPENAI_API_KEY to the environment if you want answers from ChatGPT.
+** export your OPENAI_API_KEY to the environment if you want answers from ChatGPT. No other configuration required.
 
 ```
 export OPENAI_API_KEY=<my API key>
 ```
 
-If you install the optional [mimic3](https://github.com/MycroftAI/mimic3), he will speak to you.
+If you install the optional [mimic3](https://github.com/MycroftAI/mimic3), he will speak answers out loud.
 
 ## Bonus app.
 

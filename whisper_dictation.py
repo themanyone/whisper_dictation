@@ -29,7 +29,7 @@ api_key = os.getenv("OPENAI_API_KEY")
 if (api_key):
     import openai
     openai.api_key = api_key
-    
+
 # commands and hotkeys for various platforms
 commands = {
 "windows": {
@@ -107,6 +107,17 @@ def pastetext(t):
 
 def preload():
     gettext("click.wav")
+    
+def _dummy(t):
+    pass
+
+def _speak(t):
+    os.system("mimic3 --length-scale 0.66 " + shlex.quote(t))
+    
+if check_command("mimic3"):
+    speak = _speak
+else:
+    speak = _dummy
 
 print("Start speaking. Text should appear in the window you are working in.")
 print("Say \"Stop listening.\" or press CTRL-C to stop.")
@@ -119,8 +130,7 @@ def chatGPT(prompt):
     completion = completion.choices[0].message.content
     print(completion)
     pastetext(completion)
-    if check_command("mimic3"):
-        os.system("mimic3 --length-scale 0.66 " + shlex.quote(completion))
+    speak(completion)
 
 def transcribe():
     global start
@@ -148,7 +158,7 @@ def transcribe():
                 q = tl[s.end():] # get search query
                 webbrowser.open('https://you.com/search?q=' + re.sub(' ','%20',q))
             # Go to Website.
-            elif s:=re.search("^(peter|computer).? (go|open|browse|visit|navigate)( up| to| the| webbsite)* ", tl):
+            elif s:=re.search("^(peter|computer).? (go|open|browse|visit|navigate)( up| to| the| website)* ", tl):
                 q = tl[s.end():] # get search query
                 if re.search("^[a-zA-Z0-9-]{1,63}(\.[a-zA-Z0-9-]{1,63})+$", q):
                     webbrowser.open('https://' + q.strip())
@@ -167,8 +177,15 @@ def transcribe():
                     # Remove leading space from new paragraphs
                     t = t.strip()
                     start = now
-                # Type text into active window.
-                pyautogui.typewrite(t)
+                # Type text into active terminal.
+                # Paste into other types of windows
+                window_name = subprocess.check_output(
+                ["xdotool", "getwindowfocus", "getwindowname"]).decode().strip()
+                if re.search("\w/\w",window_name):
+                    # window is a terminal
+                    pyautogui.typewrite(t)
+                else:
+                    pastetext(t)
                 
         else: time.sleep(1)
         
