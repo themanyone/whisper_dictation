@@ -61,7 +61,7 @@ def process_hotkeys(txt):
     for key,val in hotkeys.items():
         # if hotkey command
         if re.search(key, txt):
-            if val[0][0]=='enter': start = 0 # reset editing timer
+            start = 0 # reset paragraph timer
             # unpack list of key combos such as ctrl-v
             for x in val:
                 # press each key combo in turn

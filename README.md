@@ -75,7 +75,7 @@ Try saying:
 - Undo that.
 - Copy that.
 - Paste it.
-- New paragraph.
+- New paragraph. (also submits chat forms :)
 - Peter, tell me about the benefits of relaxation.**
 
 ** export your OPENAI_API_KEY to the environment if you want answers from ChatGPT.
