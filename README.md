@@ -23,7 +23,7 @@ Install [whisper-jax](https://github.com/sanchit-gandhi/whisper-jax) and make su
 ```shell
 # activate conda or venv
 python3 -m venv .venv
-
+source .venv/bin/activate
 # install dependencies
 pip install  nvidia-cudnn-cu11
 pip install "jax[cuda]" -f https://storage.googleapis.com/jax-releases/jax_cuda_releases.html
@@ -75,7 +75,6 @@ Try saying:
 ```
 export OPENAI_API_KEY=<my API key>
 ```
-
 
 ## Bonus app.
 
