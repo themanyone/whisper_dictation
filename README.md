@@ -22,8 +22,7 @@ Install [whisper-jax](https://github.com/sanchit-gandhi/whisper-jax) and make su
 
 ```shell
 # activate conda or venv
-# Can be anywhere you want to install whisper-jax
-conda activate /opt/conda
+python3 -m venv .venv
 
 # install dependencies
 pip install  nvidia-cudnn-cu11
@@ -56,7 +55,7 @@ cd whisper_dictation
 ./whisper_dictation.py
 ```
 
-If it complains about missing files, modify `whisper_dictation.py` and, in the first line, set the location of Python to the one inside the virtual environment that works with Whisper-JAX. The one you installed everything in. The default for our usage is `/usr/bin/env python` which should load the correct one. But if it doesn't, you can change this to the path of python inside the conda or venv environment. Then you don't have to source or activate the virtual environment. You can just run it.
+If it complains about missing files, modify `whisper_dictation.py` and, in the first line, set the location of Python to the one inside the virtual environment that works with Whisper-JAX. The one you installed everything in. The default for our usage is `.venv/bin/python` which should load the correct one. But if it doesn't, you can change this to the path of python inside the conda or venv environment. Then you don't have to source or activate the virtual environment. You can just run it.
 
 Also, feel free to change the FlaxWhisperPipline language, or use "openai/whisper-large-v2" if your video card has more than the 4Gb RAM that ours does. It defaults to `openai/whisper-small.en` which hogs just over 2 gigs of video RAM. But in fact, we get *fantastic* results even with `openai/whisper-tiny.en` So you might want to go tiny instead.
 
