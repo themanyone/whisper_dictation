@@ -168,8 +168,8 @@ def transcribe():
                 if not clipboard_contents or clipboard_contents == '\n':
                     # Remove leading space from paragraphs
                     t = t.strip()
-                # Paste text into active window.
-                pastetext(t)
+                # Type text into active window.
+                pyautogui.typewrite(t)
                 
         else: time.sleep(1)
         

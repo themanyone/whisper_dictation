@@ -73,7 +73,7 @@ class Record:
         level = 1 - (level / -53.0)
         num_chars = int(level * 50)
         meter_chars = '=' * num_chars + '-' * (50 - num_chars)
-        print("\r[%s] %.1f dBFS" % (meter_chars, (1 - level) * -53.0), end='')
+        print("\r[%s] %.1f dB" % (meter_chars, (1 - level) * -53.0), end='')
 
     # Create the lvl and rec pipes
     def create_pipes(self, fname):
