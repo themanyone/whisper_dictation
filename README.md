@@ -14,6 +14,10 @@ For a much-slower, dictation-only script, that unloads itself when not speaking,
 
 Go to https://github.com/google/jax#installation and follow through the steps to install cuda, cudnn, or whatever is missing. All these  [whisper-jax](https://github.com/sanchit-gandhi/whisper-jax) dependencies and video drivers can be quite bulky, requiring about 5.6GiB of downloads. Our original,[voice_typing project](https://github.com/themanyone/voice_typing) script is significantly easier on internet usage.
 
+```
+sudo dnf install python-devel gobject-introspection-devel python3-gobject-devel cairo-gobject-devel python3-tkinter python3-devel xdotool
+```
+
 Do not install `torch`. It downgrades nvidia-cudnn-cu11 to an incompatible version. Then you will have to run `pip install --upgrade nvidia-cudnn-cu11`. This problem might be fixed in another update. But for now we will use conda or venv to keep things separate.
 
 We got the commands to install jax for GPU(CUDA) [from here](https://jax.readthedocs.io/en/latest/index.html).
@@ -27,7 +31,6 @@ source .venv/bin/activate
 # install dependencies
 pip install  nvidia-cudnn-cu11
 pip install "jax[cuda]" -f https://storage.googleapis.com/jax-releases/jax_cuda_releases.html
-
 pip install numpy
 pip install ffmpeg
 pip install pyautogui
@@ -36,15 +39,11 @@ pip install pygobject
 git clone https://github.com/themanyone/whisper_dictation
 ```
 
-There may be other dependencies not listed. Go ahead and install whatever it asks for.
-
-```
-sudo dnf install python-devel gobject-introspection-devel python3-gobject-devel cairo-gobject-devel python3-tkinter python3-devel xdotool
-```
+There may be other dependencies. Look in requirements.txt.
 
 Modify `dictate.py` and set the preferred threshold audio level and device which might require some experimentation. If the microphone isn't detected, open Control Center and choose the preferred audio device for the mic, whether it is a Bluetooth, USB microphone, or whatever. You can also use `gst-inspect-1.0` to get a list of audio sources to try. The default `autoaudiosrc` should work in most cases. 
 
-Try the examples on the [Whisper-Jax](https://github.com/openai/whisper_jax) page and make sure that is working first.
+Again, explore the examples on the [Whisper-Jax](https://github.com/openai/whisper_jax) page and make sure that is working first. Edit `whisper_dictation.py` to use your preferred pipeline and dictation model from the examples for best results.
 
 Now we are ready to try dictation.
 
@@ -55,7 +54,7 @@ cd whisper_dictation
 ./whisper_dictation.py
 ```
 
-If it complains about missing files, modify `whisper_dictation.py` and, in the first line, set the location of Python to the one inside the virtual environment that works with Whisper-JAX. The one you installed everything in. The default for our usage is `.venv/bin/python` which should load the correct one. But if it doesn't, you can change this to the path of python inside the conda or venv environment. Then you don't have to source or activate the virtual environment. You can just run it.
+If it complains about missing files, modify `whisper_dictation.py` and, in the first line, set the location of Python to the one inside the virtual environment that works with Whisper-JAX. The one you installed everything in. The default for our usage is `.venv/bin/python` which should load the correct one. But if it doesn't, you can change this to the path of python inside the conda or venv environment. Then you don't have to source or activate the virtual environment each time. You can just run it from anywhere.
 
 Also, feel free to change the FlaxWhisperPipline language, or use "openai/whisper-large-v2" if your video card has more than the 4Gb RAM that ours does. It defaults to `openai/whisper-small.en` which hogs just over 2 gigs of video RAM. But in fact, we get *fantastic* results even with `openai/whisper-tiny.en` So you might want to go tiny instead.
 
@@ -77,6 +76,7 @@ Try saying:
 - Paste it.
 - New paragraph. (also submits chat forms :)
 - Peter, tell me about the benefits of relaxation.**
+- Peter, compose a Facebook post about the sunny weather we're having.
 
 ** export your OPENAI_API_KEY to the environment if you want answers from ChatGPT. No other configuration required.
 
@@ -100,9 +100,9 @@ You can monitor JAX memory usage with [jax-smi](https://github.com/ayaka14732/ja
 
 ### Improvements.
 
-Moved audio recording to the background and dictation to the foreground. Turns out spawning multiple, background threads for dictation was a bad idea. Apparently, each new `whisper-jax` instance had to be re-compiled each time. Dictation is many times faster with a single thread, runnnig in the foreground as intended.
+Threading. Moved audio recording to the background and dictation to the foreground. Turns out spawning multiple, background threads for dictation was a bad idea. Apparently, each new `whisper-jax` instance had to be re-compiled each time. Dictation is many times faster with a single thread, runnnig in the foreground as intended.
 
-Now using `pyperclip` and `pyautogui` to copy and paste text, instead of typing it out into the current window. The `pyautogui` module can automate everything, so this opens up the ability to add spoken commands, such as "close window."
+Typing speed. Set typing_interval in whisper_dictation.py. But except for terminal windows, we now use `pyperclip` and `pyautogui` to copy and paste text, instead of typing responses into the current window. Typing is very slow on sites like Twitter and Facebook. The theory is they are using Javascript to restrict input from bots. But it's annoying to fast typists too. If you enjoy watching it type slowly, you can change the code to use `pyautogui.typewrite(t, typing_interval)` for everything, and set a `typing_interval` to whatever you want.
 
 ### Issue tracker.
 

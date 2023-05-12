@@ -1,0 +1,12 @@
+openai==0.27.6
+PyAutoGUI==0.9.53
+pyperclip==1.8.2
+nvidia-cudnn-cu11==8.9.1.23
+
+ffmpeg==1.4
+jax==0.4.8
+jaxlib==0.4.7+cuda11.cudnn86
+Pillow==9.5.0
+PyGObject==3.44.1
+urllib3==2.0.2
+whisper-jax @ git+https://github.com/sanchit-gandhi/whisper-jax.git@0d3bc54c8c673d71732ba6bc20fa0323b1101fa6

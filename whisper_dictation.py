@@ -123,14 +123,18 @@ print("Start speaking. Text should appear in the window you are working in.")
 print("Say \"Stop listening.\" or press CTRL-C to stop.")
 
 def chatGPT(prompt):
-    completion = openai.ChatCompletion.create(
-      model="gpt-3.5-turbo",
-      messages=[ {"role": "user", "content": prompt} ]
-    )
-    completion = completion.choices[0].message.content
-    print(completion)
-    pastetext(completion)
-    speak(completion)
+    if api_key:
+        completion = openai.ChatCompletion.create(
+          model="gpt-3.5-turbo",
+          messages=[ {"role": "user", "content": prompt} ]
+        )
+        completion = completion.choices[0].message.content
+        print(completion)
+        pastetext(completion)
+        speak(completion)
+    else:
+        print("Export OPENAI_API_KEY if you want answers from ChatGPT.")
+        
 
 def transcribe():
     global start
