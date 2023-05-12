@@ -70,13 +70,6 @@ def process_hotkeys(txt):
             return True
     return False
 
-def check_command(command):
-    try:
-        subprocess.check_output(["which", command])
-        return True
-    except subprocess.CalledProcessError:
-        return False
-
 # fix race conditions
 audio_queue = queue.Queue()
 listening = True
@@ -107,17 +100,13 @@ def pastetext(t):
 
 def preload():
     gettext("click.wav")
-    
-def _dummy(t):
-    pass
 
-def _speak(t):
-    os.system("mimic3 --length-scale 0.66 " + shlex.quote(t))
-    
-if check_command("mimic3"):
-    speak = _speak
-else:
-    speak = _dummy
+def speak(t):
+    try:
+        subprocess.check_output(["which", "mimic3"])
+        os.system("mimic3 --length-scale 0.66 " + shlex.quote(t))
+    except:
+        pass
 
 print("Start speaking. Text should appear in the window you are working in.")
 print("Say \"Stop listening.\" or press CTRL-C to stop.")
