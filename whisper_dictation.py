@@ -113,14 +113,17 @@ print("Say \"Stop listening.\" or press CTRL-C to stop.")
 
 def chatGPT(prompt):
     if api_key:
-        completion = openai.ChatCompletion.create(
-          model="gpt-3.5-turbo",
-          messages=[ {"role": "user", "content": prompt} ]
-        )
-        completion = completion.choices[0].message.content
-        print(completion)
-        pastetext(completion)
-        speak(completion)
+        try:
+            completion = openai.ChatCompletion.create(
+              model="gpt-3.5-turbo",
+              messages=[ {"role": "user", "content": prompt} ]
+            )
+            completion = completion.choices[0].message.content
+            print(completion)
+            pastetext(completion)
+            speak(completion)
+        except Exception as e:
+                print(e)
     else:
         print("Export OPENAI_API_KEY if you want answers from ChatGPT.")
         
