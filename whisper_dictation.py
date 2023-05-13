@@ -63,7 +63,25 @@ hotkeys = {
     "^copy that.?$":    [['ctrl', 'c']],
     "^paste it.?$":     [['ctrl', 'v']],
     }
+actions = {
+    "^left click.?$": "pyautogui.click()",
+    "^(peter|computer).? (run|open|start|launch)( a| the)? ": "os.system(commands[sys.platform][q])",
+    "^(peter|computer).? closed? window": "pyautogui.hotkey('alt', 'F4')",
+    "^(peter|computer).? search( the)?( you| web| google| bing| online)?(.com)? for ": 
+        "webbrowser.open('https://you.com/search?q=' + re.sub(' ','%20',q))",
+    "^(peter|computer).? ": "pyautogui.hotkey('alt', 'F4')",
+    "^(peter|computer).? ": "chatGPT(tl[s.end():])",
+    }
 
+def process_actions(tl):
+    for action, command in actions.items():
+        # look for action in list
+        if s:=re.search(action, tl):
+            q = tl[s.end():] # get q for command
+            eval(command)
+            return True # success
+    return False # no action
+    
 # fix race conditions
 audio_queue = queue.Queue()
 listening = True
@@ -106,11 +124,11 @@ def preload():
     
 def pastetext(t):
     # paste text in window
-    if pyautogui.platform.system() == "linux":
-        pyperclip.copy(t, primary=True)
+    pyperclip.copy(t) # weird that primary won't work the first time
+    if pyautogui.platform.system() == "Linux":
+        pyperclip.copy(t, primary=True) # now it works
         pyautogui.middleClick()
     else:
-        pyperclip.copy(t)
         pyautogui.hotkey('ctrl', 'v')
 
 def speak(t):
@@ -159,46 +177,30 @@ def transcribe():
             # delete temporary audio file
             os.remove(f)
             
-            # Computer commands
-            # see list of commands at top of file :)
-            tl = t.lower().strip()
-            if match := re.search(r"[^\w\s]$", tl):
-                tl = tl[:match.start()] # remove punctuation
-            # Open terminal.
-            if s:=re.search("^(peter|computer).? (run|open|start|launch)( a| the)? ", tl):
-                q = tl[s.end():] # get program name
-                os.system(commands[sys.platform][q])
-            # Close window.
-            elif s:=re.search("^(peter|computer).? closed? window", tl):
-                pyautogui.hotkey('alt', 'F4')
-            # Search the web.
-            elif s:=re.search("^(peter|computer).? search( the)?( you| web| google| bing| online)?(.com)? for ", tl):
-                q = tl[s.end():] # get search query
-                webbrowser.open('https://you.com/search?q=' + re.sub(' ','%20',q))
+            # get lower-case spoken command string
+            lower_case = t.lower().strip()
+            if match := re.search(r"[^\w\s]$", lower_case):
+                lower_case = lower_case[:match.start()] # remove punctuation
+            
+            # see list of actions and hotkeys at top of file :)
+            if process_actions(lower_case):   continue
+            elif process_hotkeys(lower_case): continue
+            
             # Go to Website.
-            elif s:=re.search("^(peter|computer).? (go|open|browse|visit|navigate)( up| to| the| website)* ", tl):
-                q = tl[s.end():] # get search query
+            elif s:=re.search("^(peter|computer).? (go|open|browse|visit|navigate)( up| to| the| website)* ", lower_case):
+                q = lower_case[s.end():] # get q for command
                 if re.search("^[a-zA-Z0-9-]{1,63}(\.[a-zA-Z0-9-]{1,63})+$", q):
                     webbrowser.open('https://' + q.strip())
-             # Unknown Computer command, ask Chat-GPT
-            elif s:=re.search("^(peter|computer).? ", tl):
-                chatGPT(tl[s.end():])
 
-            # Process hotkeys.
-            elif process_hotkeys(tl):
-                continue
             # Stop listening.
-            elif re.search("^.{0,6}listening.?$", tl): break
+            elif re.search("^.{0,6}listening.?$", lower_case): break
             else:
                 now = time.time()
-                if now - start > 120:
-                    # Remove leading space from new paragraphs
-                    t = t.strip()
-                    start = now
-                # Paste text into windows
-                else:
-                    pastetext(t)
-                
+                # Remove leading space from new paragraph
+                if now - start > 120: t = t.strip()
+                # Paste it now
+                start = now; pastetext(t)
+        # continue looping every second
         else: time.sleep(1)
         
 def recorder():
