@@ -187,7 +187,7 @@ def transcribe():
             elif re.search("^.{0,6}listening.?$", tl): break
             else:
                 now = time.time()
-                if now - start > 60:
+                if now - start > 120:
                     # Remove leading space from new paragraphs
                     t = t.strip()
                     start = now
