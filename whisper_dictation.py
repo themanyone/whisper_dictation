@@ -193,11 +193,8 @@ def transcribe():
                     start = now
                 # Paste text into windows
                 if pyautogui.platform.system() == "linux":
-                window_name = subprocess.check_output(
-                ["xdotool", "getwindowfocus", "getwindowname"]).decode().strip()
-                if re.search("\w/\w",window_name):
-                    # window is a terminal
-                    pyautogui.typewrite(t)
+                    pyperclip.copy(t, primary=True)
+                    pyautogui.middleClick()
                 else:
                     pastetext(t)
                 
