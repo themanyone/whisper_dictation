@@ -1,17 +1,17 @@
 # Whisper Dictation
 
-Also known as the computer from "Star Trek".
+- Turns speech into text, with `whisper-jax`,
+- Launches & controls apps, with `pyautogui`
+- Communicates with OpenAI `ChatGPT`,
+- Turns text to speech, with `mimic3`
 
-Offline Dictation - Translation - Voice keyboard - Chat assistant for Linux powered by  [whisper-jax](https://github.com/sanchit-gandhi/whisper-jax).
+It's vaguely reminiscent of...a "Star Trek" computer.
+
+Offline Dictation - Translation - Voice keyboard - Chat assistant for Linux powered by [whisper-jax](https://github.com/sanchit-gandhi/whisper-jax).
 
 Get it from https://github.com/themanyone/whisper_dictation.git
 
-Most voice keyboards send audio files to remote servers for decoding. This script keeps communications confidential, using modern graphics hardware to
-
-- Turn speech into text, with `whisper-jax`,
-- Launch & control apps, with `pyautogui`
-- Communicate with OpenAI `ChatGPT`,
-- Turn text to speech, with `mimic3`
+Most voice keyboards send audio files to remote servers for decoding. This script keeps communications confidential, using modern graphics hardware. If your system is powerful enough to run language models, you can chat with them locally too.
 
 For example, say, "Computer, search the web for places to eat". A browser opens up with a list of local restaurants. Say, "Computer, say hello to our guest". After a brief pause, a reply is typed out from `ChatGPT`. A voice, `mimic3` says, "Hello. Pleased to meet you. Welcome to our shop. Let me know how I can be of assistance". Say, "Computer, launch a terminal". A terminal window pops up. You get the idea.
 
