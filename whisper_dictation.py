@@ -30,13 +30,14 @@ import json
 
 # address of Fallback Chat Server.
 url = 'http://localhost:5000'
+api_key = os.getenv("OPENAI_API_KEY")
+
 if (api_key):
     import openai
     openai.api_key = api_key
 else:
     print("Export OPENAI_API_KEY if you want answers from ChatGPT.")
     
-api_key = os.getenv("OPENAI_API_KEY")
 
 # commands and hotkeys for various platforms
 commands = {
