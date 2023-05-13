@@ -25,10 +25,18 @@ import webbrowser
 import tempfile
 import threading
 import subprocess
-api_key = os.getenv("OPENAI_API_KEY")
+import requests
+import json
+
+# address of Fallback Chat Server.
+url = 'http://localhost:5000'
 if (api_key):
     import openai
     openai.api_key = api_key
+else:
+    print("Export OPENAI_API_KEY if you want answers from ChatGPT.")
+    
+api_key = os.getenv("OPENAI_API_KEY")
 
 # commands and hotkeys for various platforms
 commands = {
@@ -55,6 +63,11 @@ hotkeys = {
     "^paste it.?$":     [['ctrl', 'v']],
     }
 
+# fix race conditions
+audio_queue = queue.Queue()
+listening = True
+chatting = False
+
 # search text for hotkeys
 def process_hotkeys(txt):
     global start
@@ -70,14 +83,9 @@ def process_hotkeys(txt):
             return True
     return False
 
-# fix race conditions
-audio_queue = queue.Queue()
-listening = True
-
 # init whisper_jax
 print("Loading... Please wait.")
 from whisper_jax import FlaxWhisperPipline
-
 # https://huggingface.co/models?sort=downloads&search=whisper
 # openai/whisper-tiny       39M Parameters
 # openai/whisper-tiny.en    39M Parameters
@@ -89,17 +97,17 @@ from whisper_jax import FlaxWhisperPipline
 pipeline = FlaxWhisperPipline("openai/whisper-small.en")
 
 def gettext(f):
-    outputs = pipeline(f,  task="transcribe", language="English")
+    outputs = pipeline(f, task="transcribe", language="English")
     return outputs['text']
+
+def preload():
+    gettext("click.wav")
     
 def pastetext(t):
     # copy text to clipboard
     pyperclip.copy(t)
     # paste text in window
     pyautogui.hotkey('ctrl', 'v')
-
-def preload():
-    gettext("click.wav")
 
 def speak(t):
     try:
@@ -112,6 +120,8 @@ print("Start speaking. Text should appear in the window you are working in.")
 print("Say \"Stop listening.\" or press CTRL-C to stop.")
 
 def chatGPT(prompt):
+    completion = ""
+    # Call chatGPT
     if api_key:
         try:
             completion = openai.ChatCompletion.create(
@@ -119,14 +129,22 @@ def chatGPT(prompt):
               messages=[ {"role": "user", "content": prompt} ]
             )
             completion = completion.choices[0].message.content
-            print(completion)
-            pastetext(completion)
-            speak(completion)
         except Exception as e:
+                print("ChatGPT had a problem. Here's the error message.")
                 print(e)
-    else:
-        print("Export OPENAI_API_KEY if you want answers from ChatGPT.")
-        
+    # Fallback to localhost
+    if not completion:
+        try:
+            data = {'prompt': prompt}
+            completion = requests.post(url, data=data).text
+        except Exception as e:
+            print("Problem with fallback chat server on localhost.")
+            print(e)
+    # Read back the response
+    if completion:
+        print(completion)
+        pastetext(completion)
+        speak(completion)
 
 def transcribe():
     global start
@@ -173,8 +191,8 @@ def transcribe():
                     # Remove leading space from new paragraphs
                     t = t.strip()
                     start = now
-                # Type text into active terminal.
-                # Paste into other types of windows
+                # Paste text into windows
+                if pyautogui.platform.system() == "linux":
                 window_name = subprocess.check_output(
                 ["xdotool", "getwindowfocus", "getwindowname"]).decode().strip()
                 if re.search("\w/\w",window_name):
