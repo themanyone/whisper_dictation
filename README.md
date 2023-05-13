@@ -1,12 +1,23 @@
 # Whisper Dictation
 
-Dictation and personal assistant with ChatGPT integration. Web search. Fast keyboard emulation using [whisper-jax](https://github.com/sanchit-gandhi/whisper-jax) and threading. https://github.com/themanyone/whisper_dictation.git
+Also known as the computer from "Star Trek".
 
-These experimental scripts are intended for working offline, on systems that have a modern graphics card. For smaller, connected devices, you might want to look at whisper cloud solutions.
+Offline Dictation - Translation - Voice keyboard - Chat assistant for Linux powered by  [whisper-jax](https://github.com/sanchit-gandhi/whisper-jax).
+
+Get it from https://github.com/themanyone/whisper_dictation.git
+
+Most voice keyboards send audio files to remote servers for decoding. This script keeps communications confidential, using modern graphics hardware to
+
+- Turn speech into text, with `whisper-jax`,
+- Launch & control apps, with `pyautogui`
+- Communicate with OpenAI `ChatGPT`,
+- Turn text to speech, with `mimic3`
+
+For example, say, "Computer, search the web for places to eat". A browser opens up with a list of local restaurants. Say, "Computer, say hello to our guest". After a brief pause, a reply is typed out from `ChatGPT`. A voice, `mimic3` says, "Hello. Pleased to meet you. Welcome to our shop. Let me know how I can be of assistance". Say, "Computer, launch a terminal". A terminal window pops up. You get the idea.
 
 ## Advantages and tradeoffs.
 
-Whisper AI is currently the state of the art for open-source voice transcription software. [Whisper jax](https://github.com/sanchit-gandhi/whisper-jax) caches compiled functions to to machine code, so dictation can be responsive and fast--easily 10x as fast as other solutions. Threading allows audio recording to proceed in the background while whisper decodes speech in the foreground. The tradeoff with running Whisper-jax continuously is that a large chunk of video RAM stays reserved until shutting down this application by saying "Stop listening." Or by pressing `CTRL` - `C`. Depending on hardware and workflow, you might experience issues with other video-intensive tasks while this is running.
+Whisper AI is currently the state of the art for open-source voice transcription software. [Whisper jax](https://github.com/sanchit-gandhi/whisper-jax) is a cached version that runs much faster, even on old laptops. We record audio in the background while whisper-jax recognizes previously-spoken dictation and commands. The tradeoff with running Whisper-jax continuously is that a large chunk of video RAM stays reserved until shutting down this application by saying "Stop listening." Or by pressing `CTRL` - `C`. Depending on hardware and workflow, you might experience issues with other video-intensive tasks, games mostly, while this is running.
 
 For a much-slower, dictation-only script, that unloads itself when not speaking, try my [voice_typing project](https://github.com/themanyone/voice_typing), which uses the bash shell to separately record and load up whisper only when spoken to. Or try my older, less-accurate [Freespeech](https://github.com/themanyone/freespeech-vr/tree/python3) project, which uses Pocketsphinx, but is very light on resources.
 
@@ -67,7 +78,6 @@ These actions are defined in whisper_dictation.py. See the source code for the f
 Try saying:
 - Computer, open terminal.
 - Computer, go to [thenerdshow.com](https://thenerdshow.com/). (or any website).
-- Computer, search the web for places to eat. (Browser need not be open).
 - Computer, open a web browser. (opens the default homepage).
 - Page up.
 - Page down.
