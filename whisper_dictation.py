@@ -105,10 +105,13 @@ def preload():
     gettext("click.wav")
     
 def pastetext(t):
-    # copy text to clipboard
-    pyperclip.copy(t)
     # paste text in window
-    pyautogui.hotkey('ctrl', 'v')
+    if pyautogui.platform.system() == "linux":
+        pyperclip.copy(t, primary=True)
+        pyautogui.middleClick()
+    else:
+        pyperclip.copy(t)
+        pyautogui.hotkey('ctrl', 'v')
 
 def speak(t):
     try:
@@ -193,9 +196,6 @@ def transcribe():
                     t = t.strip()
                     start = now
                 # Paste text into windows
-                if pyautogui.platform.system() == "linux":
-                    pyperclip.copy(t, primary=True)
-                    pyautogui.middleClick()
                 else:
                     pastetext(t)
                 
