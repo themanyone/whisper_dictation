@@ -169,6 +169,7 @@ def chatGPT(prompt):
             print(e)
     # Read back the response
     if completion:
+        if completion == "< nooutput >": completion = "No comment."
         print(completion)
         pastetext(completion)
         speak(completion)
