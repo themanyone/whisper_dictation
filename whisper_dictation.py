@@ -65,7 +65,7 @@ hotkeys = {
     }
 actions = {
     "^left click.?$": "pyautogui.click()",
-    "^(peter|computer).? (run|open|start|launch)( a| the)? ": "os.system(commands[sys.platform][q])",
+    "^(peter|computer).? (run|open|start|launch)(up)?( a| the)? ": "os.system(commands[sys.platform][q])",
     "^(peter|computer).? closed? window": "pyautogui.hotkey('alt', 'F4')",
     "^(peter|computer).? search( the)?( you| web| google| bing| online)?(.com)? for ": 
         "webbrowser.open('https://you.com/search?q=' + re.sub(' ','%20',q))",
@@ -124,6 +124,7 @@ def preload():
     
 def pastetext(t):
     # paste text in window
+    if t == " you": return # ignoring you
     pyperclip.copy(t) # weird that primary won't work the first time
     if pyautogui.platform.system() == "Linux":
         pyperclip.copy(t, primary=True) # now it works
