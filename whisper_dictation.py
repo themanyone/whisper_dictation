@@ -139,7 +139,7 @@ def pastetext(t):
 def speak(t):
     try:
         subprocess.check_output(["which", "mimic3"])
-        os.system("mimic3 --length-scale 0.66 " + shlex.quote(t))
+        os.system("mimic3 --length-scale 0.66 " + shlex.quote(t)+"&")
     except:
         pass
 
