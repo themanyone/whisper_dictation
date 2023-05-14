@@ -72,7 +72,7 @@ actions = {
     "^(peter|computer).? ": "pyautogui.hotkey('alt', 'F4')",
     "^(peter|computer).? ": "chatGPT(q)",
     "^(click)( the)?( mouse).? ": "pyautogui.click()",
-    "^resume typing$" : "chatting = False",
+    "^resume typing$" : "exec('global chatting;chatting = False')",
     }
 
 def process_actions(tl):
@@ -80,10 +80,10 @@ def process_actions(tl):
         # look for action in list
         if s:=re.search(action, tl):
             q = tl[s.end():] # get q for command
-            eval(command)
+            eval(command); speak("acknoledged")
             return True # success
     if chatting:
-        chatGPT(tl); speak("okay"); return True
+        chatGPT(tl)
     return False # no action
     
 # fix race conditions
@@ -147,6 +147,7 @@ print("Start speaking. Text should appear in the window you are working in.")
 print("Say \"Stop listening.\" or press CTRL-C to stop.")
 
 def chatGPT(prompt):
+    global chatting
     completion = ""
     # Call chatGPT
     if api_key:
