@@ -15,6 +15,8 @@ The bot also responds to commands.
 
 For example, say, "Computer, search the web for places to eat". A browser opens up with a list of local restaurants. Say, "Computer, say hello to our guest". After a brief pause, a reply is typed out from `ChatGPT`. A voice, `mimic3` says, "Hello. Pleased to meet you. Welcome to our shop. Let me know how I can be of assistance". Say, "Computer, launch a terminal". A terminal window pops up.
 
+You can keep conversing with the chat bot now without saying its name each time. Say "Resume dictation" to start typing again. It does not keep track of the chat session yet. This project is just getting started.
+
 ## Advantages and tradeoffs.
 
 Whisper AI is currently the state of the art for open-source voice transcription software. [Whisper jax](https://github.com/sanchit-gandhi/whisper-jax) is a cached version that runs much faster, even on old laptops. We record audio in the background while whisper-jax recognizes previously-spoken dictation and commands. The tradeoff with running Whisper-jax continuously is that 1-2Gb of video RAM stays reserved until shutting down this application by saying "Stop listening." Or by pressing `CTRL` - `C`. Depending on hardware and workflow, you might experience issues with other video-intensive tasks, games mostly, while this is running.

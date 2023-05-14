@@ -70,7 +70,9 @@ actions = {
     "^(peter|computer).? search( the)?( you| web| google| bing| online)?(.com)? for ": 
         "webbrowser.open('https://you.com/search?q=' + re.sub(' ','%20',q))",
     "^(peter|computer).? ": "pyautogui.hotkey('alt', 'F4')",
-    "^(peter|computer).? ": "chatGPT(tl[s.end():])",
+    "^(peter|computer).? ": "chatGPT(q)",
+    "^(click)( the)?( mouse).? ": "pyautogui.click()",
+    "^resume typing$" : "chatting = False",
     }
 
 def process_actions(tl):
@@ -80,6 +82,8 @@ def process_actions(tl):
             q = tl[s.end():] # get q for command
             eval(command)
             return True # success
+    if chatting:
+        chatGPT(tl); speak("okay"); return True
     return False # no action
     
 # fix race conditions
@@ -168,6 +172,7 @@ def chatGPT(prompt):
         print(completion)
         pastetext(completion)
         speak(completion)
+        chatting = True
 
 def transcribe():
     global start
@@ -184,8 +189,8 @@ def transcribe():
                 lower_case = lower_case[:match.start()] # remove punctuation
             
             # see list of actions and hotkeys at top of file :)
-            if process_actions(lower_case):   continue
             elif process_hotkeys(lower_case): continue
+            if process_actions(lower_case):   continue
             
             # Go to Website.
             elif s:=re.search("^(peter|computer).? (go|open|browse|visit|navigate)( up| to| the| website)* ", lower_case):
