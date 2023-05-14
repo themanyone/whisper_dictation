@@ -31,7 +31,7 @@ Go to https://github.com/google/jax#installation and follow through the steps to
 sudo dnf install python-devel gobject-introspection-devel python3-gobject-devel cairo-gobject-devel python3-tkinter python3-devel xdotool
 ```
 
-Do not install `torch`. It downgrades nvidia-cudnn-cu11 to an incompatible version. Then you will have to run `pip install --upgrade nvidia-cudnn-cu11`. This problem might be fixed in another update. But for now we will use conda or venv to keep things separate.
+Do not install `torch`. It downgrades nvidia-cudnn-cu11 to an incompatible version. Then you will have to run `pip install --upgrade nvidia-cudnn-cu11`. This problem might be fixed in another update. Or you can build it from source. But for now we will use conda or venv to keep things separate.
 
 We got the commands to install jax for GPU(CUDA) [from here](https://jax.readthedocs.io/en/latest/index.html).
 

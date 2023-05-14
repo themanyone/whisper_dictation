@@ -72,7 +72,7 @@ actions = {
     "^(peter|computer).? ": "pyautogui.hotkey('alt', 'F4')",
     "^(peter|computer).? ": "chatGPT(q)",
     "^(click)( the)?( mouse).? ": "pyautogui.click()",
-    "^resume typing$" : "exec('global chatting;chatting = False')",
+    "^(resume|zoom)( typing| dictation)$" : "exec('global chatting;chatting = False')",
     }
 
 def process_actions(tl):
@@ -80,7 +80,7 @@ def process_actions(tl):
         # look for action in list
         if s:=re.search(action, tl):
             q = tl[s.end():] # get q for command
-            eval(command); speak("acknoledged")
+            eval(command); speak("okay")
             return True # success
     if chatting:
         chatGPT(tl)
@@ -139,12 +139,13 @@ def pastetext(t):
 def speak(t):
     try:
         subprocess.check_output(["which", "mimic3"])
-        os.system("mimic3 --length-scale 0.66 " + shlex.quote(t)+"&")
+        os.system("mimic3 --length-scale 0.66 " + shlex.quote(t)+" 2>/dev/null&")
     except:
         pass
 
 print("Start speaking. Text should appear in the window you are working in.")
 print("Say \"Stop listening.\" or press CTRL-C to stop.")
+speak("Computer ready.")
 
 def chatGPT(prompt):
     global chatting
