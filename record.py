@@ -25,7 +25,7 @@
 ## MA 02110-1301, USA.
 ## 
 
-import sys, time, subprocess, tempfile
+import os, sys, time, subprocess, tempfile
 
 def convert_to_ffmpeg_time(t):
     hours = int(t // 3600)
@@ -81,7 +81,8 @@ class Record:
                         # trim time off temp audio, save to fname
                         command = f"ffmpeg -y -ss {self.ss} -i {self.temp_name} -c copy {fname}"
                         subprocess.run(command, shell=True)
-                        # done
+                        # clean up
+                        os.remove(self.temp_name)
                         self.main_loop.quit(); print(); return
                 # keep recording if there is more speech
                 elif rms > dB:
