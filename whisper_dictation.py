@@ -221,8 +221,7 @@ def recorder():
     global listening
     while listening:
         # record some (more) audio to queue
-        temp_name = tempfile.gettempdir() + '/' \
-        + next(tempfile._get_candidate_names()) + ".mp3"
+        temp_name = tempfile.mktemp()+ '.mp3'
         
         # If it wasn't for Gst conflict with pyperclip
         # we could call recmain in record.py directly
