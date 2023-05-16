@@ -38,11 +38,6 @@ def convert_to_ffmpeg_time(t):
     seconds = int(t % 60)
     milliseconds = round((t % 1) * 1000)
     return f"{hours:02d}:{minutes:02d}:{seconds:02d}.{milliseconds:03d}"
-
-def signal_handler(signal, frame):
-    Record.main_loop.quit()
-    os.remove(Record.temp_name)
-    sys.exit(0)
     
 class Record:
     silence = 0
@@ -59,6 +54,9 @@ class Record:
         self.Gst = Gst
         self.GLib = GLib
         self.temp_name = tempfile.mktemp()+ '.mp3'
+
+    def signal_handler(self, signal, frame):
+        self.quit("")
     
     def quit(self, ss):
         Gst = self.Gst
@@ -153,8 +151,8 @@ class Record:
             self.rec_pipe.set_state(Gst.State.NULL)
 
 if __name__ == '__main__':
-    signal.signal(signal.SIGINT, signal_handler)
     Record = Record()
+    signal.signal(signal.SIGINT, Record.signal_handler)
     if len(sys.argv) > 1:
         fname = sys.argv[1]
     else: fname = "audio.mp3"

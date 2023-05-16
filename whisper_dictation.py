@@ -88,7 +88,6 @@ def process_actions(tl):
     
 # fix race conditions
 audio_queue = queue.Queue()
-stop_event = threading.Event()  # Event to control the recording
 listening = True
 chatting = False
 
@@ -108,7 +107,8 @@ def process_hotkeys(txt):
     return False
 
 def signal_handler(signal, frame):
-    stop_event.set()  # Set the stop event to stop the recording 
+    pid = rec_proc.pid
+    os.kill(pid, signal.SIGKILL)
     record_thread.join()
     print();
     sys.exit(0)
@@ -229,14 +229,10 @@ def recorder():
         # record some (more) audio to queue
         temp_name = tempfile.mktemp()+ '.mp3'
         
-        # If it wasn't for Gst conflict with pyperclip
-        # we could call recmain in record.py directly
-        # rec.to_file(temp_name)
-        
-        # but instead, we have to call os.system()
-        os.system("./record.py " + temp_name)
+        # start recording
+        rec_proc = subprocess.Popen(["./record.py", temp_name])
 
-        # oh well, moving on, let's make sure we got something
+        # make sure we got something
         if os.path.exists(temp_name) and not os.path.getsize(temp_name):
             os.remove(temp_name); 
             break
@@ -244,7 +240,7 @@ def recorder():
 
 record_thread = threading.Thread(target=recorder)
 record_thread.start()
-
+rec_proc = None
 # preload whisper_jax for subsequent speedup
 preload_thread = threading.Thread(target=preload)
 preload_thread.start()
