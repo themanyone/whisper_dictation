@@ -192,14 +192,15 @@ def transcribe():
                 lower_case = lower_case[:match.start()] # remove punctuation
             
             # see list of actions and hotkeys at top of file :)
-            elif process_hotkeys(lower_case): continue
-            if process_actions(lower_case):   continue
+            if process_hotkeys(lower_case): continue
             
             # Go to Website.
             elif s:=re.search("^(peter|computer).? (go|open|browse|visit|navigate)( up| to| the| website)* ", lower_case):
                 q = lower_case[s.end():] # get q for command
                 if re.search("^[a-zA-Z0-9-]{1,63}(\.[a-zA-Z0-9-]{1,63})+$", q):
                     webbrowser.open('https://' + q.strip())
+            
+            elif process_actions(lower_case):   continue
 
             # Stop listening.
             elif re.search("^.{0,6}listening.?$", lower_case): break
