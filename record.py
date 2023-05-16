@@ -78,7 +78,7 @@ class Record:
                         bus = self.rec_pipe.get_bus()
                         bus.timed_pop_filtered(Gst.CLOCK_TIME_NONE, Gst.MessageType.EOS)
                         # trim time off temp audio, save to fname
-                        command = f"ffmpeg  -v -8 -y -ss {self.ss} -i {self.temp_name} -c copy {fname}"
+                        command = f"</dev/null ffmpeg  -v -8 -y -ss {self.ss} -i {self.temp_name} -c copy {fname}"
                         subprocess.run(command+">/dev/null", shell=True)
                         # clean up
                         os.remove(self.temp_name)

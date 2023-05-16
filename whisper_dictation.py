@@ -72,7 +72,7 @@ actions = {
     "^(peter|computer).? ": "pyautogui.hotkey('alt', 'F4')",
     "^(peter|computer).? ": "chatGPT(q)",
     "^(click)( the)?( mouse).? ": "pyautogui.click()",
-    "^(resume|zoom)( typing| dictation)$" : "exec('global chatting;chatting = False')",
+    "^(resume|zoom|continue|start)( typing| dictation)$" : "exec('global chatting;chatting = False')",
     }
 
 def process_actions(tl):
