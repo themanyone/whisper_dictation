@@ -26,7 +26,6 @@ import tempfile
 import threading
 import subprocess
 import requests
-import signal
 import json
 
 # address of Fallback Chat Server.
@@ -106,13 +105,6 @@ def process_hotkeys(txt):
             return True
     return False
 
-def signal_handler(signal, frame):
-    pid = rec_proc.pid
-    os.kill(pid, signal.SIGKILL)
-    record_thread.join()
-    print();
-    sys.exit(0)
-
 # init whisper_jax
 print("Loading... Please wait.")
 from whisper_jax import FlaxWhisperPipline
@@ -127,7 +119,10 @@ from whisper_jax import FlaxWhisperPipline
 pipeline = FlaxWhisperPipline("openai/whisper-small.en")
 
 def gettext(f):
-    outputs = pipeline(f, task="transcribe", language="English")
+    try:
+        outputs = pipeline(f, task="transcribe", language="English")
+    except:
+        return ''
     return outputs['text']
 
 def preload():
@@ -189,9 +184,12 @@ def transcribe():
     while True:
         # transcribe audio from queue
         if f := audio_queue.get():
-            t = gettext(f); print('\r' + t)
+            t = gettext(f)
+            print('\r' + t)
             # delete temporary audio file
-            os.remove(f)
+            try: os.remove(f)
+            except: pass
+            if not t: break
             
             # get lower-case spoken command string
             lower_case = t.lower().strip()
@@ -228,24 +226,18 @@ def recorder():
     while listening:
         # record some (more) audio to queue
         temp_name = tempfile.mktemp()+ '.mp3'
-        
-        # start recording
-        rec_proc = subprocess.Popen(["./record.py", temp_name])
-
-        # make sure we got something
-        if os.path.exists(temp_name) and not os.path.getsize(temp_name):
-            os.remove(temp_name); 
-            break
-        else: audio_queue.put(temp_name)
+        os.system("./record.py " + temp_name)
+        audio_queue.put(temp_name)
 
 record_thread = threading.Thread(target=recorder)
 record_thread.start()
-rec_proc = None
+
 # preload whisper_jax for subsequent speedup
 preload_thread = threading.Thread(target=preload)
 preload_thread.start()
+pyperclip.init_xsel_clipboard()
 start = 0
-signal.signal(signal.SIGINT, signal_handler)
+
 transcribe()
 print("Stopping... Make some noise to return to command prompt.")
 listening = False
