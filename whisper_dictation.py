@@ -76,7 +76,6 @@ actions = {
     }
 
 def process_actions(tl):
-    print("action " + tl)
     for action, command in actions.items():
         # look for action in list
         if s:=re.search(action, tl):
