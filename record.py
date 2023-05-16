@@ -38,8 +38,9 @@ def convert_to_ffmpeg_time(t):
 
 def signal_handler(signal, frame):
     # print('You pressed Ctrl+C!')
+    Record.main_loop.quit()
     os.remove(Record.temp_name)
-    sys.exit(0)
+    print(); sys.exit(0)
     
 class Record:
     silence = 0
@@ -67,13 +68,15 @@ class Record:
             
             # if not recording
             if self.ss == "00:00:00.001":
+                # get time to trim
+                ss = time.time() - self.lead_in
+                if ss > 1800:
+                    raise signal.SIGINT
                 if rms < dB: # wait for silence at start
                     self.silence = 1
                 elif rms > dB and self.silence: # start recording
-                        # get time to trim
-                        ss = time.time() - self.lead_in
-                        if ss > 0:
-                            self.ss = convert_to_ffmpeg_time(ss)
+                    if ss > 0:
+                        self.ss = convert_to_ffmpeg_time(ss)
             else: # stop recording after some silence
                 if rms < dB:
                     self.silence = self.silence + 1
