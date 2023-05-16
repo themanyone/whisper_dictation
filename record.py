@@ -72,7 +72,11 @@ class Record:
             subprocess.run(command+">/dev/null", shell=True)
         # clean up
         os.remove(self.temp_name)
-        self.main_loop.quit(); print(); exit(0)
+        try:
+            self.main_loop.quit();
+        except:
+            pass
+        print()
 
     # Define a callback function to handle sound-level messages
     def on_sound_level(self, bus, message):
@@ -87,7 +91,7 @@ class Record:
             # if not recording
             if self.ss == "":
                 if ss > max_recording_time:
-                    self.quit(self.ss)
+                    self.quit(self.ss); return
                 if rms < dB: # wait for silence at start
                     self.silence = 1
                 elif rms > dB and self.silence: # start recording
@@ -97,7 +101,7 @@ class Record:
                 if rms < dB:
                     self.silence = self.silence + 1
                     if self.silence > 10:
-                        self.quit(ss)
+                        self.quit(ss); return
                 # keep recording if there is more speech
                 elif rms > dB:
                     self.silence = 1
@@ -157,3 +161,4 @@ if __name__ == '__main__':
         fname = sys.argv[1]
     else: fname = "audio.mp3"
     Record.to_file(fname)
+    
