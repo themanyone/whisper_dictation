@@ -37,17 +37,15 @@ def convert_to_ffmpeg_time(t):
     return f"{hours:02d}:{minutes:02d}:{seconds:02d}.{milliseconds:03d}"
 
 def signal_handler(signal, frame):
-    self.lvl_pipe.set_state(Gst.State.NULL)
-    self.rec_pipe.set_state(Gst.State.NULL)
     Record.main_loop.quit()
     os.remove(Record.temp_name)
-    print(); sys.exit(0)
+    sys.exit(0)
     
 class Record:
     silence = 0
     dB = -20.0 # threshold audio level for speech
     src = "autoaudiosrc" # audio source (alsasrc, pulsesrc, autoaudiosrc, etc.)
-    ss = "00:00:00.001"
+    ss = ""
     
     def __init__(self):
         import gi
@@ -58,6 +56,22 @@ class Record:
         self.Gst = Gst
         self.GLib = GLib
         self.temp_name = tempfile.mktemp()+ '.mp3'
+    
+    def quit(self, ss):
+        Gst = self.Gst
+        self.lvl_pipe.set_state(Gst.State.NULL)
+        # Send EOS event to the pipeline to stop it
+        self.rec_pipe.send_event(Gst.Event.new_eos())
+        # Wait until the pipeline has finished
+        bus = self.rec_pipe.get_bus()
+        bus.timed_pop_filtered(Gst.CLOCK_TIME_NONE, Gst.MessageType.EOS)
+        # trim time off temp audio, save to fname
+        if ss:
+            command = f"ffmpeg -nostdin -v -8 -y -ss {self.ss} -i {self.temp_name} -c copy {fname}"
+            subprocess.run(command+">/dev/null", shell=True)
+        # clean up
+        os.remove(self.temp_name)
+        self.main_loop.quit(); print(); exit(0)
 
     # Define a callback function to handle sound-level messages
     def on_sound_level(self, bus, message):
@@ -66,13 +80,13 @@ class Record:
         
         if message.get_structure().get_name() == 'level':
             rms = message.get_structure().get_value('rms')[0]
+            # get time to trim
+            ss = time.time() - self.lead_in
             
             # if not recording
-            if self.ss == "00:00:00.001":
-                # get time to trim
-                ss = time.time() - self.lead_in
-                if ss > 1800:
-                    raise KeyboardInterrupt
+            if self.ss == "":
+                if ss > 10:
+                    self.quit(self.ss)
                 if rms < dB: # wait for silence at start
                     self.silence = 1
                 elif rms > dB and self.silence: # start recording
@@ -82,18 +96,7 @@ class Record:
                 if rms < dB:
                     self.silence = self.silence + 1
                     if self.silence > 10:
-                        self.lvl_pipe.set_state(Gst.State.NULL)
-                        # Send EOS event to the pipeline to stop it
-                        self.rec_pipe.send_event(Gst.Event.new_eos())
-                        # Wait until the pipeline has finished
-                        bus = self.rec_pipe.get_bus()
-                        bus.timed_pop_filtered(Gst.CLOCK_TIME_NONE, Gst.MessageType.EOS)
-                        # trim time off temp audio, save to fname
-                        command = f"ffmpeg -nostdin -v -8 -y -ss {self.ss} -i {self.temp_name} -c copy {fname}"
-                        subprocess.run(command+">/dev/null", shell=True)
-                        # clean up
-                        os.remove(self.temp_name)
-                        self.main_loop.quit(); print(); return
+                        self.quit(ss)
                 # keep recording if there is more speech
                 elif rms > dB:
                     self.silence = 1
