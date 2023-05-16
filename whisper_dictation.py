@@ -76,6 +76,7 @@ actions = {
     }
 
 def process_actions(tl):
+    print("action " + tl)
     for action, command in actions.items():
         # look for action in list
         if s:=re.search(action, tl):
@@ -192,16 +193,13 @@ def transcribe():
                 lower_case = lower_case[:match.start()] # remove punctuation
             
             # see list of actions and hotkeys at top of file :)
-            if process_hotkeys(lower_case): continue
-            
             # Go to Website.
-            elif s:=re.search("^(peter|computer).? (go|open|browse|visit|navigate)( up| to| the| website)* ", lower_case):
+            if s:=re.search("^(peter|computer).? (go|open|browse|visit|navigate)( up| to| the| website)* [a-zA-Z0-9-]{1,63}(\.[a-zA-Z0-9-]{1,63})+$", lower_case):
                 q = lower_case[s.end():] # get q for command
-                if re.search("^[a-zA-Z0-9-]{1,63}(\.[a-zA-Z0-9-]{1,63})+$", q):
-                    webbrowser.open('https://' + q.strip())
-                    continue
-            
-            elif process_actions(lower_case):   continue
+                webbrowser.open('https://' + q.strip())
+                continue
+            elif process_actions(lower_case): continue
+            elif process_hotkeys(lower_case): continue
 
             # Stop listening.
             elif re.search("^.{0,6}listening.?$", lower_case): break
