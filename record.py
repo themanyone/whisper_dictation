@@ -25,7 +25,9 @@
 ## MA 02110-1301, USA.
 ## 
 
-import os, sys, time, subprocess, tempfile
+import os, sys, time
+import subprocess, tempfile
+import signal
 
 def convert_to_ffmpeg_time(t):
     hours = int(t // 3600)
@@ -34,6 +36,11 @@ def convert_to_ffmpeg_time(t):
     milliseconds = round((t % 1) * 1000)
     return f"{hours:02d}:{minutes:02d}:{seconds:02d}.{milliseconds:03d}"
 
+def signal_handler(signal, frame):
+    # print('You pressed Ctrl+C!')
+    os.remove(Record.temp_name)
+    sys.exit(0)
+    
 class Record:
     silence = 0
     dB = -20.0 # threshold audio level for speech
@@ -136,6 +143,7 @@ class Record:
             self.rec_pipe.set_state(Gst.State.NULL)
 
 if __name__ == '__main__':
+    signal.signal(signal.SIGINT, signal_handler)
     Record = Record()
     if len(sys.argv) > 1:
         fname = sys.argv[1]
