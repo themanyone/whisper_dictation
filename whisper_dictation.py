@@ -83,7 +83,7 @@ def process_actions(tl):
             eval(command); speak("okay")
             return True # success
     if chatting:
-        chatGPT(tl)
+        chatGPT(tl); return True
     return False # no action
     
 # fix race conditions
@@ -199,6 +199,7 @@ def transcribe():
                 q = lower_case[s.end():] # get q for command
                 if re.search("^[a-zA-Z0-9-]{1,63}(\.[a-zA-Z0-9-]{1,63})+$", q):
                     webbrowser.open('https://' + q.strip())
+                    continue
             
             elif process_actions(lower_case):   continue
 
