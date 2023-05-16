@@ -29,6 +29,9 @@ import os, sys, time
 import subprocess, tempfile
 import signal
 
+# quit recording after (seconds)
+max_recording_time = 1800
+
 def convert_to_ffmpeg_time(t):
     hours = int(t // 3600)
     minutes = int((t % 3600) // 60)
@@ -85,7 +88,7 @@ class Record:
             
             # if not recording
             if self.ss == "":
-                if ss > 10:
+                if ss > max_recording_time:
                     self.quit(self.ss)
                 if rms < dB: # wait for silence at start
                     self.silence = 1
