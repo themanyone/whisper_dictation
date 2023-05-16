@@ -26,6 +26,7 @@ import tempfile
 import threading
 import subprocess
 import requests
+import signal
 import json
 
 # address of Fallback Chat Server.
@@ -37,7 +38,6 @@ if (api_key):
     openai.api_key = api_key
 else:
     print("Export OPENAI_API_KEY if you want answers from ChatGPT.")
-    
 
 # commands and hotkeys for various platforms
 commands = {
@@ -88,6 +88,7 @@ def process_actions(tl):
     
 # fix race conditions
 audio_queue = queue.Queue()
+stop_event = threading.Event()  # Event to control the recording
 listening = True
 chatting = False
 
@@ -105,6 +106,12 @@ def process_hotkeys(txt):
                 pyautogui.hotkey(*x)
             return True
     return False
+
+def signal_handler(signal, frame):
+    stop_event.set()  # Set the stop event to stop the recording 
+    record_thread.join()
+    print();
+    sys.exit(0)
 
 # init whisper_jax
 print("Loading... Please wait.")
@@ -230,9 +237,8 @@ def recorder():
         os.system("./record.py " + temp_name)
 
         # oh well, moving on, let's make sure we got something
-        if not os.path.getsize(temp_name):
-            if os.path.exists(temp_name):
-                os.remove(temp_name)
+        if os.path.exists(temp_name) and not os.path.getsize(temp_name):
+            os.remove(temp_name); 
             break
         else: audio_queue.put(temp_name)
 
@@ -242,9 +248,8 @@ record_thread.start()
 # preload whisper_jax for subsequent speedup
 preload_thread = threading.Thread(target=preload)
 preload_thread.start()
-pyperclip.init_xsel_clipboard()
 start = 0
-
+signal.signal(signal.SIGINT, signal_handler)
 transcribe()
 print("Stopping... Make some noise to return to command prompt.")
 listening = False
