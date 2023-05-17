@@ -72,6 +72,7 @@ actions = {
     "^(peter|computer).? ": "chatGPT(q)",
     "^(click)( the)?( mouse).? ": "pyautogui.click()",
     "^(resume|zoom|continue|start)( typing| dictation)$" : "exec('global chatting;chatting = False')",
+    "^(send|compose|write)( an| a) email to ": "os.popen('xdg-open \"mailto://' + q.replace(' at ', '@') + '\"')"
     }
 
 def process_actions(tl):

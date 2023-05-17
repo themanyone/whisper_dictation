@@ -1,11 +1,11 @@
 # Whisper Dictation
 
-Interactive dictation, AI voice chat, voice control, with just 4 gigs of VRAM!
+Interactive dictation, AI voice chat, voice control, with under 4 gigs of VRAM!
 
 - Listens and types quickly with `whisper-jax`,
 - Translates other languages into English,
 - Launches & controls apps, with `pyautogui`
-- Communicates with OpenAI `ChatGPT` or a built-in LLM.
+- Communicates with OpenAI `ChatGPT` or a local chat server (included).
 - Speaks answers out loud with `mimic3`,
 
 Get it from https://github.com/themanyone/whisper_dictation.git
@@ -16,9 +16,9 @@ Dictation. Start speaking and whatever you say will be typed out into the curren
 
 The bot also responds to commands.
 
-For example, say, "Computer, search the web for places to eat". A browser opens up with a list of local restaurants. Say, "Computer, say hello to our guest". After a brief pause, a reply is typed out, either from `ChatGPT`, a chat bot running on the local machine, or across the network. A voice, `mimic3` says some variation of, "Hello. Pleased to meet you. Welcome to our shop. Let me know how I can be of assistance". It's unique each time. Say, "Computer, launch a terminal". A terminal window pops up.
+For example, say, "Computer, search the web for places to eat". A browser opens up with a list of local restaurants. Say, "Computer, say hello to our guest". After a brief pause, there is a reply, either from `ChatGPT`, the included chat server on the local machine, or across the network. A voice, `mimic3` says some variation of, "Hello. Pleased to meet you. Welcome to our shop. Let me know how I can be of assistance". It's unique each time. Say, "Computer, launch a terminal". A terminal window pops up.
 
-You can keep conversing with the chat bot now without saying its name each time. Say "Resume dictation" to start typing again. It does not keep track of the chat session yet. This project is just getting started.
+You can converse with our own chat bot now. Start it with `flask run` whisper_dictation will use that. There is no need to say its name each time. It goes into a conversational mode. Say "Resume dictation" to start typing again. It does not keep track of the chat session yet. This project is just getting started.
 
 ## Advantages and tradeoffs.
 
