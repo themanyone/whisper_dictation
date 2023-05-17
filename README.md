@@ -1,25 +1,28 @@
 # Whisper Dictation
 
-- Turns speech into text, with `whisper-jax`,
+Interactive dictation, AI voice chat, voice control, with just 4 gigs of VRAM!
+
+- Listens and types quickly with `whisper-jax`,
+- Translates other languages into English,
 - Launches & controls apps, with `pyautogui`
-- Communicates with OpenAI `ChatGPT`,
-- Turns text to speech, with `mimic3`
+- Communicates with OpenAI `ChatGPT` or a built-in LLM.
+- Speaks answers out loud with `mimic3`,
 
 Get it from https://github.com/themanyone/whisper_dictation.git
 
-Most voice keyboards and chat bots send audio files to remote servers for decoding. This script keeps communications confidential, using modern graphics hardware. If your system is powerful enough to run language models, you can chat locally too. Run a powerful virtual assistant that is completely offline.
+Most voice keyboards, dictation, translation, and chat bots depend on remote servers, which is a privacy concern. Keep data off the internet and confidential. A CUDA-enaled video card with at least 4GB is all that's needed to run an uncensored virtual assistant that listens ane responds via voice. While being completely free, offline, and independent.
 
 Dictation. Start speaking and whatever you say will be typed out into the current window.
 
 The bot also responds to commands.
 
-For example, say, "Computer, search the web for places to eat". A browser opens up with a list of local restaurants. Say, "Computer, say hello to our guest". After a brief pause, a reply is typed out from `ChatGPT`. A voice, `mimic3` says, "Hello. Pleased to meet you. Welcome to our shop. Let me know how I can be of assistance". Say, "Computer, launch a terminal". A terminal window pops up.
+For example, say, "Computer, search the web for places to eat". A browser opens up with a list of local restaurants. Say, "Computer, say hello to our guest". After a brief pause, a reply is typed out, either from `ChatGPT`, a chat bot running on the local machine, or across the network. A voice, `mimic3` says some variation of, "Hello. Pleased to meet you. Welcome to our shop. Let me know how I can be of assistance". It's unique each time. Say, "Computer, launch a terminal". A terminal window pops up.
 
 You can keep conversing with the chat bot now without saying its name each time. Say "Resume dictation" to start typing again. It does not keep track of the chat session yet. This project is just getting started.
 
 ## Advantages and tradeoffs.
 
-Whisper AI is currently the state of the art for open-source voice transcription software. [Whisper jax](https://github.com/sanchit-gandhi/whisper-jax) is a cached version that runs much faster, even on old laptops. We record audio in the background while whisper-jax recognizes previously-spoken dictation and commands. The tradeoff with running Whisper-jax continuously is that 1-2Gb of video RAM stays reserved until shutting down this application by saying "Stop listening." Or by pressing `CTRL` - `C`. Depending on hardware and workflow, you might experience issues with other video-intensive tasks, games mostly, while this is running.
+Whisper AI is currently the state of the art for open-source voice transcription software. [Whisper jax](https://github.com/sanchit-gandhi/whisper-jax) is a compiled version that runs much faster, even on old laptops. We record audio in the background while whisper-jax recognizes previously-spoken dictation and commands. The tradeoff with running Whisper-jax continuously is that 1-2Gb of video RAM stays reserved until shutting down this application by saying "Stop listening." Or by pressing `CTRL` - `C`. Depending on hardware and workflow, you might experience issues with other video-intensive tasks, games mostly, while this is running.
 
 For a much-slower, dictation-only script, that unloads itself when not speaking, try my [voice_typing project](https://github.com/themanyone/voice_typing), which uses the bash shell to separately record and load up whisper only when spoken to. Or try my older, less-accurate [Freespeech](https://github.com/themanyone/freespeech-vr/tree/python3) project, which uses Pocketsphinx, but is very light on resources.
 
@@ -92,7 +95,7 @@ Try saying:
 
 ** export your OPENAI_API_KEY to the environment if you want answers from ChatGPT.
 
-ChatGPT is optional. If there is no API key, or if ChatGPT is busy, it will ping a private language model running on http://localhost:5000. There are language models on [huggingface](https://huggingface.co/models) that produce acceptable conversation with less than one gig of video RAM.
+ChatGPT is optional. If there is no API key, or if ChatGPT is busy, it will ping a private language model running on http://localhost:5000. There are language models on [huggingface](https://huggingface.co/models) that produce acceptable conversation with 1 Gb of video RAM. Now whisper_dictation has its own, local chat bot. Start it by running `flask run`.
 
 ```
 export OPENAI_API_KEY=<my API key>

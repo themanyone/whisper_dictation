@@ -142,8 +142,9 @@ def speak(t):
     try:
         subprocess.check_output(["which", "mimic3"])
         os.system("mimic3 --length-scale 0.66 " + shlex.quote(t)+" 2>/dev/null&")
-    except:
-        pass
+    except Exception as e:
+        print("Problem with mimic3, required for voice output.")
+        print(e)
 
 print("Start speaking. Text should appear in the window you are working in.")
 print("Say \"Stop listening.\" or press CTRL-C to stop.")
@@ -214,7 +215,7 @@ def transcribe():
                 # Paste it now
                 start = now; pastetext(t)
         # continue looping every second
-        else: time.sleep(1)
+        else: time.sleep(0.5)
         
 def recorder():
     # If it wasn't for Gst conflict with pyperclip,
