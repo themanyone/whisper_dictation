@@ -27,6 +27,7 @@ import threading
 import subprocess
 import requests
 import json
+from mimic3_client import say
 
 # address of Fallback Chat Server.
 url = 'http://localhost:5000'
@@ -80,7 +81,8 @@ def process_actions(tl):
         # look for action in list
         if s:=re.search(action, tl):
             q = tl[s.end():] # get q for command
-            eval(command); speak("okay")
+            say("okay")
+            eval(command)
             return True # success
     if chatting:
         chatGPT(tl); return True
@@ -139,17 +141,9 @@ def pastetext(t):
     else:
         pyautogui.hotkey('ctrl', 'v')
 
-def speak(t):
-    try:
-        subprocess.check_output(["which", "mimic3"])
-        os.system("mimic3 --length-scale 0.66 " + shlex.quote(t)+" 2>/dev/null&")
-    except Exception as e:
-        print("Problem with mimic3, required for voice output.")
-        print(e)
-
 print("Start speaking. Text should appear in the window you are working in.")
 print("Say \"Stop listening.\" or press CTRL-C to stop.")
-speak("Computer ready.")
+say("Computer ready.")
 
 def chatGPT(prompt):
     global chatting
@@ -178,7 +172,7 @@ def chatGPT(prompt):
         if completion == "< nooutput >": completion = "No comment."
         print(completion)
         pastetext(completion)
-        speak(completion)
+        say(completion)
         chatting = True
 
 def transcribe():
@@ -223,7 +217,6 @@ def recorder():
     # we could import record.py instead of os.system()
     # from record import Record
     # rec = Record()
-    
     global listening
     while listening:
         # record some (more) audio to queue
@@ -244,3 +237,11 @@ transcribe()
 print("Stopping... Make some noise to return to command prompt.")
 listening = False
 record_thread.join()
+# clean up
+try:
+    while f := audio_queue.get_nowait():
+        print("Removing temporary file: ", f)
+        if f[:5] == "/tmp/": # safety check
+            os.remove(f)
+except: pass
+print("Freeing system resources.")

@@ -95,17 +95,21 @@ Try saying:
 
 ** export your OPENAI_API_KEY to the environment if you want answers from ChatGPT.
 
-ChatGPT is optional. If there is no API key, or if ChatGPT is busy, it will ping a private language model running on http://localhost:5000. There are language models on [huggingface](https://huggingface.co/models) that produce acceptable conversation with 1 Gb of video RAM. Now whisper_dictation has its own, local chat bot. Start it by running `flask run`.
+ChatGPT is optional. If there is no API key, or if ChatGPT is busy, it will ping a private language model running on http://localhost:5000. There are language models on [huggingface](https://huggingface.co/models) that produce acceptable conversation with 1 Gb of video RAM. Now whisper_dictation has its own, local chat bot. To start it, `cd` to the project directory and type `flask run`.
 
 ```
 export OPENAI_API_KEY=<my API key>
 ```
 
-If you install the optional [mimic3](https://github.com/MycroftAI/mimic3), he will speak answers out loud.
+Mimic3. If you install the optional [mimic3](https://github.com/MycroftAI/mimic3) as a server, he will speak answers out loud. Follow the [instructions for setting up mimi3 as a server](https://mycroft-ai.gitbook.io/docs/mycroft-technologies/mimic-tts/mimic-3#web-server). The `mimic3-server` is already lightening-fast on CPU. Do not bother with --cuda flag, which requires old `onnxruntime-gpu` that is not compatable with CUDA 12.1 and won't compile with nvcc12... It just hogs all of VRAM and provides no noticeable speedup anyway. Regular `onnxruntime` works fine with mimic3.
 
-## Bonus app.
+## Bonus apps.
 
-This project includes `record.py` which does hands-free recording of an mp3 audio clip from the microphone. It waits for a minimum threshold sound level of, -20dB, but you can edit the script and change that. It stops recording when audio drops below that level for a couple seconds. You can run it separately. It creates a file named `audio.mp3`. Or you can supply an output file name on the command line.
+`record.py`: hands-free recording from the microphone. It waits for a minimum threshold sound level of, -20dB, but you can edit the script and change that. It stops recording when audio drops below that level for a couple seconds. You can run it separately. It creates a file named `audio.mp3`. Or you can supply an output file name on the command line.
+
+`mimic3_client.py`: a client to query and test `mimic3-server` installation.
+
+`test_cuda.py`: test your torch, pytorch, cuda, and optional onnxruntime installation
 
 ## Issues
 
