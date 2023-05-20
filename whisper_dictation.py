@@ -92,7 +92,7 @@ def process_actions(tl):
 audio_queue = queue.Queue()
 listening = True
 chatting = False
-
+ 
 # search text for hotkeys
 def process_hotkeys(txt):
     global start
@@ -145,15 +145,18 @@ print("Start speaking. Text should appear in the window you are working in.")
 print("Say \"Stop listening.\" or press CTRL-C to stop.")
 say("Computer ready.")
 
+messages = [{ "role": "system", "content": "In this conversation between `user:` and `assistant:`, play the role of assistant. Reply as a helpful assistant." },]
+
 def chatGPT(prompt):
-    global chatting
+    global chatting, messages
+    messages.append({"role": "user", "content": prompt})
     completion = ""
     # Call chatGPT
     if api_key:
         try:
             completion = openai.ChatCompletion.create(
               model="gpt-3.5-turbo",
-              messages=[ {"role": "user", "content": prompt} ]
+              messages=messages
             )
             completion = completion.choices[0].message.content
         except Exception as e:
@@ -161,19 +164,23 @@ def chatGPT(prompt):
                 print(e)
     # Fallback to localhost
     if not completion:
-        try:
-            data = {'prompt': prompt}
-            completion = requests.post(url, data=data).text
-        except Exception as e:
-            print("Problem with fallback chat server on localhost.")
-            print(e)
-    # Read back the response
+        msg = {"messages": messages}
+        response = requests.post(url, json=msg)
+        if response.status_code == 200:
+            data = response.json()
+            completion = data["content"]
+    # Read back the response completion
     if completion:
         if completion == "< nooutput >": completion = "No comment."
         print(completion)
         pastetext(completion)
         say(completion)
         chatting = True
+        # add to conversation
+        messages.append({"role": "assistant", "content": completion})
+        if len(messages) > 9:
+            messages.remove(messages[1])
+            messages.remove(messages[1])
 
 def transcribe():
     global start
@@ -198,11 +205,13 @@ def transcribe():
                 q = lower_case[s.end():] # get q for command
                 webbrowser.open('https://' + q.strip())
                 continue
+            # Stop listening.
+            elif re.search("^.{0,6}listening.?$", lower_case):
+                say("Shutting down.")
+                break
             elif process_actions(lower_case): continue
             elif process_hotkeys(lower_case): continue
 
-            # Stop listening.
-            elif re.search("^.{0,6}listening.?$", lower_case): break
             else:
                 now = time.time()
                 # Remove leading space from new paragraph
@@ -232,7 +241,6 @@ preload_thread = threading.Thread(target=preload)
 preload_thread.start()
 pyperclip.init_xsel_clipboard()
 start = 0
-
 transcribe()
 print("Stopping... Make some noise to return to command prompt.")
 listening = False
