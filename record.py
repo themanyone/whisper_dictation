@@ -41,7 +41,8 @@ def convert_to_ffmpeg_time(t):
     
 class Record:
     silence = 0
-    dB = -20.0 # threshold audio level for speech
+    dB = -20.0 # threshold audio level for detecting speech
+    eta = 10 # 10 x 100ms = 1 sec. Stop recording after eta of 1 second.
     src = "autoaudiosrc" # audio source (alsasrc, pulsesrc, autoaudiosrc, etc.)
     ss = ""
     
@@ -100,7 +101,7 @@ class Record:
             else: # stop recording after some silence
                 if rms < dB:
                     self.silence = self.silence + 1
-                    if self.silence > 10:
+                    if self.silence > self.eta:
                         self.quit(ss); return
                 # keep recording if there is more speech
                 elif rms > dB:
