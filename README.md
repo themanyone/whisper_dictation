@@ -99,7 +99,7 @@ Try saying:
 
 ** export your OPENAI_API_KEY to the environment if you want answers from ChatGPT.
 
-### Requirements.
+### Optional chat and text-to-speech.
 
 ```
 pip install "accelerate>=0.16.0,<1" "transformers[torch]>=4.28.1,<5" "torch>=1.13.1,<2"
@@ -111,9 +111,9 @@ flask run
 export OPENAI_API_KEY=<my API key>
 ```
 
-ChatGPT is optional. If there is no API key, or if ChatGPT is busy, it will ping a private language model running on http://localhost:5000. There are language models on [huggingface](https://huggingface.co/models) that produce intelligible conversation with 1 Gb of video RAM. So now whisper_dictation has its own, privacy-focused chat bot. The default language model is for research only. It's pretty limited to fit into such limited space, but rather chatty. He seems to excel at writing poetry, but is lacking in factual information. It is recommended that you edit `app.py` and choose a larger language model if your system supports it.
+If there is no API key, or if ChatGPT is busy, it will ping a private language model running on http://localhost:5000. There are language models on [huggingface](https://huggingface.co/models) that produce intelligible conversation with 1 Gb of video RAM. So now whisper_dictation has its own, privacy-focused chat bot. The default language model is for research only. It's pretty limited to fit into such limited space, but rather chatty. He seems to excel at writing poetry, but is lacking in factual information. It is recommended that you edit `app.py` and choose a larger language model if your system supports it.
 
-Mimic3. If you install the optional [mimic3](https://github.com/MycroftAI/mimic3) as a service, he will speak answers out loud. Follow the [instructions for setting up mimi3 as a server](https://mycroft-ai.gitbook.io/docs/mycroft-technologies/mimic-tts/mimic-3#web-server). The `mimic3-server` is already lightening-fast on CPU. Do not bother with --cuda flag, which requires old `onnxruntime-gpu` that is not compatable with CUDA 12.1 and won't compile with nvcc12... It just hogs all of VRAM and provides no noticeable speedup anyway. Regular `onnxruntime` works fine with mimic3.
+Mimic3. If you install [mimic3](https://github.com/MycroftAI/mimic3) as a service, he will speak answers out loud. Follow the [instructions for setting up mimi3 as a server](https://mycroft-ai.gitbook.io/docs/mycroft-technologies/mimic-tts/mimic-3#web-server). The `mimic3-server` is already lightening-fast on CPU. Do not bother with --cuda flag, which requires old `onnxruntime-gpu` that is not compatable with CUDA 12.1 and won't compile with nvcc12... It just hogs all of VRAM and provides no noticeable speedup anyway. Regular `onnxruntime` works fine with mimic3.
 
 ## Bonus apps.
 
