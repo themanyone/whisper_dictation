@@ -40,11 +40,11 @@ def convert_to_ffmpeg_time(t):
     return f"{hours:02d}:{minutes:02d}:{seconds:02d}.{milliseconds:03d}"
     
 class Record:
-    silence = 0
-    dB = -20.0 # threshold audio level for detecting speech
-    eta = 10 # 10 x 100ms = 1 sec. Stop recording after eta of 1 second.
+    # frequently-configured variables
+    lead_in = 0.25 # Lead-in time. Increase if it cuts off the beginning.
+    dB = -20.0 # threshold audio level, for detecting start of speech
+    eta = 10 # in tenths: 10 = stop recording after 1 sec. of silence.
     src = "autoaudiosrc" # audio source (alsasrc, pulsesrc, autoaudiosrc, etc.)
-    ss = ""
     
     def __init__(self):
         import gi
@@ -55,6 +55,8 @@ class Record:
         self.Gst = Gst
         self.GLib = GLib
         self.temp_name = tempfile.mktemp()+ '.mp3'
+        self.silence = 0
+        self.ss = ""
 
     def signal_handler(self, signal, frame):
         self.quit("")
@@ -86,26 +88,25 @@ class Record:
         
         if message.get_structure().get_name() == 'level':
             rms = message.get_structure().get_value('rms')[0]
-            # get time to trim
+            # seconds of silence to trim off beginning of audio
             ss = time.time() - self.lead_in
             
             # if not recording
             if self.ss == "":
                 if ss > max_recording_time:
                     self.quit(self.ss); return
-                if rms < dB: # wait for silence at start
-                    self.silence = 1
-                elif rms > dB and self.silence: # start recording
-                    if ss > 0:
-                        self.ss = convert_to_ffmpeg_time(ss)
-            else: # stop recording after some silence
+                if rms < dB: # wait for startup clicks and pops to die down
+                    self.silence = 1 # got it, we have silence!
+                elif rms > dB and self.silence: # now wait for voice
+                    self.ss = convert_to_ffmpeg_time(ss)
+            else: # stop recording after eta of silence is reached
                 if rms < dB:
                     self.silence = self.silence + 1
-                    if self.silence > self.eta:
-                        self.quit(ss); return
+                    if self.silence > self.eta: # eta reached
+                        self.quit(ss); return # wrap it up, we're done!
                 # keep recording if there is more speech
-                elif rms > dB:
-                    self.silence = 1
+                elif rms > dB: # speech detected
+                    self.silence = 1 # reset silence counter
 
                 # show VU meter display
                 self.draw_meter(rms)
@@ -132,7 +133,7 @@ class Record:
             + enc + ' ! filesink location=' + self.temp_name)
         self.rec_pipe.set_state(Gst.State.PLAYING)
         # give recording 0.25 sec. lead-in time
-        self.lead_in = time.time() + 0.25
+        self.lead_in = time.time() + self.lead_in
         self.lvl_pipe = Gst.parse_launch(
         src + ' ! audioconvert ! level name=level ! fakesink')
         # Create a bus to get messages from the lvl_pipe
