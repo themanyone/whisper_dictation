@@ -12,7 +12,7 @@ Get it from https://github.com/themanyone/whisper_dictation.git
 
 **The ship's computer.** Inspired by the *Star Trek* television series. It's offline, so it's usuable when the internet is down, or in the far reaches of the galaxy, "where no man has gone before."
 
-**Privacy focused.** Most voice keyboards, dictation, translation, and chat bots depend on sending data to remote servers, which is a privacy concern. Keep data off the internet and confidential. A CUDA-enaled video card with at least 4GB is all that's needed to run an uncensored virtual assistant that listens ane responds via voice. While being completely free, offline, and independent.
+**Privacy focused.** Most voice keyboards, dictation, translation, and chat bots depend on sending data to remote servers, which is a privacy concern. Keep data off the internet and confidential. A CUDA-enaled video card with at least 4GB is all that's needed to run an uncensored virtual assistant that listens and responds via voice. While being completely free, offline, and independent.
 
 **Dictation.** Start speaking and whatever you say will be typed out into the current window.
 
@@ -113,7 +113,7 @@ export OPENAI_API_KEY=<my API key>
 
 If there is no API key, or if ChatGPT is busy, it will ping a private language model running on http://localhost:5000. There are language models on [huggingface](https://huggingface.co/models) that produce intelligible conversation with 1 Gb of video RAM. So now whisper_dictation has its own, privacy-focused chat bot. The default language model is for research only. It's pretty limited to fit into such limited space, but rather chatty. He seems to excel at writing poetry, but is lacking in factual information. It is recommended that you edit `app.py` and choose a larger language model if your system supports it.
 
-Mimic3. If you install [mimic3](https://github.com/MycroftAI/mimic3) as a service, he will speak answers out loud. Follow the [instructions for setting up mimi3 as a server](https://mycroft-ai.gitbook.io/docs/mycroft-technologies/mimic-tts/mimic-3#web-server). The `mimic3-server` is already lightening-fast on CPU. Do not bother with --cuda flag, which requires old `onnxruntime-gpu` that is not compatable with CUDA 12.1 and won't compile with nvcc12... It just hogs all of VRAM and provides no noticeable speedup anyway. Regular `onnxruntime` works fine with mimic3.
+Mimic3. If you install [mimic3](https://github.com/MycroftAI/mimic3) as a service, he will speak answers out loud. Follow the [instructions for setting up mimi3 as a server](https://mycroft-ai.gitbook.io/docs/mycroft-technologies/mimic-tts/mimic-3#web-server). The `mimic3-server` is already lightening-fast on CPU. Do not bother with --cuda flag, which requires old `onnxruntime-gpu` that is not compatible with CUDA 12.1 and won't compile with nvcc12... It just hogs all of VRAM and provides no noticeable speedup anyway. Regular `onnxruntime` works fine with mimic3.
 
 ## Bonus apps.
 
@@ -129,9 +129,9 @@ Various test files, including:
 
 ### Improvements.
 
-Threading. Moved audio recording to the background and dictation to the foreground. Turns out spawning multiple, background threads for dictation was a bad idea. Apparently, each new `whisper-jax` instance had to be re-compiled each time. Dictation is many times faster runnnig in the foreground as intended.
+Threading. Moved audio recording to the background and dictation to the foreground. Turns out spawning multiple, background threads for dictation was a bad idea. Apparently, each new `whisper-jax` instance had to be re-compiled each time. Dictation is many times faster running in the foreground as intended.
 
-Typing speed. Set typing_interval in whisper_dictation.py. But we now use `pyperclip` and `pyautogui` to paste text, instead of typing responses into the current window. Typing is very slow on sites like Twitter and Facebook. The theory is they are using Javascript to restrict input from bots. But it's annoying to fast typists too. If you enjoy watching it type slowly, you can change the code to use `pyautogui.typewrite(t, typing_interval)` for everything, and set a `typing_interval` to whatever you want.
+Typing speed. Set typing_interval in whisper_dictation.py. But we now use `pyperclip` and `pyautogui` to paste text, instead of typing responses into the current window. Typing is very slow on sites like Twitter and Facebook. The theory is they are using JavaScript to restrict input from bots. But it's annoying to fast typists too. If you enjoy watching it type slowly, you can change the code to use `pyautogui.typewrite(t, typing_interval)` for everything, and set a `typing_interval` to whatever you want.
 
 ## Issues
 
