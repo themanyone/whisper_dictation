@@ -5,7 +5,7 @@ Offline, privacy-focused voice typing, AI voice chat, voice control, with under 
 - Listens and types quickly with `whisper-jax`,
 - Translates other languages into English,
 - Launches & controls apps, with `pyautogui`,
-- Communicates with OpenAI `ChatGPT` or a private chat server ,(included).
+- Communicates with OpenAI `ChatGPT` or a private chat server (included).
 - Speaks answers out loud with `mimic3`.
 
 Get it from https://github.com/themanyone/whisper_dictation.git
@@ -26,7 +26,7 @@ Set the language model in `app.py`. The first time you use it, it will download 
 
 ## Advantages and tradeoffs.
 
-Whisper AI is currently the state of the art for open-source voice transcription software. [Whisper jax](https://github.com/sanchit-gandhi/whisper-jax) is a compiled version that runs much faster, even on old laptops. We record audio in the background while whisper-jax recognizes spoken dictation and commands. The tradeoff with running Whisper-jax continuously is that 1-2Gb of video RAM stays reserved until shutting down this application by saying "Stop listening." Or by pressing `CTRL` - `C`. Depending on hardware and workflow, you might experience issues with other video-intensive tasks, games mostly, while this is running.
+Whisper AI is currently the state of the art for open-source voice transcription software. [Whisper jax](https://github.com/sanchit-gandhi/whisper-jax) uses optimised JAX code, which is 70x faster than pytorch/numpy. even old laptops. We record audio in the background while whisper-jax recognizes spoken dictation and commands. The tradeoff with running Whisper-jax continuously is that 1-2Gb of video RAM stays reserved until shutting down this application by saying "Stop listening." Or by pressing `CTRL` - `C`. Depending on hardware and workflow, you might experience issues with other video-intensive tasks, games mostly, while this is running.
 
 For a much-slower, dictation-only script, that unloads itself when not speaking, try my [voice_typing project](https://github.com/themanyone/voice_typing), which uses the bash shell to separately record and load up whisper only when spoken to. Or try my older, less-accurate [Freespeech](https://github.com/themanyone/freespeech-vr/tree/python3) project, which uses Pocketsphinx, but is very light on resources.
 
@@ -102,6 +102,7 @@ Try saying:
 ### Optional chat and text-to-speech.
 
 ```
+# in another terminal, not inside the .venv used for whisper_dictation
 pip install "accelerate>=0.16.0,<1" "transformers[torch]>=4.28.1,<5" "torch>=1.13.1,<2"
 cd whisper_dictation
 flask run

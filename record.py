@@ -63,10 +63,10 @@ class Record:
     
     def quit(self, ss):
         Gst = self.Gst
-        self.lvl_pipe.set_state(Gst.State.NULL)
-        # Send EOS event to the pipeline to stop it
+        # Send EOS event to the pipeline to stop them
+        self.lvl_pipe.send_event(Gst.Event.new_eos())
         self.rec_pipe.send_event(Gst.Event.new_eos())
-        # Wait until the pipeline has finished
+        # Wait until the recording pipeline has finished
         bus = self.rec_pipe.get_bus()
         bus.timed_pop_filtered(Gst.CLOCK_TIME_NONE, Gst.MessageType.EOS)
         # trim time off temp audio, save to fname
