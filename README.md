@@ -12,7 +12,7 @@ Get it from https://github.com/themanyone/whisper_dictation.git
 
 **The ship's computer.** Inspired by the *Star Trek* television series. It's offline, so it's usuable when the internet is down, or in the far reaches of the galaxy, "where no man has gone before."
 
-**Privacy focused.** Most voice keyboards, dictation, translation, and chat bots depend on sending data to remote servers, which is a privacy concern. Keep data off the internet and confidential. A CUDA-enaled video card with at least 4GB is all that's needed to run an uncensored virtual assistant that listens and responds via voice. While being completely free, offline, and independent.
+**Privacy focused.** Most voice keyboards, dictation, translation, and chat bots depend on sending data to remote servers, which is a privacy concern. Keep data off the internet and confidential. A CUDA-enabled video card with at least 4GB is all that's needed to run an uncensored virtual assistant that listens and responds via voice. While being completely free, offline, and independent.
 
 **Dictation.** Start speaking and whatever you say will be typed out into the current window.
 
