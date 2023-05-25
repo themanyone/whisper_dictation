@@ -17,7 +17,7 @@ Get it from https://github.com/themanyone/whisper_dictation.git
 
 **Dictation.** Start speaking and whatever you say will be typed out into the current window.
 
-**Translation.** This app is optimised for dictation. It can do some translation into English. But that's not its primary task. To use it as a full-time translator, set `task="transcribe"` inside `whisper_dictation.py`, and choose a larger model for the pipeline for consistent translation results.
+**Translation.** This app is optimised for dictation. It can do some translation into English. But that's not its primary task. To use it as a full-time translator, change `task="transcribe"` to `task="translate"` inside `whisper_dictation.py`, and, if there is enough VRAM, choose a larger model for the pipeline, such as `openai/whisper-large-v2` for consistent translation results.
 
 **Voice control.** The bot also responds to commands.
 
