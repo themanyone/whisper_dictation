@@ -33,6 +33,8 @@ Whisper AI is currently the state of the art for open-source voice transcription
 
 For a much-slower, dictation-only script, that unloads itself when not speaking, try my [voice_typing project](https://github.com/themanyone/voice_typing), which uses the bash shell to separately record and load up whisper only when spoken to. Or try my older, less-accurate [Freespeech](https://github.com/themanyone/freespeech-vr/tree/python3) project, which uses Pocketsphinx, but is very light on resources.
 
+This application is not optimised for making captions or transcripts of pre-recorded material. Just run [whisper](https://github.com/openai/whisper) or [whisper-jax](https://github.com/sanchit-gandhi/whisper-jax) for that. They also have a [server that makes transcripts for voice recordings and videos](https://github.com/sanchit-gandhi/whisper-jax/blob/main/app/app.py). If you would like real-time AI captions to translate everyone's conversation in the room into English, watch videos with accents that are difficult to understand, or to record your zoom calls, check out my other project, [Caption Anything](https://github.com/themanyone/caption_anything). And generate captions as you record.
+
 ## Dependencies.
 
 Go to https://github.com/google/jax#installation and follow through the steps to install cuda, cudnn, or whatever is missing. All these  [whisper-jax](https://github.com/sanchit-gandhi/whisper-jax) dependencies and video drivers can be quite bulky, requiring about 5.6GiB of downloads. Our original,[voice_typing project](https://github.com/themanyone/voice_typing) script is significantly easier on internet usage.
