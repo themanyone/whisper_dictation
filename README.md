@@ -123,6 +123,8 @@ Mimic3. If you install [mimic3](https://github.com/MycroftAI/mimic3) as a servic
 
 ## Bonus apps.
 
+`whisper_client.py`: A client version. Instead of loading up the language model for speech recognition. This one will connect to any [Whisper Jax server](https://github.com/sanchit-gandhi/whisper-jax/blob/main/app/app.py) running on the machine, the local network, or the internet. Edit it and change the location. This makes dictation available even on budget laptops. You might also find that, although it starts instantly, it is noticeably slower to operate. This is because the server uses extra resoures to handle multiple clients, which really aren't necessary for one user. You can edit the server configuration to speed it up quite a bit. Make it use the "openai/whisper-small.en" checkpoint. Reduce BATCH_SIZE, CHUNK_LENGTH_S, NUM_PROC to the minimum necessary to support your needs.
+
 `record.py`: hands-free recording from the microphone. It waits for a minimum threshold sound level of, -20dB, but you can edit the script and change that. It stops recording when audio drops below that level for a couple seconds. You can run it separately. It creates a file named `audio.mp3`. Or you can supply an output file name on the command line.
 
 `app.py`: A local, privacy-focused AI chat server. Start it by typing `flask run` from within the directory where it resides. You can use almost any model on huggingface with it. Just open it up and edit the model configuration. It is not security-focused server, however. So don't use it outside the local network, or share its address with more than a few friends. In particular, flask apps have no built-in protection against distributed denial-of-service attacks (DDoS).
