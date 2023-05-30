@@ -32,7 +32,7 @@ from gradio_client import Client
 client = Client("http://localhost:7860/")
 
 # address of Fallback Chat Server.
-url = 'http://localhost:5000'
+fallback_chat_url = 'http://localhost:5000'
 api_key = os.getenv("OPENAI_API_KEY")
 
 if (api_key):
@@ -150,7 +150,7 @@ def chatGPT(prompt):
     # Fallback to localhost
     if not completion:
         msg = {"messages": messages}
-        response = requests.post(url, json=msg)
+        response = requests.post(fallback_chat_url, json=msg)
         if response.status_code == 200:
             data = response.json()
             completion = data["content"]

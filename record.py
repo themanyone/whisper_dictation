@@ -94,6 +94,7 @@ class Record:
             # if not recording
             if self.ss == "":
                 if ss > max_recording_time:
+                    print(sys.argv[0]+": Max recording time reached.", file=sys.stderr)
                     self.quit(self.ss); return
                 if rms < dB: # wait for startup clicks and pops to die down
                     self.silence = 1 # got it, we have silence!
