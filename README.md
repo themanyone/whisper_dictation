@@ -2,12 +2,14 @@
 
 Offline, privacy-focused, hands-free voice typing, AI voice chat, voice control, with under 4 gigs of VRAM!
 
+<img src="img/ss.png" alt="example pic" title="App does dictation anywhere, even social media." width="300" align="right">
+
 - Listens and types quickly with `whisper-jax`,
 - Hands-free, text appears under mouse cursor,
 - Translates other languages into English,
 - Launches & controls apps, with `pyautogui`,
-- Communicates with OpenAI `ChatGPT` or a private chat server (included).
-- Speaks answers out loud with `mimic3`.
+- Optionally communicates with OpenAI `ChatGPT` or an included chat server.
+- Optionally speaks answers out loud with `mimic3`.
 
 Get it from https://github.com/themanyone/whisper_dictation.git
 
