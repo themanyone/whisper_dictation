@@ -111,7 +111,9 @@ def process_hotkeys(txt):
     return False
 
 def gettext(f):
-    result = client.predict(f, "transcribe", False, api_name="/predict")
+    result = ['']
+    if f and os.path.isfile(f):
+        result = client.predict(f, "transcribe", False, api_name="/predict")
     return result[0]
     
 def pastetext(t):
