@@ -81,7 +81,7 @@ cd whisper_dictation
 ./whisper_dictation.py
 ```
 
-If it complains about missing files, modify `whisper_dictation.py` and, in the first line, set the location of Python to the one inside the virtual environment that works with Whisper-JAX. The one you installed everything in. The default for our usage is `.venv/bin/python` which should load the correct one. But if it doesn't, you can change this to the path of python inside the conda or venv environment. Then you don't have to source or activate the virtual environment each time. You can just change to the directory and run it.
+If it complains about missing files, modify `whisper_dictation.py` and, in the first line, set the location of Python to the one inside the virtual environment that works with Whisper-JAX. The one you installed everything in. The default for our usage is `.venv/bin/python` which should load the correct one. But if it doesn't, you can change this to the path of python inside the conda or venv environment. Then you don't have to source or activate the virtual environment each time. You can just change to the directory and run it. Say "pause dictation" to turn off the microphone. Press Enter to resume. Say "stop listening" or "stop dictation" to quit the program entirely.
 
 Also, feel free to change the FlaxWhisperPipline language, or use "openai/whisper-large-v2" if your video card has more than the 4Gb RAM that ours does. It defaults to `openai/whisper-small.en` which hogs just over 2 gigs of video RAM. But in fact, we get *fantastic* results even with `openai/whisper-tiny.en` So you might want to go tiny instead.
 

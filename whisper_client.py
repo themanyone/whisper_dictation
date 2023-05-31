@@ -24,7 +24,7 @@ import os, shlex, time, queue, sys, re
 import webbrowser
 import tempfile
 import threading
-import subprocess
+import subprocess, signal
 import requests
 import json
 from mimic3_client import say
@@ -74,7 +74,7 @@ actions = {
     "^(peter|computer).? ": "pyautogui.hotkey('alt', 'F4')",
     "^(peter|computer).? ": "chatGPT(q)",
     "^(click)( the)?( mouse).? ": "pyautogui.click()",
-    "^(resume|zoom|continue|start)( typing| dictation)$" : "exec('global chatting;chatting = False')",
+    "^(resume|zoom|continue|start)(.typing|.d.ctation)$" : "exec('global chatting;chatting = False')",
     "^(send|compose|write)( an| a) email to ": "os.popen('xdg-open \"mailto://' + q.replace(' at ', '@') + '\"')"
     }
 
@@ -118,7 +118,7 @@ def gettext(f):
     
 def pastetext(t):
     # paste text in window
-    if t == " you": return # ignoring you
+    if t == " you" or t == " Thanks for watching!": return # ignoring you
     pyperclip.copy(t) # weird that primary won't work the first time
     if pyautogui.platform.system() == "Linux":
         pyperclip.copy(t, primary=True) # now it works
@@ -169,6 +169,7 @@ def chatGPT(prompt):
 
 def transcribe():
     global start
+    global listening
     while True:
         # transcribe audio from queue
         if f := audio_queue.get():
@@ -191,12 +192,19 @@ def transcribe():
                 webbrowser.open('https://' + q.strip())
                 continue
             # Stop listening.
-            elif re.search("^.{0,6}listening.?$", lower_case):
+            elif re.search("^.?stop.(d.ctation|listening).?$", lower_case):
                 say("Shutting down.")
                 break
+            elif re.search("^.?(pause.d.ctation|positication).?$", lower_case):
+                listening = False
+                record_process.send_signal(signal.SIGINT)
+                record_process.wait()
+                say("Acknowledged.")
+                input("Paused. Press Enter to continue...")
+                audio_queue.get() # discard truncated sample
+                listening = True
             elif process_actions(lower_case): continue
             elif process_hotkeys(lower_case): continue
-
             else:
                 now = time.time()
                 # Remove leading space from new paragraph
@@ -211,27 +219,46 @@ def recorder():
     # we could import record.py instead of os.system()
     # from record import Record
     # rec = Record()
+    global record_process
+    global running
+    while running:
+        if listening:
+            # record some (more) audio to queue
+            temp_name = tempfile.mktemp()+ '.mp3'
+            record_process = subprocess.Popen(["python", "./record.py", temp_name])
+            record_process.wait()
+            audio_queue.put(temp_name)
+        else:
+            time.sleep(0.5)
+
+def quit():
+    print("Stopping...")
+    global running
     global listening
-    while listening:
-        # record some (more) audio to queue
-        temp_name = tempfile.mktemp()+ '.mp3'
-        os.system("./record.py " + temp_name)
-        audio_queue.put(temp_name)
+    listening = False
+    running = False
+    try:
+        record_process.send_signal(signal.SIGINT)
+        record_process.wait()
+    except:
+        pass
+    time.sleep(1)
+    record_thread.join()
+    # clean up
+    try:
+        while f := audio_queue.get_nowait():
+            print("Removing temporary file: ", f)
+            if f[:5] == "/tmp/": # safety check
+                os.remove(f)
+    except: pass
+    print("Freeing system resources.")
 
-record_thread = threading.Thread(target=recorder)
-record_thread.start()
-
-pyperclip.init_xsel_clipboard()
-start = 0
-transcribe()
-print("Stopping... Make some noise to return to command prompt.")
-listening = False
-record_thread.join()
-# clean up
-try:
-    while f := audio_queue.get_nowait():
-        print("Removing temporary file: ", f)
-        if f[:5] == "/tmp/": # safety check
-            os.remove(f)
-except: pass
-print("Freeing system resources.")
+if __name__ == '__main__':
+    record_process = None
+    running = True
+    record_thread = threading.Thread(target=recorder)
+    record_thread.start()
+    pyperclip.init_xsel_clipboard()
+    start = 0
+    transcribe()
+    quit()
