@@ -121,17 +121,22 @@ export OPENAI_API_KEY=<my API key>
 
 If there is no API key, or if ChatGPT is busy, it will ping a private language model running on http://localhost:5000. There are language models on [huggingface](https://huggingface.co/models) that produce intelligible conversation with 1 Gb of video RAM. So now whisper_dictation has its own, privacy-focused chat bot. The default language model is for research only. It's pretty limited to fit into such limited space, but rather chatty. He seems to excel at writing poetry, but is lacking in factual information. It is recommended that you edit `app.py` and choose a larger language model if your system supports it.
 
-Mimic3. If you install [mimic3](https://github.com/MycroftAI/mimic3) as a service, he will speak answers out loud. Follow the [instructions for setting up mimi3 as a server](https://mycroft-ai.gitbook.io/docs/mycroft-technologies/mimic-tts/mimic-3#web-server). The `mimic3-server` is already lightening-fast on CPU. Do not bother with --cuda flag, which requires old `onnxruntime-gpu` that is not compatible with CUDA 12.1 and won't compile with nvcc12... It just hogs all of VRAM and provides no noticeable speedup anyway. Regular `onnxruntime` works fine with mimic3.
+Mimic3. If you install [mimic3](https://github.com/MycroftAI/mimic3) as a service, he will speak answers out loud. Follow the [instructions for setting up mimic3 as a Systemd Service](https://mycroft-ai.gitbook.io/docs/mycroft-technologies/mimic-tts/mimic-3#web-server). The `mimic3-server` is already lightening-fast on CPU. Do not bother with --cuda flag, which requires old `onnxruntime-gpu` that is not compatible with CUDA 12.1 and won't compile with nvcc12... It just hogs all of VRAM and provides no noticeable speedup anyway. Regular `onnxruntime` works fine with mimic3.
 
-You can also download other voices for mimic3 with `mimic3-download`, if you prefer.
+Female voice. You can also download other voices for mimic3 with `mimic3-download`. For a nice female voice, get `en_US/vctk_low` and change the `paraams` line in `mimic3_client`, commenting the other line out, like so:
+
+```
+    # params = { 'text': text, "lengthScale": "0.6" }
+    params = { 'text': text, "voice": "en_US/vctk_low" }
+```
 
 ## Bonus apps.
 
-`whisper_client.py`: A client version. Instead of loading up the language model for speech recognition. The client connects to any [Whisper Jax server](https://github.com/sanchit-gandhi/whisper-jax/blob/main/app/app.py) running on the machine, the local network, or the internet. Edit `whisper_client.py` to configure the server location. This makes dictation available even on budget laptops. You might also find that, although it starts instantly, it is noticeably slower to operate. This is because the server uses extra resoures to handle multiple clients, resources which really aren't necessary for one user. You can edit the server configuration to speed it up quite a bit. Make it use the "openai/whisper-small.en" checkpoint. Reduce BATCH_SIZE, CHUNK_LENGTH_S, NUM_PROC to the minimum necessary to support your needs.
+`whisper_client.py`: A client version. Instead of loading up the language model for speech recognition. The client connects to any [Whisper Jax server](https://github.com/sanchit-gandhi/whisper-jax/blob/main/app/app.py) running on the machine, the local network, or the internet. Edit `whisper_client.py` to configure the server location. This makes dictation available even on budget laptops and old phones that can run linux/python from the app store. You might also find that, although it starts instantly, it is noticeably slower to operate. This is because the server uses extra resoures to handle multiple clients, resources which really aren't necessary for one user. You can edit the server configuration to speed it up quite a bit. Make it use the "openai/whisper-small.en" checkpoint. Reduce BATCH_SIZE, CHUNK_LENGTH_S, NUM_PROC to the minimum necessary to support your needs.
 
 `record.py`: hands-free recording from the microphone. It waits for a minimum threshold sound level of, -20dB, but you can edit the script and change that. It stops recording when audio drops below that level for a couple seconds. You can run it separately. It creates a file named `audio.mp3`. Or you can supply an output file name on the command line.
 
-`app.py`: A local, privacy-focused AI chat server. Start it by typing `flask run` from within the directory where it resides. You can use almost any model on huggingface with it. Just open it up and edit the model configuration. It is not security-focused server, however. So don't use it outside the local network, or share its address with more than a few friends. In particular, flask apps have no built-in protection against distributed denial-of-service attacks (DDoS).
+`app.py`: A local, privacy-focused AI chat server. Start it by typing `flask run` from within the directory where it resides. You can use almost any model on huggingface with it. Just open it up and change the model configuration. It is not security-focused server, however. So don't use it outside the local network, or share its address with more than a few friends. In particular, flask apps have no built-in protection against distributed denial-of-service attacks (DDoS).
 
 Various test files, including:
 

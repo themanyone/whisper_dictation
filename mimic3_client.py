@@ -30,6 +30,7 @@ def say(text):
         audio_data = io.BytesIO(response.content)
         audio_bytes = audio_data.read()
         # Pass the audio data to gstreamer-1.0 for playback
+        # You could also use `aplay -` for this
         command = ['gst-launch-1.0', '-q', 'fdsrc', '!', 'wavparse', '!', 'autoaudiosink']
         subprocess.run(command, input=audio_bytes, check=True,
         stdout=subprocess.DEVNULL)
