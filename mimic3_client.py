@@ -24,7 +24,8 @@ import io
 
 def say(text):
     base_url = "http://localhost:59125/api/tts"
-    params = { 'text': text, "lengthScale": "0.6" }
+    # params = { 'text': text, "lengthScale": "0.6" }
+    params = { 'text': text, "voice": "en_US/vctk_low" }
     response = requests.get(base_url, params=params)
     if response.status_code == 200:
         audio_data = io.BytesIO(response.content)
