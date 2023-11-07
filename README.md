@@ -1,6 +1,6 @@
 # Whisper Dictation
 
-Offline, privacy-focused, hands-free voice typing, AI voice chat, voice control, with under 4 gigs of VRAM!
+Offline, privacy-focused, hands-free voice typing, AI voice chat, voice control, in under 4 gigs of VRAM!
 
 <img src="img/ss.png" alt="example pic" title="App does dictation anywhere, even social media." width="300" align="right">
 
@@ -13,7 +13,7 @@ Offline, privacy-focused, hands-free voice typing, AI voice chat, voice control,
 
 Get it from https://github.com/themanyone/whisper_dictation.git
 
-**The ship's computer.** Inspired by the *Star Trek* television series. It's offline, so it's usuable when the internet is down, or in the far reaches of the galaxy, "where no man has gone before."
+**The ship's computer.** Inspired by the *Star Trek* television series. Talk to your computer any time. And have it answer back with clear, easy-to-understand speech. Use your voice to write Captain's Log entries when the internet is down, when satellites are no longer working, or in the far reaches of the galaxy, "where no man has gone before."
 
 **Privacy focused.** Most voice keyboards, dictation, translation, and chat bots depend on sending data to remote servers, which is a privacy concern. Keep data off the internet and confidential. A CUDA-enabled video card with at least 4GB is all that's needed to run an uncensored virtual assistant that listens and responds via voice. While being completely free, offline, and independent.
 
@@ -45,9 +45,9 @@ Go to https://github.com/google/jax#installation and follow through the steps to
 sudo dnf install python-devel gobject-introspection-devel python3-gobject-devel cairo-gobject-devel python3-tkinter python3-devel xdotool
 ```
 
-Install `torch` for the chat server, but not in the same conda or venv virtual environment as `whisper_dictation`. Or use your main python installation. It downgrades nvidia-cudnn-cu11 to an incompatible version. Then you will have to run `pip install --upgrade nvidia-cudnn-cu11` from within the virtual environment. This difficulty might be addressed in another update. Or you can build it from source. But for now we will use conda or venv to keep things separate.
+Install `torch` for the chat server. But do not install it in the same conda or venv virtual environment as `whisper_dictation`. Or use your main python installation. If you install it in the same virtual environment, it downgrades `nvidia-cudnn-cu11` to an incompatible version. Then you will have to run `pip install --upgrade nvidia-cudnn-cu11` from within the virtual environment to make `whisper-jax` work again. This difficulty might be addressed in another update. Or you can try building `torch` from source. But for now it's much easier to use conda or venv to keep things separate.
 
-We got the commands to install jax for GPU(CUDA) [from here](https://jax.readthedocs.io/en/latest/index.html).
+The commands to install jax for GPU(CUDA) are copied [from here](https://jax.readthedocs.io/en/latest/index.html).
 
 Install [whisper-jax](https://github.com/sanchit-gandhi/whisper-jax) and make sure the examples work.
 
@@ -68,9 +68,9 @@ git clone https://github.com/themanyone/whisper_dictation
 
 There may be other dependencies. Look in requirements.txt.
 
-Modify `dictate.py` and set the preferred threshold audio level and device which might require some experimentation. If the microphone is not detected, open Control Center or Volume Control settings. And choose the preferred audio device for the mic, whether it is a Bluetooth, USB microphone, or whatever. You can also use `gst-inspect-1.0` to get a list of audio sources to try. The default `autoaudiosrc` should work in most cases. 
+Modify `dictate.py` and set the preferred threshold audio level and device. This might require some experimentation. If the microphone is not detected, open Control Center or Volume Control settings. And choose the preferred audio device for the mic, whether it is a Bluetooth, USB microphone, or whatever. You can also use `gst-inspect-1.0` to get a list of audio sources to try. The default `autoaudiosrc` should work in most cases. 
 
-Again, explore the examples on the [Whisper-Jax](https://github.com/sanchit-gandhi/whisper-jax) page and make sure that is working first. Edit `whisper_dictation.py` to use your preferred pipeline and dictation model from their examples for best results. We found that `jnp.bfloat16` is for TPU devices. So `jnp.float16` is what we use for our older GPU. Reference, [PyTorch docs.](https://pytorch.org/xla/release/2.1/index.html)
+Again, explore the examples on the [Whisper-Jax](https://github.com/sanchit-gandhi/whisper-jax) page and make sure whisper is working first. Edit `whisper_dictation.py` to use your preferred pipeline and dictation model from their examples for best results. We found that `jnp.bfloat16` is for TPU devices. So `jnp.float16` is what we use for our older GPU. Reference, [PyTorch docs.](https://pytorch.org/xla/release/2.1/index.html)
 
 Now we are ready to try dictation.
 
@@ -83,7 +83,7 @@ cd whisper_dictation
 
 If it complains about missing files, modify `whisper_dictation.py` and, in the first line, set the location of Python to the one inside the virtual environment that works with Whisper-JAX. The one you installed everything in. The default for our usage is `.venv/bin/python` which should load the correct one. But if it doesn't, you can change this to the path of python inside the conda or venv environment. Then you don't have to source or activate the virtual environment each time. You can just change to the directory and run it. Say "pause dictation" to turn off the microphone. Press Enter to resume. Say "stop listening" or "stop dictation" to quit the program entirely.
 
-Also, feel free to change the FlaxWhisperPipline language, or use "openai/whisper-large-v2" if your video card has more than the 4Gb RAM that ours does. It defaults to `openai/whisper-small.en` which hogs just over 2 gigs of video RAM. But in fact, we get *fantastic* results even with `openai/whisper-tiny.en` So you might want to go tiny instead.
+Feel free to change the FlaxWhisperPipline language, or use "openai/whisper-large-v2" if your video card has more than the 4Gb RAM that ours does. It defaults to `openai/whisper-small.en` which hogs just over 2 gigs of video RAM. But in fact, we get *fantastic* results even with `openai/whisper-tiny.en` So you might want to go tiny instead.
 
 ### Spoken commands and program launchers.
 
@@ -104,7 +104,7 @@ Try saying:
 - Peter, tell me about the benefits of relaxation.**
 - Peter, compose a Facebook post about the sunny weather we're having.
 
-** export your OPENAI_API_KEY to the environment if you want answers from ChatGPT.
+** export your OPENAI_API_KEY to the environment if you want answers from ChatGPT. If your firm is worried about privacy and security, ChatGPT has an enterprise version with those features. We script writers are not affiliated.
 
 ### Optional chat and text-to-speech.
 
@@ -123,7 +123,7 @@ If there is no API key, or if ChatGPT is busy, it will ping a private language m
 
 Mimic3. If you install [mimic3](https://github.com/MycroftAI/mimic3) as a service, he will speak answers out loud. Follow the [instructions for setting up mimic3 as a Systemd Service](https://mycroft-ai.gitbook.io/docs/mycroft-technologies/mimic-tts/mimic-3#web-server). The `mimic3-server` is already lightening-fast on CPU. Do not bother with --cuda flag, which requires old `onnxruntime-gpu` that is not compatible with CUDA 12.1 and won't compile with nvcc12... We got it working! And it just hogs all of VRAM and provides no noticeable speedup anyway. Regular `onnxruntime` works fine with mimic3.
 
-Female voice. You can also download other voices for mimic3 with `mimic3-download`. For a nice female voice, get `en_US/vctk_low` and change the `paraams` line in `mimic3_client`, commenting the other line out, like so:
+Female voice. You can also download other voices for mimic3 with `mimic3-download`. For a nice, female voice, download `en_US/vctk_low` and change the `params` line in `mimic3_client`, commenting the other line out, like so:
 
 ```
     # params = { 'text': text, "lengthScale": "0.6" }
@@ -150,11 +150,11 @@ Threading. Moved audio recording to the background and dictation to the foregrou
 
 Typing speed. Set typing_interval in whisper_dictation.py. But we now use `pyperclip` and `pyautogui` to paste text, instead of typing responses into the current window. We use middle-click paste on Linux, so that it also works in terminals. If you miss and it doesn't put text where you want it, you can always middle-click it.
 
-We would have it type text out but typing is extremely-slow on sites like Twitter and Facebook. The theory is they are using JavaScript to restrict input from bots. But it's annoying to fast typists too. If you enjoy watching it type one, letter, at, a, time, you can change the code to use `pyautogui.typewrite(t, typing_interval)` for everything, and set a `typing_interval` to whatever you want.
+We would have it type text out but typing is extremely-slow on sites like Twitter and Facebook. The theory is they are using JavaScript to restrict input from bots. But it's annoying to fast typists too. If you enjoy watching it type one, letter, at, a, time, you can change the code to use `pyautogui.typewrite(t, typing_interval)` for everything, and set a `typing_interval` to whatever speed you want.
 
 ## Issues
 
-**GPU memory usage.** According to a post by [sanchit-gandhi](https://github.com/sanchit-gandhi/whisper-jax/issues/7#issuecomment-1531124418), JAX using 90% of GPU RAM is probably unnecessary, but intended to prevent fragmentation. You can disable that with an environment variable, e.g. `XLA_PYTHON_CLIENT_PREALLOCATE=false ./whisper_dictation.py`.
+**GPU memory usage.** According to a post by [sanchit-gandhi](https://github.com/sanchit-gandhi/whisper-jax/issues/7#issuecomment-1531124418), it is unnecessary for JAX to use 90% of GPU RAM. The setting was intended to prevent fragmentation. You can reduce memory usage by setting the environment variable. `XLA_PYTHON_CLIENT_PREALLOCATE=false ./whisper_dictation.py`.
 
 You can monitor JAX memory usage with [jax-smi](https://github.com/ayaka14732/jax-smi), `nvidia-smi`, or by installing the bloated, GreenWithEnvy (gwe) for Nvidia cards which does the same thing with a graphical interface.
 
