@@ -10,10 +10,11 @@ Offline, privacy-focused, hands-free voice typing, AI voice chat, voice control,
 - Launches & controls apps, with `pyautogui`,
 - Optionally communicates with OpenAI `ChatGPT` or an included chat server.
 - Optionally speaks answers out loud with `mimic3`.
+- Client and server versions included.
 
 Get it from https://github.com/themanyone/whisper_dictation.git
 
-**The ship's computer.** Inspired by the *Star Trek* television series. Talk to your computer any time. And have it answer back with clear, easy-to-understand speech. Use your voice to write Captain's Log entries when the internet is down, when satellites are no longer working, or in the far reaches of the galaxy, "where no man has gone before."
+**The ship's computer.** Inspired by the *Star Trek* television series. Talk to your computer any time. And have it answer back with clear, easy-to-understand speech. Network it throughout the ship. Use your voice to write Captain's Log entries when the internet is down, when satellites are no longer working, or in the far reaches of the galaxy, "where no man has gone before."
 
 **Privacy focused.** Most voice keyboards, dictation, translation, and chat bots depend on sending data to remote servers, which is a privacy concern. Keep data off the internet and confidential. A CUDA-enabled video card with at least 4GB is all that's needed to run an uncensored virtual assistant that listens and responds via voice. While being completely free, offline, and independent.
 
@@ -49,7 +50,7 @@ Install `torch` for the chat server. But do not install it in the same conda or 
 
 The commands to install jax for GPU(CUDA) are copied [from here](https://jax.readthedocs.io/en/latest/index.html).
 
-Install [whisper-jax](https://github.com/sanchit-gandhi/whisper-jax) and make sure the examples work.
+Install [whisper-jax](https://github.com/sanchit-gandhi/whisper-jax) and make sure the examples work. You may need to reboot to make CUDA work, after getting everything installed. And after each kernel update, and video driver upgrade/recompilation.
 
 ```shell
 # activate conda or venv
@@ -83,7 +84,7 @@ cd whisper_dictation
 
 If it complains about missing files, modify `whisper_dictation.py` and, in the first line, set the location of Python to the one inside the virtual environment that works with Whisper-JAX. The one you installed everything in. The default for our usage is `.venv/bin/python` which should load the correct one. But if it doesn't, you can change this to the path of python inside the conda or venv environment. Then you don't have to source or activate the virtual environment each time. You can just change to the directory and run it. Say "pause dictation" to turn off the microphone. Press Enter to resume. Say "stop listening" or "stop dictation" to quit the program entirely.
 
-Feel free to change the FlaxWhisperPipline language, or use "openai/whisper-large-v2" if your video card has more than the 4Gb RAM that ours does. It defaults to `openai/whisper-small.en` which hogs just over 2 gigs of video RAM. But in fact, we get *fantastic* results even with `openai/whisper-tiny.en` So you might want to go tiny instead.
+Feel free to change the FlaxWhisperPipline language, or use "openai/whisper-large-v2" if your video card has more than the 4Gb RAM that ours does. It defaults to `openai/whisper-small.en` which hogs just over 2 gigs of video RAM. But in fact, we get *fantastic* results even with `openai/whisper-tiny.en` So you might want to go tiny instead. Then it might even work with a 2Gb video card. We would be interested to know.
 
 ### Spoken commands and program launchers.
 
