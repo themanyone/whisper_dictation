@@ -147,11 +147,26 @@ Various test files, including:
 
 ### Improvements.
 
-Threading. Moved audio recording to the background and dictation to the foreground. Turns out spawning multiple, background threads for dictation was a bad idea. Apparently, each new `whisper-jax` instance had to be re-compiled each time. Dictation is many times faster running in the foreground as intended.
+**Threading.** Moved audio recording to the background and dictation to the foreground. Turns out spawning multiple, background threads for dictation was a bad idea. Apparently, each new `whisper-jax` instance had to be re-compiled each time. Dictation is many times faster running in the foreground as intended.
 
-Typing speed. Set typing_interval in whisper_dictation.py. But we now use `pyperclip` and `pyautogui` to paste text, instead of typing responses into the current window. We use middle-click paste on Linux, so that it also works in terminals. If you miss and it doesn't put text where you want it, you can always middle-click it.
+**Text goes to wrong place.** We now use `pyperclip` and `pyautogui` to paste text, instead of typing responses into the current window. We use middle-click paste on Linux, so that it also works in terminals. If you miss and it doesn't put text where you want it, you can always middle-click it.
 
-We would have it type text out but typing is extremely-slow on sites like Twitter and Facebook. The theory is they are using JavaScript to restrict input from bots. But it's annoying to fast typists too. If you enjoy watching it type one, letter, at, a, time, you can change the code to use `pyautogui.typewrite(t, typing_interval)` for everything, and set a `typing_interval` to whatever speed you want.
+**Fixing Linux paste.** "No. I don't want this script to use middle-click on Linux!" The alternative to using middle click on Linux is to change the behavior of the Linux terminal. Are you tired of having to remember to use Ctrl-Shift-C and Ctrl-Shift-V in the terminal, instead of Ctrl-C and Ctrl-V? The beauty of Linux is being able to customize. So let's do it!
+
+[Modifying Terminal Settings](https://askubuntu.com/questions/53688/making-ctrlc-copy-text-in-gnome-terminal)
+
+    Open your terminal emulator (e.g., gnome-terminal, xterm, etc.).
+    Go to the terminal's menu and select "Edit" or "Preferences".
+    Look for the "Shortcuts" or "Keyboard" section.
+    Find the entry for "Copy" or "Interrupt" and modify the keybinding from CTRL-C to CTRL-Shift-C.
+    The interrupt command will automatically be remapped to Ctrl-Shift-C.
+        Note: The exact steps may vary depending on your terminal emulator. Refer to the above link or help resources specific to your terminal emulator for more information.
+
+By following these steps, you will have swapped the behavior of the "break" or "stop script" Ctrl-C, and the Paste Ctrl-Shift-C hotkeys in the Linux terminal.
+
+Now we are ready to change `whisper_dictation.py` or `whisper_client.py` to use Ctrl-V instead of middle click. Somewhere around line 144, change the line that says `pyautogui.middleClick()` to `pyautogui.hotkey('ctrl', 'v')`.
+
+**I want it to type slowly.** We would have it type text slowly, but typing has become extremely-slow on sites like Twitter and Facebook. The theory is they are using JavaScript to restrict input from bots. But it's annoying to fast typists too. If you enjoy watching it type one, letter, at, a, time, you can change the code to use `pyautogui.typewrite(t, typing_interval)` for everything, and set a `typing_interval` to whatever speed you want.
 
 ## Issues
 
