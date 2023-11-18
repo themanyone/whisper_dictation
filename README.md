@@ -1,6 +1,6 @@
 # Whisper Dictation
 
-Offline, privacy-focused, hands-free voice typing, AI voice chat, voice control, in under 4 gigs of VRAM!
+Offline, privacy-focused, hands-free voice typing, AI voice chat, voice control, in under 4 gigs of VRAM. 2Gb for dictation alone.
 
 <img src="img/ss.png" alt="example pic" title="App does dictation anywhere, even social media." width="300" align="right">
 
@@ -122,9 +122,9 @@ export OPENAI_API_KEY=<my API key>
 
 If there is no API key, or if ChatGPT is busy, it will ping a private language model running on http://localhost:5000. There are language models on [huggingface](https://huggingface.co/models) that produce intelligible conversation with 1 Gb of video RAM. So now whisper_dictation has its own, privacy-focused chat bot. The default language model is for research only. It's pretty limited to fit into such limited space, but rather chatty. He seems to excel at writing poetry, but is lacking in factual information. It is recommended that you edit `app.py` and choose a larger language model if your system supports it.
 
-Mimic3. If you install [mimic3](https://github.com/MycroftAI/mimic3) as a service, he will speak answers out loud. Follow the [instructions for setting up mimic3 as a Systemd Service](https://mycroft-ai.gitbook.io/docs/mycroft-technologies/mimic-tts/mimic-3#web-server). The `mimic3-server` is already lightening-fast on CPU. Do not bother with --cuda flag, which requires old `onnxruntime-gpu` that is not compatible with CUDA 12.1 and won't compile with nvcc12... We got it working! And it just hogs all of VRAM and provides no noticeable speedup anyway. Regular `onnxruntime` works fine with mimic3.
+Mimic3. If you install [mimic3](https://github.com/MycroftAI/mimic3) as a service, he will speak answers out loud. Follow the [instructions for setting up mimic3 as a Systemd Service](https://mycroft-ai.gitbook.io/docs/mycroft-technologies/mimic-tts/mimic-3#web-server). The `mimic3-server` is already lightening-fast on CPU. Do not bother with --cuda flag, which requires old `onnxruntime-gpu` that is not compatible with CUDA 12+ and won't compile with nvcc12... We got it working! And it just hogs all of VRAM and provides no noticeable speedup anyway. Regular `onnxruntime` works fine with mimic3.
 
-Female voice. You can also download other voices for mimic3 with `mimic3-download`. For a nice, female voice, download `en_US/vctk_low` and change the `params` line in `mimic3_client`, commenting the other line out, like so:
+Female voice. For a nice, female voice, use  `mimic3-download` to obtain `en_US/vctk_low` and change the `params` line in `mimic3_client`, commenting the other line out, like so:
 
 ```
     # params = { 'text': text, "lengthScale": "0.6" }
@@ -147,7 +147,7 @@ Various test files, including:
 
 ### Improvements.
 
-**Threading.** Moved audio recording to the background and dictation to the foreground. Turns out spawning multiple, background threads for dictation was a bad idea. Apparently, each new `whisper-jax` instance had to be re-compiled each time. Dictation is many times faster running in the foreground as intended.
+**Stable-Diffusion.** Stable-Diffusion normally requires upwards of 16Gb of VRAM. But we were able to get it running with a mere 2Gb using [The Stable Diffuion Web UI](https://techtactician.com/stable-diffusion-low-vram-memory-errors-fix/). Just add a voice launcher for the webui and speak your prompt into the box.
 
 **Text goes to wrong place.** We now use `pyperclip` and `pyautogui` to paste text, instead of typing responses into the current window. We use middle-click paste on Linux, so that it also works in terminals. If you miss and it doesn't put text where you want it, you can always middle-click it.
 
@@ -158,13 +158,13 @@ Various test files, including:
     Open your terminal emulator (e.g., gnome-terminal, xterm, etc.).
     Go to the terminal's menu and select "Edit" or "Preferences".
     Look for the "Shortcuts" or "Keyboard" section.
-    Find the entry for "Copy" or "Interrupt" and modify the keybinding from CTRL-C to CTRL-Shift-C.
-    The interrupt command will automatically be remapped to Ctrl-Shift-C.
+    Find the entry for "Copy" or "Interrupt" and modify the keybinding from CTRL-Shift-C to CTRL-C. Do the same for CTRL-Shift-V, changing it to CTRL-V.
+    The interrupt or "stop scrip" hotkey will automatically be remapped from CTRL-C to Ctrl-Shift-C.
         Note: The exact steps may vary depending on your terminal emulator. Refer to the above link or help resources specific to your terminal emulator for more information.
 
-By following these steps, you will have swapped the behavior of the "break" or "stop script" Ctrl-C, and the Paste Ctrl-Shift-C hotkeys in the Linux terminal.
+By following these steps, you will have swapped the behavior of the "break" or "stop script" Ctrl-C, and the copy, Ctrl-Shift-C hotkeys in the Linux terminal.
 
-Now we are ready to change `whisper_dictation.py` or `whisper_client.py` to use Ctrl-V instead of middle click. Somewhere around line 144, change the line that says `pyautogui.middleClick()` to `pyautogui.hotkey('ctrl', 'v')`.
+Now we are ready to change `whisper_dictation.py` or `whisper_client.py` to use Ctrl-V paste instead of middle click. Somewhere around line 144, change the line that says `pyautogui.middleClick()` to `pyautogui.hotkey('ctrl', 'v')`.
 
 **I want it to type slowly.** We would have it type text slowly, but typing has become extremely-slow on sites like Twitter and Facebook. The theory is they are using JavaScript to restrict input from bots. But it's annoying to fast typists too. If you enjoy watching it type one, letter, at, a, time, you can change the code to use `pyautogui.typewrite(t, typing_interval)` for everything, and set a `typing_interval` to whatever speed you want.
 
