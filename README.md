@@ -10,6 +10,7 @@ Offline, privacy-focused, hands-free voice typing, AI voice chat, voice control,
 - Launches & controls apps, with `pyautogui`,
 - Optionally communicates with OpenAI `ChatGPT` or an included chat server.
 - Optionally speaks answers out loud with `mimic3`.
+- Draws pictures with stable-diffusion-webui.
 - Client and server versions included.
 
 Get it from https://github.com/themanyone/whisper_dictation.git
@@ -24,7 +25,9 @@ Get it from https://github.com/themanyone/whisper_dictation.git
 
 **Voice control.** The bot also responds to commands.
 
-For example, say, "Computer, search the web for places to eat". A browser opens up with a list of local restaurants. Say, "Computer, say hello to our guest". After a brief pause, there is a reply, either from `ChatGPT`, the included chat server on the local machine, or another, networked chat server that you set up. A voice, `mimic3` says some variation of, "Hello. Pleased to meet you. Welcome to our shop. Let me know how I can be of assistance". It's unique each time. Say, "Computer, open terminal". A terminal window pops up.
+For example, say, "Computer, search the web for places to eat". A browser opens up with a list of local restaurants. Say, "Computer, say hello to our guest". After a brief pause, there is a reply, either from `ChatGPT`, the included chat server on the local machine, or another, networked chat server that you set up. A voice, `mimic3` says some variation of, "Hello. Pleased to meet you. Welcome to our shop. Let me know how I can be of assistance". It's unique each time. Say, "Computer, open terminal". A terminal window pops up. Say "Computer, draw a picture of a Klingon warship". An image of a warship appears with buttons to save, print, and navigate through previously-generated images.
+
+**AI Images.** Now with the included stable-diffusion API, `sdapi.py`, images may be generated locally, or across the network. Requires [stable-diffusion-webui](https://github.com/AUTOMATIC1111/stable-diffusion-webui). Start `webui.sh` on the server with --medvram and --api options. If using remotely, configure our `sdapi.py` client with the server's address.
 
 **Chat.** You can converse with our own chat bot now. Start it with `flask run` whisper_dictation will use that. There is no need to say its name except to start the conversation. From then on it goes into a conversational mode. Say "Resume dictation" to start typing again.
 
@@ -148,7 +151,7 @@ Various test files, including:
 
 ### Improvements.
 
-**Stable-Diffusion.** Stable-Diffusion normally requires upwards of 16Gb of VRAM. But we were able to get it running with a mere 2Gb using [The Stable Diffuion Web UI](https://techtactician.com/stable-diffusion-low-vram-memory-errors-fix/). Just add a voice launcher for the webui and speak your prompt into the box. TODO: API integration is in-progrss.
+**Stable-Diffusion.** Stable-Diffusion normally requires upwards of 16Gb of VRAM. But we were able to get it running with a mere 2Gb using the `--medvram` option from [The Stable Diffuion Web UI](https://techtactician.com/stable-diffusion-low-vram-memory-errors-fix/). 
 
 **Text goes to wrong place.** We now use `pyperclip` and `pyautogui` to paste text, instead of typing responses into the current window. We use middle-click paste on Linux, so that it also works in terminals. If you miss and it doesn't put text where you want, you can always manually middle-click it somewhere else.
 

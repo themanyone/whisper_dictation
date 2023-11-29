@@ -73,11 +73,11 @@ actions = {
     "^(peter|computer).? (run|open|start|launch)(up)?( a| the)? ": "os.system(commands[sys.platform][q])",
     "^(peter|computer).? closed? window": "pyautogui.hotkey('alt', 'F4')",
     "^(peter|computer).? search( the)?( you| web| google| bing| online)?(.com)? for ": 
-        "webbrowser.open('https://you.com/search?q=' + re.sub(' ','%20',q))",
-    "^(peter|computer).? ": "pyautogui.hotkey('alt', 'F4')",
+       "webbrowser.open('https://you.com/search?q=' + re.sub(' ','%20',q))",
+    "^(peter|computer).? (send|compose|write)( an| a) email to ": "os.popen('xdg-open \"mailto://' + q.replace(' at ', '@') + '\"')",
+    "^(peter|computer).? (draw|create|imagine|paint) ": "os.popen(f'./sdapi.py \"{q}\"')",
     "^(peter|computer).? ": "chatGPT(q)",
-    "^(resume|zoom|continue|start)(.typing|.d.ctation)$" : "exec('global chatting;chatting = False')",
-    "^(send|compose|write)( an| a) email to ": "os.popen('xdg-open \"mailto://' + q.replace(' at ', '@') + '\"')"
+    "^(resume|zoom|continue|start)(.typing|.d.ctation)$" : "exec('global chatting;chatting = False')"
     }
 
 def process_actions(tl):
