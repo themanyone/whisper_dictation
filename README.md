@@ -1,6 +1,6 @@
 # Whisper Dictation
 
-Offline, privacy-focused, hands-free voice typing, AI voice chat, voice control, in under 4 gigs of VRAM. 2Gb for dictation alone.
+Offline, privacy-focused, hands-free voice typing, AI voice chat, voice control, in under 4 Gb of VRAM. **Now less than 1Gb** when optimised for laptops. Refer to the section on [GPU memory usage](#Issues).
 
 <img src="img/ss.png" alt="example pic" title="App does dictation anywhere, even social media." width="300" align="right">
 
@@ -14,13 +14,13 @@ Offline, privacy-focused, hands-free voice typing, AI voice chat, voice control,
 
 Get it from https://github.com/themanyone/whisper_dictation.git
 
-**The ship's computer.** Inspired by the *Star Trek* television series. Talk to your computer any time. And have it answer back with clear, easy-to-understand speech. Network it throughout the ship. Use your voice to write Captain's Log entries when the internet is down, when satellites are no longer working, or in the far reaches of the galaxy, "where no man has gone before."
+**The ship's computer.** Inspired by the *Star Trek* television series. Talk to your computer any time. And have it answer back with clear, easy-to-understand speech. Network it throughout the ship. Use your voice to write Captain's Log entries when the internet is down, when satellites are busy, or in the far reaches of the galaxy, "where no man has gone before."
 
-**Privacy focused.** Most voice keyboards, dictation, translation, and chat bots depend on sending data to remote servers, which is a privacy concern. Keep data off the internet and confidential. A CUDA-enabled video card with at least 4GB is all that's needed to run an uncensored virtual assistant that listens and responds via voice. While being completely free, offline, and independent.
+**Privacy focused.** Most voice keyboards, dictation, translation, and chat bots depend on sending data to remote servers, which is a privacy concern. Keep data off the internet and confidential. A CUDA-enabled video card with at least 1Gb is all that's needed to run an uncensored virtual assistant that listens and responds via voice. While being completely free, offline, and independent.
 
-**Dictation.** Start speaking and whatever you say will be typed out into the current window. This project now includes both stand-alone and client-server versions. So other network users can use it without installing all these dependencies.
+**Dictation.** Start speaking and whatever you say will be pasted into the current window. This project now includes both stand-alone and client-server versions. So other network users may use it without installing all these dependencies.
 
-**Translation.** This app is optimised for dictation. It can do some translation into English. But that's not its primary task. To use it as a full-time translator, change `task="transcribe"` to `task="translate"` inside `whisper_dictation.py`, and, if there is enough VRAM, choose a larger model for the pipeline, such as `openai/whisper-large-v2` for consistent translation results.
+**Translation.** This app is optimised for dictation. It can do some translation into English. But that's not its primary task. To use it as a full-time translator, change `task="transcribe"` to `task="translate"` inside `whisper_dictation.py`, and, if there is enough VRAM, choose a larger model for the pipeline, such as `openai/whisper-large-v2` for improved translation results.
 
 **Voice control.** The bot also responds to commands.
 
@@ -34,9 +34,11 @@ Set the chat language model in `app.py`. The first time you use it, it will down
 
 Whisper AI is currently the state of the art for open-source voice transcription software. [Whisper jax](https://github.com/sanchit-gandhi/whisper-jax) uses optimised JAX code, which is 70x faster than pytorch/numpy, even on old laptops. We record audio in the background while whisper-jax recognizes spoken dictation and commands. The tradeoff with running Whisper-jax continuously is that 1-2Gb of video RAM stays reserved until shutting down this application by saying "Stop listening." Or by pressing `CTRL` - `C`. Depending on hardware and workflow, you might experience issues with other video-intensive tasks, games mostly, while this is running.
 
-For an extremely light-weight, dictation-only script (which is also less-responsive because it unloads itself from memory when not speaking) try my [voice_typing project](https://github.com/themanyone/voice_typing). It uses the bash shell to record in the background, and load up whisper only when spoken-to. Or try my older, less-accurate [Freespeech](https://github.com/themanyone/freespeech-vr/tree/python3) project, which uses old-school Pocketsphinx, but is very light on resources.
+Our implementation records audio for 10 minutes before it gets bored and signs off. It then waits an additional 10 minutes for some type of acknowledgement or grunt before shutting down and freeing all resources. Feel free to change the recording duration in `record.py` . Beware that longer recordings use additional /tmp space, which usually sits in RAM.
 
-This application is not optimised for making captions or transcripts of pre-recorded material. Just use [whisper](https://github.com/openai/whisper) or [whisper-jax](https://github.com/sanchit-gandhi/whisper-jax) for that. They also have a [server that makes transcripts for voice recordings and videos](https://github.com/sanchit-gandhi/whisper-jax/blob/main/app/app.py). If you want real-time AI captions to translate everyone's conversation in the room into English, watch videos with accents that are difficult to understand, or to record your zoom calls, check out my other project, [Caption Anything](https://github.com/themanyone/caption_anything). And generate captions as you record.
+For an extremely light-weight, dictation-only script (which is also less-responsive because it unloads itself from memory when not speaking) try my [voice_typing project](https ://github.com/themanyone/voice_typing). It uses the bash shell to record in the background, and load up whisper only when spoken-to. Or try my older, less-accurate [Freespeech](https://github.com/themanyone/freespeech-vr/tree/python3) project, which uses old-school Pocketsphinx, but is very light on resources.
+
+This application is not optimised for making captions or transcripts of pre-recorded material. Just use [whisper](https://github.com/openai/whisper) or [whisper-jax](https://github.com/sanchit-gandhi/whisper-jax) for that. They also have a [server that makes transcripts for voice recordings and videos](https://github.com/sanchit-gandhi/whisper-jax/blob/main/app/app.py). If you want real-time AI captions translating everyone's conversations in the room into English. If you want to watch videos with accents that are difficult to understand. Or if you just don't want to miss what the job interviewer asked you during that zoom call... WHAT???, check out my other project, [Caption Anything](https://github.com/themanyone/caption_anything). And generate captions as you record "what you hear" from the audio monitor device (any sounds that are playing through the computer).
 
 ## Dependencies.
 
@@ -46,7 +48,7 @@ Go to https://github.com/google/jax#installation and follow through the steps to
 sudo dnf install python-devel gobject-introspection-devel python3-gobject-devel cairo-gobject-devel python3-tkinter python3-devel xdotool
 ```
 
-Install `torch` for the chat server. But do not install it in the same conda or venv virtual environment as `whisper_dictation`. Or use your main python installation. If you install it in the same virtual environment, it downgrades `nvidia-cudnn-cu11` to an incompatible version. Then you will have to run `pip install --upgrade nvidia-cudnn-cu11` from within the virtual environment to make `whisper-jax` work again. This difficulty might be addressed in another update. Or you can try building `torch` from source. But for now it's much easier to use conda or venv to keep things separate.
+Install `torch` for the chat server. But do not install it in the same conda or venv virtual environment as `whisper_dictation`. Or use your main python installation. If you install it in the same virtual environment, it downgrades `nvidia-cudnn-cu11` to an incompatible version. Then you will have to run something like `./.venv/bin/python -m pip install --upgrade nvidia-cudnn-cu11` from within the virtual environment to make `whisper-jax` work again. This difficulty might be addressed in another update. Or you can try building `torch` from source. But for now it's much easier to use conda or venv to keep things separate.
 
 The commands to install jax for GPU(CUDA) are copied [from here](https://jax.readthedocs.io/en/latest/index.html).
 
@@ -69,9 +71,9 @@ git clone https://github.com/themanyone/whisper_dictation
 
 There may be other dependencies. Look in requirements.txt.
 
-Modify `dictate.py` and set the preferred threshold audio level and device. This might require some experimentation. If the microphone is not detected, open Control Center or Volume Control settings. And choose the preferred audio device for the mic, whether it is a Bluetooth, USB microphone, or whatever. You can also use `gst-inspect-1.0` to get a list of audio sources to try. The default `autoaudiosrc` should work in most cases. 
+Modify `dictate.py` and set the preferred threshold audio level and device. This could require experimentation. If the microphone is not detected, open Control Center or Volume Control settings. And choose the preferred audio device for the mic, whether it is a Bluetooth, USB microphone, or whatever. You can also use `gst-inspect-1.0` to get a list of audio sources to try. The default `autoaudiosrc` should work in most cases. 
 
-Again, explore the examples on the [Whisper-Jax](https://github.com/sanchit-gandhi/whisper-jax) page and make sure whisper is working first. Edit `whisper_dictation.py` to use your preferred pipeline and dictation model from their examples for best results. We found that `jnp.bfloat16` is for TPU devices. So `jnp.float16` is what we use for our older GPU. Reference, [PyTorch docs.](https://pytorch.org/xla/release/2.1/index.html)
+Again, explore the examples on the [Whisper-Jax](https://github.com/sanchit-gandhi/whisper-jax) page and make sure whisper is working first. Edit `whisper_dictation.py` to use the preferred pipeline and dictation model from their examples for best results. We found that `jnp.bfloat16` is for TPU devices. So `jnp.float16` is what we use for our laptop GPU. Those with a decent, desktop GPU might prefer float32. Reference, [PyTorch docs.](https://pytorch.org/xla/release/2.1/index.html)
 
 Now we are ready to try dictation.
 
@@ -84,7 +86,7 @@ cd whisper_dictation
 
 If it complains about missing files, modify `whisper_dictation.py` and, in the first line, set the location of Python to the one inside the virtual environment that works with Whisper-JAX. The one you installed everything in. The default for our usage is `.venv/bin/python` which should load the correct one. But if it doesn't, you can change this to the path of python inside the conda or venv environment. Then you don't have to source or activate the virtual environment each time. You can just change to the directory and run it. Say "pause dictation" to turn off the microphone. Press Enter to resume. Say "stop listening" or "stop dictation" to quit the program entirely.
 
-Feel free to change the FlaxWhisperPipline language, or use "openai/whisper-large-v2" if your video card has more than the 4Gb RAM that ours does. It defaults to `openai/whisper-small.en` which hogs just over 2 gigs of video RAM. But in fact, we get *fantastic* results even with `openai/whisper-tiny.en` So you might want to go tiny instead. Then it might even work with a 2Gb video card. We would be interested to know.
+Feel free to change the FlaxWhisperPipline language, or use "openai/whisper-large-v2" if your video card has more than the 4Gb RAM that ours does. It defaults to `openai/whisper-small.en` which uses around 975MiB VRAM when optimised for size. But in fact, we get *fantastic* results even with `openai/whisper-tiny.en` So you might want to go tiny instead. Then it might even work with a 1Gb video card. We would be interested to know.
 
 ### Spoken commands and program launchers.
 
@@ -147,11 +149,11 @@ Various test files, including:
 
 ### Improvements.
 
-**Stable-Diffusion.** Stable-Diffusion normally requires upwards of 16Gb of VRAM. But we were able to get it running with a mere 2Gb using [The Stable Diffuion Web UI](https://techtactician.com/stable-diffusion-low-vram-memory-errors-fix/). Just add a voice launcher for the webui and speak your prompt into the box.
+**Stable-Diffusion.** Stable-Diffusion normally requires upwards of 16Gb of VRAM. But we were able to get it running with a mere 2Gb using [The Stable Diffuion Web UI](https://techtactician.com/stable-diffusion-low-vram-memory-errors-fix/). Just add a voice launcher for the webui and speak your prompt into the box. TODO: API integration is in-progrss.
 
-**Text goes to wrong place.** We now use `pyperclip` and `pyautogui` to paste text, instead of typing responses into the current window. We use middle-click paste on Linux, so that it also works in terminals. If you miss and it doesn't put text where you want it, you can always middle-click it.
+**Text goes to wrong place.** We now use `pyperclip` and `pyautogui` to paste text, instead of typing responses into the current window. We use middle-click paste on Linux, so that it also works in terminals. If you miss and it doesn't put text where you want, you can always manually middle-click it somewhere else.
 
-**Fixing Linux paste.** "No. I don't want this script to use middle-click on Linux!" The alternative to using middle click on Linux is to change the behavior of the Linux terminal. Are you tired of having to remember to use Ctrl-Shift-C and Ctrl-Shift-V in the terminal, instead of Ctrl-C and Ctrl-V? The beauty of Linux is being able to customize. So let's do it!
+**Fixing Linux paste.** "No. I don't want to use middle-click on Linux!" The alternative to using middle click on Linux is to change the behavior of the Linux terminal. Are you tired of having to remember to use Ctrl-Shift-C and Ctrl-Shift-V in the terminal, instead of Ctrl-C and Ctrl-V? The beauty of Linux is being able to customize. So let's do it!
 
 [Modifying Terminal Settings](https://askubuntu.com/questions/53688/making-ctrlc-copy-text-in-gnome-terminal)
 
@@ -166,13 +168,21 @@ By following these steps, you will have swapped the behavior of the "break" or "
 
 Now we are ready to change `whisper_dictation.py` or `whisper_client.py` to use Ctrl-V paste instead of middle click. Somewhere around line 144, change the line that says `pyautogui.middleClick()` to `pyautogui.hotkey('ctrl', 'v')`.
 
-**I want it to type slowly.** We would have it type text slowly, but typing has become extremely-slow on sites like Twitter and Facebook. The theory is they are using JavaScript to restrict input from bots. But it's annoying to fast typists too. If you enjoy watching it type one, letter, at, a, time, you can change the code to use `pyautogui.typewrite(t, typing_interval)` for everything, and set a `typing_interval` to whatever speed you want.
+**I want it to type slowly.** We would love to have it type text slowly, but typing has become unbearably-slow on sites like Twitter and Facebook. The theory is they are using JavaScript to restrict input from bots. But it's annoying to fast typists too. If you enjoy watching the sunset while it types one, letter, at, a, time on social media, you can change the code to use `pyautogui.typewrite(t, typing_interval)` for everything, and set a `typing_interval` to whatever speed you want.
 
 ## Issues
 
-**GPU memory usage.** According to a post by [sanchit-gandhi](https://github.com/sanchit-gandhi/whisper-jax/issues/7#issuecomment-1531124418), it is unnecessary for JAX to use 90% of GPU RAM. The setting was intended to prevent fragmentation. You can reduce memory usage by setting the environment variable. `XLA_PYTHON_CLIENT_PREALLOCATE=false ./whisper_dictation.py`.
+**GPU memory usage.** According to [JAX documentation](https://jax.readthedocs.io/en/latest/gpu_memory_allocation.html), JAX preallocates around 75% of VRAM to reduce allocation overhead and memory fragmentation. Configure JAX GPU usage through environment variables to save space.
 
-You can monitor JAX memory usage with [jax-smi](https://github.com/ayaka14732/jax-smi), `nvidia-smi`, or by installing the bloated, GreenWithEnvy (gwe) for Nvidia cards which does the same thing with a graphical interface.
+`export XLA_PYTHON_CLIENT_ALLOCATOR=platform` provides the smallest GPU footprint, 983MiB with `openai/whisper-small.en`. We noticed no performance penalty, and no memory fragmentation with this setting. Because Whisper Dictation only uses one compiled JAX process, and reuses it each time. Put in `~/.bashrc` or `~/.bash_profile` to make changes persistent.
+
+If the above setting causes problems, try the following.
+
+`export XLA_PYTHON_CLIENT_PREALLOCATE=false` This uses around 2048MiB of VRAM. We did not notice *any* performance boost preallocating half of our laptop's VRAM. But mileage may vary.
+
+`export XLA_PYTHON_CLIENT_MEM_FRACTION=.XX` If the above preallocation is enabled, this makes JAX preallocate XX% of the total GPU memory, instead of the default 75%.
+
+Monitor JAX memory usage with [jax-smi](https://github.com/ayaka14732/jax-smi), `nvidia-smi`, or by installing the bloated, GreenWithEnvy (gwe) for Nvidia cards that does the exact-same thing with a graphical interface.
 
 This is a fairly new project. There are bound to be more issues. Share them on the [issues section on GitHub](https://github.com/themanyone/whisper_dictation/issues). Or fork the project, create a new branch with proposed changes. And submit a pull request.
 

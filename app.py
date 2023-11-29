@@ -22,6 +22,9 @@ import torch
 import sys
 
 print("Loading language model. This could take a while...")
+# This is a very small, and limited large language model (LLM), for testing only.
+# Please change the model="" path. The model will download automatically.
+# You can explore and try out the various LLMs on Huggingface.com
 generate_text = pipeline(model="aisquared/chopt-research-125m", torch_dtype=torch.float16, trust_remote_code=True, device_map="auto")
 
 from flask import Flask, abort, request, jsonify
