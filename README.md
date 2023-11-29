@@ -1,6 +1,6 @@
 # Whisper Dictation
 
-Offline, privacy-focused, hands-free voice typing, AI voice chat, voice control, in under 4 Gb of VRAM. **Now less than 1Gb** when optimised for laptops. Refer to the section on [GPU memory usage](#Issues).
+Offline, privacy-focused, hands-free voice typing, AI voice chat, voice control, in under 4 Gb of VRAM. **Now less than 1Gb** when optimised for dictation alone. Refer to the section on [GPU memory usage](#Issues).
 
 <img src="img/ss.png" alt="example pic" title="App does dictation anywhere, even social media." width="300" align="right">
 
