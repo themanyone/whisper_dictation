@@ -151,11 +151,15 @@ def chatGPT(prompt):
                 print(e)
     # Fallback to localhost
     if not completion:
-        msg = {"messages": messages}
-        response = requests.post(fallback_chat_url, json=msg)
-        if response.status_code == 200:
-            data = response.json()
-            completion = data["content"]
+        try:
+            msg = {"messages": messages}
+            response = requests.post(fallback_chat_url, json=msg)
+            if response.status_code == 200:
+                data = response.json()
+                completion = data["content"]
+        except Exception as e:
+                print("Chat had a problem. Here's the error message.")
+                print(e)
     # Read back the response completion
     if completion:
         if completion == "< nooutput >": completion = "No comment."

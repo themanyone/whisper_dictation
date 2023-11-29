@@ -41,13 +41,17 @@ def draw(prompt, output="output.png"):
         "prompt": prompt,
         "steps": 30
     }
-    response = requests.post(url=f'{url}/sdapi/v1/txt2img', json=payload)
+    try:
+        response = requests.post(url=f'{url}/sdapi/v1/txt2img', json=payload)
 
-    r = response.json()
+        r = response.json()
 
-    image = Image.open(io.BytesIO(base64.b64decode(r['images'][0])))
-    image.save(output)
-    image.show()
+        image = Image.open(io.BytesIO(base64.b64decode(r['images'][0])))
+        image.save(output)
+        image.show()
+    except Exception as e:
+        print("SD API had a problem. Here's the error message.")
+        print(e)
 
 if __name__ == '__main__':
     #  Draw an image from a prompt supplied on the command line.

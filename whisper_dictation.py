@@ -73,7 +73,7 @@ actions = {
     "^(peter|computer).? search( the)?( you| web| google| bing| online)?(.com)? for ": 
        "webbrowser.open('https://you.com/search?q=' + re.sub(' ','%20',q))",
     "^(peter|computer).? (send|compose|write)( an| a) email to ": "os.popen('xdg-open \"mailto://' + q.replace(' at ', '@') + '\"')",
-    "^(peter|computer).? (draw|create|imagine|paint) ": "os.popen(f'./sdapi.py \"{q}\"')",
+    "^(peter|computer).? (draw|create|imagine|picture|paint) ": "os.popen(f'./sdapi.py \"{q}\"')",
     "^(peter|computer).? ": "chatGPT(q)",
     "^(resume|zoom|continue|start)(.typing|.d.ctation)$" : "exec('global chatting;chatting = False')"
     }
@@ -166,11 +166,15 @@ def chatGPT(prompt):
                 print(e)
     # Fallback to localhost
     if not completion:
-        msg = {"messages": messages}
-        response = requests.post(fallback_chat_url, json=msg)
-        if response.status_code == 200:
-            data = response.json()
-            completion = data["content"]
+        try:
+            msg = {"messages": messages}
+            response = requests.post(fallback_chat_url, json=msg)
+            if response.status_code == 200:
+                data = response.json()
+                completion = data["content"]
+        except Exception as e:
+                print("Chat had a problem. Here's the error message.")
+                print(e)
     # Read back the response completion
     if completion:
         if completion == "< nooutput >": completion = "No comment."
