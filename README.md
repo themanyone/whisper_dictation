@@ -66,7 +66,6 @@ pip install ffmpeg
 pip install pyautogui
 pip install pyperclip
 pip install pygobject
-git clone https://github.com/themanyone/whisper_dictation
 ```
 
 There may be other dependencies. Look in requirements.txt.
@@ -86,7 +85,7 @@ cd whisper_dictation
 
 If it complains about missing files, modify `whisper_dictation.py` and, in the first line, set the location of Python to the one inside the virtual environment that works with Whisper-JAX. The one you installed everything in. The default for our usage is `.venv/bin/python` which should load the correct one. But if it doesn't, you can change this to the path of python inside the conda or venv environment. Then you don't have to source or activate the virtual environment each time. You can just change to the directory and run it. Say "pause dictation" to turn off the microphone. Press Enter to resume. Say "stop listening" or "stop dictation" to quit the program entirely.
 
-Feel free to change the FlaxWhisperPipline language, or use "openai/whisper-large-v2" if your video card has more than the 4Gb RAM that ours does. It defaults to `openai/whisper-small.en` which uses around 975MiB VRAM when optimised for size. But in fact, we get *fantastic* results even with `openai/whisper-tiny.en` So you might want to go tiny instead. Then it might even work with a 1Gb video card. We would be interested to know.
+Feel free to change the FlaxWhisperPipline language, or use "openai/whisper-large-v2" if your video card can afford having more than 1Gb VRAM tied-up. It defaults to `openai/whisper-small.en` which uses around 975MiB VRAM when [optimised for size](#Issues). But in fact, we get *fantastic* results even with `openai/whisper-tiny.en` So you might want to go tiny instead. Then it might even work with a tiny video card. We would be interested to know.
 
 ### Spoken commands and program launchers.
 
@@ -126,7 +125,7 @@ If there is no API key, or if ChatGPT is busy, it will ping a private language m
 
 Mimic3. If you install [mimic3](https://github.com/MycroftAI/mimic3) as a service, he will speak answers out loud. Follow the [instructions for setting up mimic3 as a Systemd Service](https://mycroft-ai.gitbook.io/docs/mycroft-technologies/mimic-tts/mimic-3#web-server). The `mimic3-server` is already lightening-fast on CPU. Do not bother with --cuda flag, which requires old `onnxruntime-gpu` that is not compatible with CUDA 12+ and won't compile with nvcc12... We got it working! And it just hogs all of VRAM and provides no noticeable speedup anyway. Regular `onnxruntime` works fine with mimic3.
 
-Female voice. For a nice, female voice, use  `mimic3-download` to obtain `en_US/vctk_low` and change the `params` line in `mimic3_client`, commenting the other line out, like so:
+Female voice. For a pleasant, female voice, use  `mimic3-download` to obtain `en_US/vctk_low` and change the `params` line in `mimic3_client`, commenting the other line out, like so:
 
 ```
     # params = { 'text': text, "lengthScale": "0.6" }
@@ -135,11 +134,11 @@ Female voice. For a nice, female voice, use  `mimic3-download` to obtain `en_US/
 
 ## Bonus apps.
 
-`whisper_client.py`: A client version. Instead of loading up the language model for speech recognition. The client connects to any [Whisper Jax server](https://github.com/sanchit-gandhi/whisper-jax/blob/main/app/app.py) running on the machine, the local network, or the internet. Edit `whisper_client.py` to configure the server location. This makes dictation available even on budget laptops and old phones that can run linux/python from the app store. You might also find that, although it starts instantly, it is noticeably slower to operate. This is because the server uses extra resoures to handle multiple clients, resources which really aren't necessary for one user. You can edit the server configuration to speed it up quite a bit. Make it use the "openai/whisper-small.en" checkpoint. Reduce BATCH_SIZE, CHUNK_LENGTH_S, NUM_PROC to the minimum necessary to support your needs.
+`whisper_client.py`: A client version. Instead of loading up the language model for speech recognition. The client connects to a local [Whisper JAX server](https://jserver.py) running on the machine, the local network, or the internet. Edit `whisper_client.py` to configure the server location. This makes dictation available even on budget laptops and old phones that can run linux/python from the app store. You might also find that, although it starts instantly for clients, it is slightly slower, compared to running it locally. This is because the server uses extra resoures to handle multiple clients, resources which really aren't necessary for one user. If only a handful of clients will use it, editing the server configuration may speed it up somewhat. Make it use the "openai/whisper-small.en" checkpoint. Reduce BATCH_SIZE, CHUNK_LENGTH_S, NUM_PROC to the minimum necessary to support your needs.
 
-`record.py`: hands-free recording from the microphone. It waits for a minimum threshold sound level of, -20dB, but you can edit the script and change that. It stops recording when audio drops below that level for a couple seconds. You can run it separately. It creates a file named `audio.mp3`. Or you can supply an output file name on the command line.
+`record.py`: hands-free recording from the microphone. It waits up to 10 minutes listening for a minimum threshold sound level of, -20dB, but you can edit the script and change that. It stops recording when audio drops below that level for a couple seconds. You can run it separately. It creates a cropped audio soundbite named `audio.mp3`. Or you can supply an output file name on the command line.
 
-`app.py`: A local, privacy-focused AI chat server. Start it by typing `flask run` from within the directory where it resides. You can use almost any model on huggingface with it. Just open it up and change the model configuration. It is not security-focused server, however. So don't use it outside the local network, or share its address with more than a few friends. In particular, flask apps have no built-in protection against distributed denial-of-service attacks (DDoS).
+`app.py`: A local, privacy-focused AI chat server. Start it by typing `flask run` from within the directory where it resides. You can use almost any model on huggingface with it. Edit the file, and and change the model configuration. It is not a security-focused server, however. So beware using it outside the local network. And do not share its address with more than a few friends. In particular, flask apps have no built-in protection against distributed denial-of-service attacks (DDoS).
 
 Various test files, including:
 
