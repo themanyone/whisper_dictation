@@ -55,7 +55,7 @@ Install `torch` for the chat server. But do not install it in the same conda or 
 
 The commands to install jax for GPU(CUDA) are copied [from here](https://jax.readthedocs.io/en/latest/index.html).
 
-Install [whisper-jax](https://github.com/sanchit-gandhi/whisper-jax) and make sure the examples work. You may need to reboot to make CUDA work, after getting everything installed. And after each kernel update, and video driver upgrade/recompilation.
+Install [whisper-jax](https://github.com/sanchit-gandhi/whisper-jax) and make sure the examples work. You may need to reboot to make CUDA work, after getting everything installed. And after each kernel update, and video driver upgrade/recompilation. Update: An alternative to rebooting is to reload the Nvidia uvm module `sudo modprobe -r nvidia_uvm && sudo modprobe nvidia_uvm`.
 
 ```shell
 # activate conda or venv

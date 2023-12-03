@@ -39,7 +39,7 @@ url = "http://127.0.0.1:7860"
 def draw(prompt, output="output.png"):
     payload = {
         "prompt": prompt,
-        "steps": 30
+        "steps": 25
     }
     try:
         response = requests.post(url=f'{url}/sdapi/v1/txt2img', json=payload)
