@@ -1,10 +1,10 @@
 # Whisper Dictation
 
-Offline, privacy-focused, hands-free voice typing, AI voice chat, voice control, in under 4 Gb of VRAM. **Now less than 1Gb** when optimised for dictation alone. Refer to the section on [GPU memory usage](#Issues).
+Fast! Offline, privacy-focused, hands-free voice typing, AI voice chat, voice control, in **under 0.3 Gb of VRAM** when optimised for dictation alone.
 
 <img src="img/ss.png" alt="example pic" title="App does dictation anywhere, even social media." width="300" align="right">
 
-- Listens and types quickly with `whisper-jax`,
+- Listens and types quickly with `whisper-jax` or `whisper.cpp`,
 - Hands-free, text appears under mouse cursor,
 - Translates other languages into English,
 - Launches & controls apps, with `pyautogui`,
@@ -17,11 +17,13 @@ Get it from https://github.com/themanyone/whisper_dictation.git
 
 **The ship's computer.** Inspired by the *Star Trek* television series. Talk to your computer any time. And have it answer back with clear, easy-to-understand speech. Network it throughout the ship. Use your voice to write Captain's Log entries when the internet is down, when satellites are busy, or in the far reaches of the galaxy, "where no man has gone before."
 
-**Privacy focused.** Most voice keyboards, dictation, translation, and chat bots depend on sending data to remote servers, which is a privacy concern. Keep data off the internet and confidential. A CUDA-enabled video card with at least 1Gb is all that's needed to run an uncensored virtual assistant that listens and responds via voice. While being completely free, offline, and independent.
+**Privacy focused.** Most voice keyboards, dictation, translation, and chat bots depend on sending data to remote servers, which is a privacy concern. Keep data off the internet and confidential with your own, local server. A CUDA-enabled video card with at least 1Gb is all that's needed to run an uncensored virtual assistant that listens and responds via voice. While being completely free, offline, and independent.
 
-**Dictation.** Start speaking and whatever you say will be pasted into the current window. This project now includes both stand-alone and client-server versions. So other network users may use it without installing all these dependencies.
+**Dictation.** Start speaking and whatever you say will be pasted into the current window. This project now uses a client-server model. So other network users may use it without installing all these dependencies.
 
-**Translation.** This app is optimised for dictation. It can do some translation into English. But that's not its primary task. To use it as a full-time translator, change `task="transcribe"` to `task="translate"` inside `whisper_dictation.py`, and, if there is enough VRAM, choose a larger model for the pipeline, such as `openai/whisper-large-v2` for improved translation results.
+**Translation.** This app is optimised for dictation. It can do some translation into English. But that's not its primary task. To use it as a full-time translator, start whisper.cpp with `--translate` flag and use ggml-medium.bin or larger language model in place of ggml-small.en.bin.
+
+Or if using JAX, set `task="transcribe"` to `task="translate"` inside `whisper_dictation.py`, and, if there is enough VRAM, choose a larger model for the pipeline, such as `openai/whisper-large-v2` for improved translation results.
 
 **Voice control.** The bot also responds to commands.
 
@@ -35,19 +37,62 @@ Set the chat language model in `app.py`. The first time you use it, it will down
 
 ## Advantages and tradeoffs.
 
-Whisper AI is currently the state of the art for open-source voice transcription software. [Whisper jax](https://github.com/sanchit-gandhi/whisper-jax) uses optimised JAX code, which is 70x faster than pytorch/numpy, even on old laptops. We record audio in the background while whisper-jax recognizes spoken dictation and commands. The tradeoff with running Whisper-jax continuously is that 1-2Gb of video RAM stays reserved until shutting down this application by saying "Stop listening." Or by pressing `CTRL` - `C`. Depending on hardware and workflow, you might experience issues with other video-intensive tasks, games mostly, while this is running.
+Whisper AI is currently the state of the art for open-source voice transcription software. [Whisper jax](https://github.com/sanchit-gandhi/whisper-jax) uses optimised JAX code, which is 70x faster than pytorch/numpy, even on old laptops. [Whisper.cpp](https://github.com/ggerganov/whisper.cpp) is even faster, and without the huge Python dependencies.
+
+Our implementation records audio in the background while `whisper-jax` or `whisper.cpp` recognizes spoken dictation and commands.
+
+The tradeoff with running Whisper-jax continuously is that 1-2Gb of VRAM stays reserved until shutting down this application by saying "Stop listening." Or by pressing `CTRL` - `C`. Depending on hardware and workflow, you might experience issues with other video-intensive tasks, games mostly, while this is running.
+
+The `Whisper.cpp` server can use as little as 300MiB, so we prefer to use that now. We are keeping the old `Whisper-JAX` code here. In case people can't get `whisper.cpp` to compile.
 
 Our implementation records audio for 10 minutes before it gets bored and signs off. It then waits an additional 10 minutes for some type of acknowledgement or grunt before shutting down and freeing all resources. Feel free to change the recording duration in `record.py` . Beware that longer recordings use additional /tmp space, which usually sits in RAM.
 
-For an extremely light-weight, dictation-only script (which is also less-responsive because it unloads itself from memory when not speaking) try the [voice_typing](https://github.com/themanyone/voice_typing) app. It uses the bash shell to record in the background, and load up whisper only when spoken-to. Or try my older, less-accurate [Freespeech](https://github.com/themanyone/freespeech-vr/tree/python3) project, which uses old-school Pocketsphinx, but is very light on resources.
+For an extremely light-weight, dictation-only script (which is also less-responsive because it unloads itself from memory when not speaking) try the [voice_typing](https://github.com/themanyone/voice_typing) app. It uses the bash shell to record in the background, and load up whisper only when spoken-to. Or try my ancient, less-accurate [Freespeech](https://github.com/themanyone/freespeech-vr/tree/python3) project, which uses old-school Pocketsphinx, but is very light on resources.
 
-This application is not optimised for making captions or transcripts of pre-recorded material. Just use [whisper](https://github.com/openai/whisper) or [whisper-jax](https://github.com/sanchit-gandhi/whisper-jax) for that. They also have a [server that makes transcripts for voice recordings and videos](https://github.com/sanchit-gandhi/whisper-jax/blob/main/app/app.py). If you want real-time AI captions translating everyone's conversations in the room into English. If you want to watch videos with accents that are difficult to understand. Or if you just don't want to miss what the job interviewer asked you during that zoom call... WHAT???, check out my other project, [Caption Anything](https://github.com/themanyone/caption_anything). And generate captions as you record "what you hear" from the audio monitor device (any sounds that are playing through the computer).
+This application is not optimised for making captions or transcripts of pre-recorded material. Just use[Whisper.cpp](https://github.com/ggerganov/whisper.cpp) or [whisper-jax](https://github.com/sanchit-gandhi/whisper-jax) for that. They too have a [server that makes transcripts for voice recordings and videos](https://github.com/sanchit-gandhi/whisper-jax/blob/main/app/app.py). If you want real-time AI captions translating everyone's conversations in the room into English. If you want to watch videos with accents that are difficult to understand. Or if you just don't want to miss what the job interviewer asked you during that zoom call... WHAT???, check out my other project, [Caption Anything](https://github.com/themanyone/caption_anything). And generate captions as you record "what you hear" from the audio monitor device (any sounds that are playing through the computer).
 
-## Dependencies.
+## Whisper.cpp Dependencies.
+
+Download and build [Whisper.cpp](https://github.com/ggerganov/whisper.cpp) with whatever acceleration method fits your system.
+
+We will need a few more dependencies to get the client running.
+
+```shell
+pip install ffmpeg
+pip install pyautogui
+pip install pyperclip
+pip install pygobject
+```
+
+Now edit `whisper_cpp_client.py`  and set the address of cpp_url to the address of your server machine. In this case, it is already set up to use localhost.
+
+`cpp_url = "http://127.0.0.1:8080/inference"`
+
+## Quick Start.
+
+**Start the** [Whisper.cpp](https://github.com/ggerganov/whisper.cpp) **server!**
+```shell
+./server -l en -m models/ggml-tiny.en.bin -bs 2 --convert
+```
+
+There is currently a [server bug](https://github.com/ggerganov/whisper.cpp/issues/1587). And you might need to add the `-ng` flag to the above until it gets fixed.
+
+**Start a client.**
+```shell
+cd whisper_dictation
+./whisper_cpp.py
+```
+
+Refer to the section on [spoken commands and program launchers.](#Spoken commands and program launchers.)
+
+
+## Whisper-JAX Dependencies.
+
+You should be good to go using whisper.cpp.  We're keeping this section here for people who want to try Whisper-JAX.
 
 Go to https://github.com/google/jax#installation and follow through the steps to install cuda, cudnn, or whatever is missing. All these  [whisper-jax](https://github.com/sanchit-gandhi/whisper-jax) dependencies and video drivers can be quite bulky, requiring about 5.6GiB of downloads. Our original,[voice_typing project](https://github.com/themanyone/voice_typing) script is significantly easier on disk space and internet usage.
 
-```
+```shell
 sudo dnf install python-devel gobject-introspection-devel python3-gobject-devel cairo-gobject-devel python3-tkinter python3-devel xdotool
 ```
 
@@ -81,18 +126,22 @@ Now we are ready to try dictation.
 
 ## Usage.
 
+**Stand-alone Python version.**
+
 ```shell
 cd whisper_dictation
 ./whisper_dictation.py
 ```
 
-If it complains about missing files, modify `whisper_dictation.py` and, in the first line, set the location of Python to the one inside the virtual environment that works with Whisper-JAX. The one you installed everything in. The default for our usage is `.venv/bin/python` which should load the correct one. But if it doesn't, you can change this to the path of python inside the conda or venv environment. Then you don't have to source or activate the virtual environment each time. You can just change to the directory and run it.
+Refer to the section on [GPU memory usage](#Issues).
 
-**Mute button.** There is no mute button. Say "pause dictation" to turn off text generation. It will keep listening to commands. Say "resume dictation", or "Computer, type this out" to have it start typing again. Say "stop listening" or "stop dictation" to quit the program entirely. You could configure a button to mute your mic, but that is no longer necessary and beyond the scope of this program.
+If it complains about missing files, modify `whisper_dictation.py` and, in the first line, set the location of Python to the one inside the virtual environment that works with Whisper-JAX. The one you installed everything in. The default for our usage is `.venv/bin/python` which should load the correct one. But if it doesn't, you can change this to the path of python inside the conda or venv environment. Then you don't have to source or activate the virtual environment each time. You can just change to the directory and run it.
 
 Feel free to change the FlaxWhisperPipline language, or use "openai/whisper-large-v2" if your video card can afford having more than 1Gb VRAM tied-up. It defaults to `openai/whisper-small.en` which uses around 975MiB VRAM when [optimised for size](#Issues). But in fact, we get *fantastic* results even with `openai/whisper-tiny.en` So you might want to go tiny instead. Then it might even work with a tiny video card. We would be interested to know.
 
 ### Spoken commands and program launchers.
+
+**Mute button.** There is no mute button. Say "pause dictation" to turn off text generation. It will keep listening to commands. Say "resume dictation", or "Computer, type this out" to have it start typing again. Say "stop listening" or "stop dictation" to quit the program entirely. You could configure a button to mute your mic, but that is no longer necessary and beyond the scope of this program.
 
 The computer responds to commands. You can also call him Peter.
 
@@ -107,28 +156,31 @@ Try saying:
 - Undo that.
 - Copy that.
 - Paste it.
+- Pause dictation.
+- Resume dictation.
 - New paragraph. (also submits chat forms :)
 - Peter, tell me about the benefits of relaxation.**
 - Peter, compose a Facebook post about the sunny weather we're having.
+- Stop dictation. (quits program).
 
-** export your OPENAI_API_KEY to the environment if you want answers from ChatGPT. If your firm is worried about privacy and security, ChatGPT has an enterprise version with those features. We script writers are not affiliated.
+** export your OPENAI_API_KEY to the environment if you want answers from ChatGPT. If your firm is worried about privacy and security, ChatGPT has an enterprise version with those features. We are not affiliated with OpenAI.
 
 ### Optional chat and text-to-speech.
 
-```
+```shell
 # in another terminal, not inside the .venv used for whisper_dictation
 pip install "accelerate>=0.16.0,<1" "transformers[torch]>=4.28.1,<5" "torch>=1.13.1,<2"
 cd whisper_dictation
 flask run
 ```
 
-```
+```shell
 export OPENAI_API_KEY=<my API key>
 ```
 
 If there is no API key, or if ChatGPT is busy, it will ping a private language model running on http://localhost:5000. There are language models on [huggingface](https://huggingface.co/models) that produce intelligible conversation with 1 Gb of video RAM. So now whisper_dictation has its own, privacy-focused chat bot. The default language model is for research only. It's pretty limited to fit into such limited space, but rather chatty. He seems to excel at writing poetry, but is lacking in factual information. It is recommended that you edit `app.py` and choose a larger language model if your system supports it.
 
-Mimic3. If you install [mimic3](https://github.com/MycroftAI/mimic3) as a service, he will speak answers out loud. Follow the [instructions for setting up mimic3 as a Systemd Service](https://mycroft-ai.gitbook.io/docs/mycroft-technologies/mimic-tts/mimic-3#web-server). The `mimic3-server` is already lightening-fast on CPU. Do not bother with --cuda flag, which requires old `onnxruntime-gpu` that is not compatible with CUDA 12+ and won't compile with nvcc12... We got it working! And it just hogs all of VRAM and provides no noticeable speedup anyway. Regular `onnxruntime` works fine with mimic3.
+Mimic3. If you install [mimic3](https://github.com/MycroftAI/mimic3) as a service, the computer will speak answers out loud. Follow the [instructions for setting up mimic3 as a Systemd Service](https://mycroft-ai.gitbook.io/docs/mycroft-technologies/mimic-tts/mimic-3#web-server). The `mimic3-server` is already lightening-fast on CPU. Do not bother with --cuda flag, which requires old `onnxruntime-gpu` that is not compatible with CUDA 12+ and won't compile with nvcc12... We got it working! And it just hogs all of VRAM and provides no noticeable speedup anyway. Regular `onnxruntime` works fine with mimic3.
 
 Female voice. For a pleasant, female voice, use  `mimic3-download` to obtain `en_US/vctk_low` and change the `params` line in `mimic3_client`, commenting the other line out, like so:
 
@@ -139,9 +191,11 @@ Female voice. For a pleasant, female voice, use  `mimic3-download` to obtain `en
 
 ## Bonus apps.
 
-`whisper_client.py`: A client version. Instead of loading up the language model for speech recognition. The client connects to a local [Whisper JAX server](https://jserver.py) running on the machine, the local network, or the internet. Edit `whisper_client.py` to configure the server location. This makes dictation available even on budget laptops and old phones that can run linux/python from the app store.
+`whisper_cpp.py`: The default dictation client that we now use. It connects to a running Whisper CPP server on the local machine or across the network (whoosh) (upbeat drum music).
 
-`jserver.py`: The server for the client version. Run it with `venv-run jserver.py`. You might also find that, although it starts instantly for clients, the client/server version is slightly slower, compared to running it locally. This is because the server uses extra resoures to handle multiple clients, resources which really aren't necessary for one user. If only a handful of clients will use it, editing `jserver.py` in certain ways may speed it up somewhat. Make it use the "openai/whisper-tiny.en" checkpoint. Reduce BATCH_SIZE, CHUNK_LENGTH_S, NUM_PROC to the minimum necessary to support your needs.
+`whisper_client.py`: A client version for `whisper-jax`. Instead of loading up the language model for speech recognition. The client connects to a local [Whisper JAX server](https://jserver.py) running on the machine, the local network, or the internet. Edit `whisper_client.py` to configure the server location. This makes dictation available even on budget laptops and old phones that can run linux/python from the app store.
+
+`jserver.py`: The old, `whisper-jax` server for the client version. Run it with `venv-run jserver.py`. You might also find that, although it starts instantly for clients, the client/server version is slightly slower, compared to running it locally. This is because the server uses extra resoures to handle multiple clients, resources which really aren't necessary for one user. If only a handful of clients will use it, editing `jserver.py` in certain ways may speed it up somewhat. Make it use the "openai/whisper-tiny.en" checkpoint. Reduce BATCH_SIZE, CHUNK_LENGTH_S, NUM_PROC to the minimum necessary to support your needs.
 
 `record.py`: hands-free recording from the microphone. It waits up to 10 minutes listening for a minimum threshold sound level of, -20dB, but you can edit the script and change that. It stops recording when audio drops below that level for a couple seconds. You can run it separately. It creates a cropped audio soundbite named `audio.mp3`. Or you can supply an output file name on the command line.
 
@@ -167,18 +221,18 @@ Various test files, including:
     Go to the terminal's menu and select "Edit" or "Preferences".
     Look for the "Shortcuts" or "Keyboard" section.
     Find the entry for "Copy" or "Interrupt" and modify the keybinding from CTRL-Shift-C to CTRL-C. Do the same for CTRL-Shift-V, changing it to CTRL-V.
-    The interrupt or "stop scrip" hotkey will automatically be remapped from CTRL-C to Ctrl-Shift-C.
+    The interrupt or "stop script" hotkey will automatically be remapped from CTRL-C to Ctrl-Shift-C.
         Note: The exact steps may vary depending on your terminal emulator. Refer to the above link or help resources specific to your terminal emulator for more information.
 
 By following these steps, you will have swapped the behavior of the "break" or "stop script" Ctrl-C, and the copy, Ctrl-Shift-C hotkeys in the Linux terminal.
 
-Now we are ready to change `whisper_dictation.py` or `whisper_client.py` to use Ctrl-V paste instead of middle click. Somewhere around line 144, change the line that says `pyautogui.middleClick()` to `pyautogui.hotkey('ctrl', 'v')`.
+Now we are ready to change `whisper_cpp.py`, `whisper_dictation.py` or `whisper_client.py` to use Ctrl-V paste instead of middle click. Somewhere around line 144, change the line that says `pyautogui.middleClick()` to `pyautogui.hotkey('ctrl', 'v')`.
 
 **I want it to type slowly.** We would love to have it type text slowly, but typing has become unbearably-slow on sites like Twitter and Facebook. The theory is they are using JavaScript to restrict input from bots. But it's annoying to fast typists too. If you enjoy watching the sunset while it types one, letter, at, a, time on social media, you can change the code to use `pyautogui.typewrite(t, typing_interval)` for everything, and set a `typing_interval` to whatever speed you want.
 
-## Issues
+## JAX Issues (not applicable to whisper_cpp.py)
 
-**GPU memory usage.** According to [JAX documentation](https://jax.readthedocs.io/en/latest/gpu_memory_allocation.html), JAX preallocates around 75% of VRAM to reduce allocation overhead and memory fragmentation. Configure JAX GPU usage through environment variables to save space.
+**JAX GPU memory usage.** According to [JAX documentation](https://jax.readthedocs.io/en/latest/gpu_memory_allocation.html), JAX preallocates around 75% of VRAM to reduce allocation overhead and memory fragmentation. Configure JAX GPU usage through environment variables to save space.
 
 `export XLA_PYTHON_CLIENT_ALLOCATOR=platform` provides the smallest GPU footprint, 983MiB with `openai/whisper-small.en`. We noticed no performance penalty, and no memory fragmentation with this setting. Because Whisper Dictation only uses one compiled JAX process, and reuses it each time. Put in `~/.bashrc` or `~/.bash_profile` to make changes persistent.
 

@@ -28,9 +28,8 @@ import subprocess, signal
 import requests
 import json
 from mimic3_client import say
-from gradio_client import Client
-client = Client("http://localhost:7860/")
-
+# address of whisper.cpp server
+cpp_url = "http://127.0.0.1:8080/inference"
 # address of Fallback Chat Server.
 fallback_chat_url = 'http://localhost:5000'
 api_key = os.getenv("OPENAI_API_KEY")
@@ -115,18 +114,29 @@ def process_hotkeys(txt):
 def gettext(f):
     result = ['']
     if f and os.path.isfile(f):
-        result = client.predict(f, "transcribe", False, api_name="/predict")
-    return result[0]
-    
+        files = {'file': (f, open(f, 'rb'))}
+        data = {'temperature': '0.2', 'response-format': 'json'}
+
+        try:
+            response = requests.post(cpp_url, files=files, data=data)
+            response.raise_for_status()  # Check for errors
+
+            # Parse the JSON response
+            result = [response.json()]
+
+        except requests.exceptions.RequestException as e:
+            print(f"Error: {e}")
+    return result[0]['text']
+
 def pastetext(t):
     # paste text in window
     if t == " you" or t == " Thanks for watching!": return # ignoring you
     pyperclip.copy(t) # weird that primary won't work the first time
-    if pyautogui.platform.system() == "Linux":
-        pyperclip.copy(t, primary=True) # now it works
-        pyautogui.middleClick()
-    else:
-        pyautogui.hotkey('ctrl', 'v')
+    #if pyautogui.platform.system() == "Linux":
+    #    pyperclip.copy(t, primary=True) # now it works
+    #    pyautogui.middleClick()
+    #else:
+    pyautogui.hotkey('ctrl', 'v')
 
 print("Start speaking. Text should appear in the window you are working in.")
 print("Say \"Stop listening.\" or press CTRL-C to stop.")
