@@ -1,6 +1,6 @@
 # Whisper Dictation
 
-Fast! Offline, privacy-focused, hands-free voice typing, AI voice chat, voice control, in **under 0.3 Gb of VRAM** when optimised for dictation alone.
+Fast! Offline, privacy-focused, hands-free voice typing, AI voice chat, voice control, in **under 0.3 Gb of VRAM** when optimised for dictation alone. "The works" all AI features now running concurrently in under 4GiB of VRAM!
 
 <img src="img/ss.png" alt="example pic" title="App does dictation anywhere, even social media." width="300" align="right">
 
@@ -49,7 +49,7 @@ Our implementation records audio for 10 minutes before it gets bored and signs o
 
 For an extremely light-weight, dictation-only script (which is also less-responsive because it unloads itself from memory when not speaking) try the [voice_typing](https://github.com/themanyone/voice_typing) app. It uses the bash shell to record in the background, and load up whisper only when spoken-to. Or try my ancient, less-accurate [Freespeech](https://github.com/themanyone/freespeech-vr/tree/python3) project, which uses old-school Pocketsphinx, but is very light on resources.
 
-This application is not optimised for making captions or transcripts of pre-recorded material. Just use[Whisper.cpp](https://github.com/ggerganov/whisper.cpp) or [whisper-jax](https://github.com/sanchit-gandhi/whisper-jax) for that. They too have a [server that makes transcripts for voice recordings and videos](https://github.com/sanchit-gandhi/whisper-jax/blob/main/app/app.py). If you want real-time AI captions translating everyone's conversations in the room into English. If you want to watch videos with accents that are difficult to understand. Or if you just don't want to miss what the job interviewer asked you during that zoom call... WHAT???, check out my other project, [Caption Anything](https://github.com/themanyone/caption_anything). And generate captions as you record "what you hear" from the audio monitor device (any sounds that are playing through the computer).
+This application is not optimised for making captions or transcripts of pre-recorded material. Just use [Whisper.cpp](https://github.com/ggerganov/whisper.cpp) or [whisper-jax](https://github.com/sanchit-gandhi/whisper-jax) for that. They too have a [server that makes transcripts for voice recordings and videos](https://github.com/sanchit-gandhi/whisper-jax/blob/main/app/app.py). If you want real-time AI captions translating everyone's conversations in the room into English. If you want to watch videos with accents that are difficult to understand. Or if you just don't want to miss what the job interviewer asked you during that zoom call... WHAT???, check out my other project, [Caption Anything](https://github.com/themanyone/caption_anything). And generate captions as you record "what you hear" from the audio monitor device (any sounds that are playing through the computer).
 
 ## Whisper.cpp Dependencies.
 
@@ -83,14 +83,25 @@ cd whisper_dictation
 ./whisper_cpp.py
 ```
 
-Refer to the section on [spoken commands and program launchers.](#Spoken commands and program launchers.)
+**Optionally start a chat server.**
 
+```shell
+flask run
+```
+
+**Optionally start stable-diffusion webui**
+
+```shell
+webui.sh --api --medvram
+```
+
+Control your computer. Refer to the section on [spoken commands and program launchers](#Spoken).
 
 ## Whisper-JAX Dependencies.
 
 You should be good to go using whisper.cpp.  We're keeping this section here for people who want to try Whisper-JAX.
 
-Go to https://github.com/google/jax#installation and follow through the steps to install cuda, cudnn, or whatever is missing. All these  [whisper-jax](https://github.com/sanchit-gandhi/whisper-jax) dependencies and video drivers can be quite bulky, requiring about 5.6GiB of downloads. Our original,[voice_typing project](https://github.com/themanyone/voice_typing) script is significantly easier on disk space and internet usage.
+Go to https://github.com/google/jax#installation and follow through the steps to install cuda, cudnn, or whatever is missing. All these [whisper-jax](https://github.com/sanchit-gandhi/whisper-jax) dependencies and video drivers can be quite bulky, requiring about 5.6GiB of downloads. Our original,[voice_typing project](https://github.com/themanyone/voice_typing) script is significantly easier on disk space and internet usage.
 
 ```shell
 sudo dnf install python-devel gobject-introspection-devel python3-gobject-devel cairo-gobject-devel python3-tkinter python3-devel xdotool
@@ -151,6 +162,7 @@ Try saying:
 - Computer, open terminal.
 - Computer, go to [thenerdshow.com](https://thenerdshow.com/). (or any website).
 - Computer, open a web browser. (opens the default homepage).
+- Computer, show us a picture of a Klingon battle cruiser.
 - Page up.
 - Page down.
 - Undo that.
