@@ -2,17 +2,17 @@
 # -*- coding: utf-8 -*-
 ##
 ## Copyright 2023 Henry Kroll <nospam@thenerdshow.com>
-## 
+##
 ## This program is free software; you can redistribute it and/or modify
 ## it under the terms of the GNU General Public License as published by
 ## the Free Software Foundation; either version 2 of the License, or
 ## (at your option) any later version.
-## 
+##
 ## This program is distributed in the hope that it will be useful,
 ## but WITHOUT ANY WARRANTY; without even the implied warranty of
 ## MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 ## GNU General Public License for more details.
-## 
+##
 ## You should have received a copy of the GNU General Public License
 ## along with this program; if not, write to the Free Software
 ## Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
@@ -73,18 +73,18 @@ actions = {
     "^(peter|computer).? search( the)?( you| web| google| bing| online)?(.com)? for ": 
        "webbrowser.open('https://you.com/search?q=' + re.sub(' ','%20',q))",
     "^(peter|computer).? (send|compose|write)( an| a) email to ": "os.popen('xdg-open \"mailto://' + q.replace(' at ', '@') + '\"')",
-    "^(peter|computer).? (draw|create|imagine|picture|paint) ": "os.popen(f'./sdapi.py \"{q}\"')",
-    "^(peter|computer).? ": "chatGPT(q)",
-    "^(resume|zoom|continue|start)(.typing|.d.ctation)$" : "exec('global chatting;chatting = False')"
+    "^(peter|computer).? (i need )?(let's )?(see |have |show )?(us |me )?(an? )?(image|picture|draw|create|imagine|paint)(ing| of)? ": "os.popen(f'./sdapi.py \"{q}\"')",
+    "^(peter.? |computer.? )?(resume|zoom|continue|start|type) (typing|d.ctation|this)" : "exec('global chatting;global listening;chatting = False;listening = True')",
+    "^(peter|computer).? ": "chatGPT(q)"
     }
 
 def process_actions(tl):
-    for action, command in actions.items():
+    for input, action in actions.items():
         # look for action in list
-        if s:=re.search(action, tl):
-            q = tl[s.end():] # get q for command
+        if s:=re.search(input, tl):
+            q = tl[s.end():] # get q for action
             say("okay")
-            eval(command)
+            eval(action)
             return True # success
     if chatting:
         chatGPT(tl); return True
@@ -94,7 +94,7 @@ def process_actions(tl):
 audio_queue = queue.Queue()
 listening = True
 chatting = False
- 
+
 # search text for hotkeys
 def process_hotkeys(txt):
     global start
@@ -212,19 +212,21 @@ def transcribe():
                 q = lower_case[s.end():] # get q for command
                 webbrowser.open('https://' + q.strip())
                 continue
-            # Stop listening.
+            # Stop dictation.
             elif re.search("^.?stop.(d.ctation|listening).?$", lower_case):
                 say("Shutting down.")
                 break
-            elif re.search("^.?(pause.d.ctation|positication).?$", lower_case):
+            elif re.search("^.?(pause.d.ctation|positi.?i?cation).?$", lower_case):
                 listening = False
-                record_process.send_signal(signal.SIGINT)
-                record_process.wait()
-                say("Acknowledged.")
-                input("Paused. Press Enter to continue...")
-                audio_queue.get() # discard truncated sample
-                listening = True
+                say("okay")
+                #record_process.send_signal(signal.SIGINT)
+                #record_process.wait()
+                #say("Acknowledged.")
+                #input("Paused. Press Enter to continue...")
+                #audio_queue.get() # discard truncated sample
+                #listening = True
             elif process_actions(lower_case): continue
+            if not listening: continue
             elif process_hotkeys(lower_case): continue
             else:
                 now = time.time()
@@ -243,14 +245,11 @@ def recorder():
     global record_process
     global running
     while running:
-        if listening:
-            # record some (more) audio to queue
-            temp_name = tempfile.mktemp()+ '.mp3'
-            record_process = subprocess.Popen(["python", "./record.py", temp_name])
-            record_process.wait()
-            audio_queue.put(temp_name)
-        else:
-            time.sleep(0.5)
+        # record some (more) audio to queue
+        temp_name = tempfile.mktemp()+ '.mp3'
+        record_process = subprocess.Popen(["python", "./record.py", temp_name])
+        record_process.wait()
+        audio_queue.put(temp_name)
 
 def quit():
     print("Stopping...")
