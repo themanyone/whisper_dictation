@@ -1,4 +1,5 @@
 #!/usr/bin/python
+# -*- coding: utf-8 -*-
 ## record.py
 ##
 ## Hands-free voice audio recording to mp3, wav, other types
