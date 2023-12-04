@@ -37,12 +37,12 @@ def say(text):
             subprocess.run(command, input=audio_bytes, check=True,
             stdout=subprocess.DEVNULL)
         else:
-            print("Error:", response.status_code)
+            sys.stderr.write("Error:", response.status_code)
     except Exception as e:
-        print("Cannot contact speech-dispatcherd service.")
+        sys.stderr.write("Cannot contact speech-dispatcherd service.")
 
 if __name__ == '__main__':
     if len(sys.argv) > 1:
         say(sys.argv[1])
     else:
-        print("Import say from mimic3_client or test with `mimic3_client 'this is a test'`")
+        sys.stderr.write("Import say from mimic3_client or test with `mimic3_client 'this is a test'`")

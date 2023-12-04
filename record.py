@@ -8,22 +8,22 @@
 ## ./record.py filename.mp3
 ##
 ## Copyright 2023 Henry Kroll <nospam@thenerdshow.com>
-## 
+##
 ## This program is free software; you can redistribute it and/or modify
 ## it under the terms of the GNU General Public License as published by
 ## the Free Software Foundation; either version 2 of the License, or
 ## (at your option) any later version.
-## 
+##
 ## This program is distributed in the hope that it will be useful,
 ## but WITHOUT ANY WARRANTY; without even the implied warranty of
 ## MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 ## GNU General Public License for more details.
-## 
+##
 ## You should have received a copy of the GNU General Public License
 ## along with this program; if not, write to the Free Software
 ## Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
 ## MA 02110-1301, USA.
-## 
+##
 
 import os, sys, time
 import subprocess, tempfile
@@ -85,16 +85,16 @@ class Record:
     def on_sound_level(self, bus, message):
         dB = self.dB
         Gst = self.Gst
-        
+
         if message.get_structure().get_name() == 'level':
             rms = message.get_structure().get_value('rms')[0]
             # seconds of silence to trim off beginning of audio
             ss = time.time() - self.lead_in
-            
+
             # if not recording
             if self.ss == "":
                 if ss > max_recording_time:
-                    print(sys.argv[0]+": Max recording time reached.", file=sys.stderr)
+                    sys.stderr.write(sys.argv[0]+": Max recording time reached.", file=sys.stderr)
                     self.quit(self.ss); return
                 if rms < dB: # wait for startup clicks and pops to die down
                     self.silence = 1 # got it, we have silence!

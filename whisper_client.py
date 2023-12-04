@@ -39,7 +39,7 @@ if (api_key):
     import openai
     openai.api_key = api_key
 else:
-    print("Export OPENAI_API_KEY if you want answers from ChatGPT.")
+    sys.stderr.write("Export OPENAI_API_KEY if you want answers from ChatGPT.")
 
 # commands and hotkeys for various platforms
 commands = {
@@ -147,8 +147,8 @@ def chatGPT(prompt):
             )
             completion = completion.choices[0].message.content
         except Exception as e:
-                print("ChatGPT had a problem. Here's the error message.")
-                print(e)
+                sys.stderr.write("ChatGPT had a problem. Here's the error message.")
+                sys.stderr.write(e)
     # Fallback to localhost
     if not completion:
         try:
@@ -158,8 +158,8 @@ def chatGPT(prompt):
                 data = response.json()
                 completion = data["content"]
         except Exception as e:
-                print("Chat had a problem. Here's the error message.")
-                print(e)
+                sys.stderr.write("Chat had a problem. Here's the  message.")
+                sys.stderr.write(e)
     # Read back the response completion
     if completion:
         if completion == "< nooutput >": completion = "No comment."
@@ -237,7 +237,7 @@ def recorder():
         audio_queue.put(temp_name)
 
 def quit():
-    print("Stopping...")
+    sys.stderr.write("Stopping...")
     global running
     global listening
     listening = False
@@ -252,11 +252,11 @@ def quit():
     # clean up
     try:
         while f := audio_queue.get_nowait():
-            print("Removing temporary file: ", f)
+            sys.stderr.write("Removing temporary file: ", f)
             if f[:5] == "/tmp/": # safety check
                 os.remove(f)
     except: pass
-    print("Freeing system resources.")
+    sys.stderr.write("Freeing system resources.")
 
 if __name__ == '__main__':
     record_process = None

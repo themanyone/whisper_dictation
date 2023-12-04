@@ -6,22 +6,22 @@
 ## Usage: sdapi.py [prompt] [output image]
 ##
 ## Copyright 2023 Henry Kroll <nospam@thenerdshow.com>
-## 
+##
 ## This program is free software; you can redistribute it and/or modify
 ## it under the terms of the GNU General Public License as published by
 ## the Free Software Foundation; either version 2 of the License, or
 ## (at your option) any later version.
-## 
+##
 ## This program is distributed in the hope that it will be useful,
 ## but WITHOUT ANY WARRANTY; without even the implied warranty of
 ## MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 ## GNU General Public License for more details.
-## 
+##
 ## You should have received a copy of the GNU General Public License
 ## along with this program; if not, write to the Free Software
 ## Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
 ## MA 02110-1301, USA.
-## 
+##
 
 import os, sys
 import json
@@ -50,8 +50,8 @@ def draw(prompt, output="output.png"):
         image.save(output)
         image.show()
     except Exception as e:
-        print("SD API had a problem. Here's the error message.")
-        print(e)
+        sys.stderr.write("SD API had a problem. Here's the error message.")
+        sys.stderr.write(e)
 
 if __name__ == '__main__':
     #  Draw an image from a prompt supplied on the command line.
@@ -60,4 +60,4 @@ if __name__ == '__main__':
     if len(sys.argv) == 3: # Provide a name for the image.
         draw(sys.argv[1], sys.argv[2])
     else:
-        print(f"Usage: {sys.argv[0]} \"a horse riding an elephant\" horse_phant.png")
+        sys.stderr.write(f"Usage: {sys.argv[0]} \"a horse riding an elephant\" horse_phant.png")
