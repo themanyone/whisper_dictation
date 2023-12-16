@@ -263,7 +263,6 @@ if __name__ == '__main__':
     running = True
     record_thread = threading.Thread(target=recorder)
     record_thread.start()
-    pyperclip.init_xsel_clipboard()
     start = 0
     transcribe()
     quit()

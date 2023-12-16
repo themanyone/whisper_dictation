@@ -281,7 +281,6 @@ if __name__ == '__main__':
     # preload whisper_jax for subsequent speedup
     preload_thread = threading.Thread(target=preload)
     preload_thread.start()
-    pyperclip.init_xsel_clipboard()
     start = 0
     transcribe()
     quit()

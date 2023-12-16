@@ -210,9 +210,9 @@ If there is no API key, or if ChatGPT is busy, it will ping a private language m
 
 `whisper_cpp.py`: A Python client that connects to a running [Whisper.cpp](https://github.com/ggerganov/whisper.cpp) server on the local machine or across the network.
 
-`whisper_dictation.py`: A stand-alone dictation app bundled with Whisper-JAX. It takes a long time to start up, but it might be more responsive in some cases than whisper.cpp.
+`whisper_dictation.py`: A stand-alone dictation app bundled with Whisper-JAX, a JAX/Python alternative to Whisper.cpp. It takes a long time to start up, but it might be more responsive in some cases than whisper.cpp.
 
-`whisper_client.py`: A client version for `whisper-jax`. Instead of loading up the language model for speech recognition. The client connects to a local [Whisper JAX server](https://jserver.py) running on the machine, the local network, or the internet. Edit `whisper_client.py` to configure the server location. This makes dictation available even on budget laptops and old phones that can run linux/python from the app store.
+`whisper_client.py`: A client version of Whisper Dictation. The client connects to a local [Whisper JAX server](https://jserver.py) running on the machine, the local network, or the internet. Edit `whisper_client.py` to configure the server location. Clients make dictation available even on budget laptops and old phones that can run linux/python from the app store.
 
 `jserver.py`: A `whisper-jax` server. Run it with `venv-run jserver.py`. You might also find that, although they start quickly, clients are slightly slower, compared to the bundled version. This is because servers set aside extra resoures to handle multiple clients, resources which typically aren't necessary for one user. If only a handful of clients will use it, editing `jserver.py` in certain ways may speed it up somewhat. Make it use the "openai/whisper-tiny.en" checkpoint. Reduce BATCH_SIZE, CHUNK_LENGTH_S, NUM_PROC to the minimum necessary to support your needs.
 

@@ -132,11 +132,11 @@ def pastetext(t):
     # paste text in window
     if t == " you" or t == " Thanks for watching!": return # ignoring you
     pyperclip.copy(t) # weird that primary won't work the first time
-    #if pyautogui.platform.system() == "Linux":
-    #    pyperclip.copy(t, primary=True) # now it works
-    #    pyautogui.middleClick()
-    #else:
-    pyautogui.hotkey('ctrl', 'v')
+    if pyautogui.platform.system() == "Linux":
+        pyperclip.copy(t, primary=True) # now it works
+        pyautogui.middleClick()
+    else:
+        pyautogui.hotkey('ctrl', 'v')
 
 print("Start speaking. Text should appear in the window you are working in.")
 print("Say \"Stop listening.\" or press CTRL-C to stop.")
@@ -273,7 +273,6 @@ if __name__ == '__main__':
     running = True
     record_thread = threading.Thread(target=recorder)
     record_thread.start()
-    pyperclip.init_xsel_clipboard()
     start = 0
     transcribe()
     quit()
