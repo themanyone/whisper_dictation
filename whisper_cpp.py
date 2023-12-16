@@ -29,7 +29,7 @@ import requests
 import json
 from mimic3_client import say
 # address of whisper.cpp server
-cpp_url = "http://127.0.0.1:8080/inference"
+cpp_url = "http://127.0.0.1:7777/inference"
 # address of Fallback Chat Server.
 fallback_chat_url = 'http://localhost:5000'
 api_key = os.getenv("OPENAI_API_KEY")

@@ -71,10 +71,10 @@ Compile [Whisper.cpp](https://github.com/ggerganov/whisper.cpp) with some type o
 We had to had to modify `Makefile` to get it to compile:
 	`NVCCFLAGS = -allow-unsupported-compiler ...`
 
-To minimize GPU footprint, launch `server` with tiny.en model. It uses just over 111 MiB VRAM on our budget laptop. `--convert` is required because we record in .mp3 format.
+To minimize GPU footprint, launch `server` with tiny.en model. It uses just over 111 MiB VRAM on our budget laptop. `--convert` is required because we record in .mp3 format. We started using port 7777 because 8080 is used by other apps. Feel free to change it. As long as servers and clients agree, it should be no problem.
 
 ```shell
-./server -l en -m models/ggml-tiny.en.bin --convert
+./server -l en -m models/ggml-tiny.en.bin --port 7777 --convert
 ```
 
 Due to a [bug](https://github.com/ggerganov/whisper.cpp/issues/1587), it may be necessary to add the `-ng` flag but it does not seem to affect our performance with cuBLAS.
