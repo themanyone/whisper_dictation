@@ -130,7 +130,8 @@ def gettext(f):
 
 def pastetext(t):
     # paste text in window
-    if t == " you" or t == " Thanks for watching!": return # ignoring you
+    if t == " you" or t == " Thanks for watching!" or "[" in t:
+        return # ignoring you
     pyperclip.copy(t) # weird that primary won't work the first time
     if pyautogui.platform.system() == "Linux":
         pyperclip.copy(t, primary=True) # now it works
