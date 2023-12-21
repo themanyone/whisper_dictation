@@ -40,7 +40,8 @@ url = "http://127.0.0.1:7860"
 def draw(prompt, output="output.png"):
     payload = {
         "prompt": prompt,
-        "steps": 25
+        "steps": 1,
+        "cfg_scale": 1
     }
     try:
         response = requests.post(url=f'{url}/sdapi/v1/txt2img', json=payload)
@@ -52,7 +53,7 @@ def draw(prompt, output="output.png"):
         image.show()
     except Exception as e:
         sys.stderr.write("SD API had a problem. Here's the error message.")
-        sys.stderr.write(e)
+        sys.stderr.write(str(e))
 
 if __name__ == '__main__':
     #  Draw an image from a prompt supplied on the command line.

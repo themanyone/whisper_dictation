@@ -18,13 +18,16 @@
 ## Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
 ## MA 02110-1301, USA.
 ##
+# This client is a drop-in replacement for `spd-say`.
+# But this can also run as a Python module!
+
 import sys
 import requests
 import subprocess
 import io
 
-def say(text):
-    base_url = "http://localhost:59125/api/tts"
+# Update the location of your default speech server.
+def say(text, base_url="http://localhost:59125/api/tts"):
     # params = { 'text': text, "lengthScale": "0.6" }
     params = { 'text': text, "voice": "en_US/vctk_low" }
     try:
@@ -46,4 +49,4 @@ if __name__ == '__main__':
     if len(sys.argv) > 1:
         say(sys.argv[1])
     else:
-        sys.stderr.write("Import say from mimic3_client or test with `mimic3_client 'this is a test'`")
+        sys.stderr.write("Import say from mimic3_client in Python. Or test from command line with `mimic3_client 'this is a test'`")

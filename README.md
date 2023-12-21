@@ -39,13 +39,13 @@ Set the chat language model in `app.py`. The first time you use it, it will down
 
 **Whisper JAX or Whisper.cpp?** Whisper AI is currently the state of the art for open-source Python voice transcription software. [Whisper JAX](https://github.com/sanchit-gandhi/whisper-jax) accelerates Whisper AI with optimised JAX code. [Whisper.cpp](https://github.com/ggerganov/whisper.cpp) takes a different route, and rewrites Whisper AI in bare-metal C++, so it might yield even better performance on some accelerated hardware. And, if you already have C++ development libraries, video drivers, tools, and experience, C++ eliminates having to download the roughly 5 GiB of Python dependencies for Whisper JAX.
 
-Our implementation may be adapted to use any back-end implimentation of Whisper AI. All we do is record audio when sound (hopefully speech) is detected. We send the audio to a `whsper-jax` or [Whisper.cpp](https://github.com/ggerganov/whisper.cpp) server to translate the audio into text.
+Our implementation may be adapted to use any back-end implimentation of Whisper AI. All we do is record audio when sound (hopefully speech) is detected. We transcribe the audio internally with `whsper-jax`, or send it to a `whisper-jax` server, a [Whisper.cpp](https://github.com/ggerganov/whisper.cpp), server, or another audio transcription service.
 
 The tradeoff with running Whisper continuously is that some VRAM stays reserved until shutting down the stand-alone application or server. Depending on hardware and workflow, you might experience issues with other video-intensive tasks, games mostly, while these things are running.
 
 **Time limits.** Our voice detection listens for 10 minutes before it gets bored and signs off. It then waits an additional 10 minutes for some type of acknowledgement or grunt before shutting down the client and freeing resources. Feel free to change the recording duration in `record.py`. Be aware that longer recordings use additional /tmp space, which usually resides in RAM.
 
-For an extremely-simple, light-weight, dictation-only client/server solution, try the [voice_typing](https://github.com/themanyone/voice_typing) app. It uses the bash shell to record and loads up whisper only when spoken-to. It now has a `whisper.cpp` client too. Or try the ancient, less-accurate [Freespeech](https://github.com/themanyone/freespeech-vr/tree/python3) project, which uses old-school Pocketsphinx, but is very light on resources.
+For an extremely-simple, light-weight, dictation-only client/server solution, try the [voice_typing](https://github.com/themanyone/voice_typing) app. It uses the bash shell to record and loads up whisper only when spoken-to. It now has a `whisper.cpp` thin client too. Or try the ancient, less-accurate [Freespeech](https://github.com/themanyone/freespeech-vr/tree/python3) project, which uses old-school Pocketsphinx, but is very light on resources.
 
 Whisper Dictation is not optimised for making captions or transcripts of pre-recorded material. Use [Whisper.cpp](https://github.com/ggerganov/whisper.cpp) or [whisper-jax](https://github.com/sanchit-gandhi/whisper-jax) for that. They too have a [server with a web interface that makes transcripts for voice recordings and videos](https://github.com/sanchit-gandhi/whisper-jax/blob/main/app/app.py). If you want real-time AI captions translating everyone's conversations in the room into English. If you want to watch videos with accents that are difficult to understand. Or if you just don't want to miss what the job interviewer asked you during that zoom call... WHAT???, check out my other project, [Caption Anything](https://github.com/themanyone/caption_anything). And generate captions as you record live "what you hear" from the audio monitor device (any sounds that are playing through the computer).
 
@@ -60,9 +60,9 @@ pip install pyperclip
 pip install pygobject
 ```
 
-Now edit `whisper_cpp.py`  and set the address of cpp_url to the address of your server machine. In this case, it is already set up to use localhost.
+Now edit `whisper_cpp.py`, and set the address of cpp_url to the address of your server machine. In this case, it is already set up to use localhost.
 
-`cpp_url = "http://127.0.0.1:8080/inference"`
+`cpp_url = "http://127.0.0.1:7777/inference"`
 
 ## Whisper.cpp Server
 
@@ -71,7 +71,7 @@ Compile [Whisper.cpp](https://github.com/ggerganov/whisper.cpp) with some type o
 We had to had to modify `Makefile` to get it to compile:
 	`NVCCFLAGS = -allow-unsupported-compiler ...`
 
-To minimize GPU footprint, launch `server` with tiny.en model. It uses just over 111 MiB VRAM on our budget laptop. `--convert` is required because we record in .mp3 format. We started using port 7777 because 8080 is used by other apps. Feel free to change it. As long as servers and clients agree, it should be no problem.
+To minimize GPU footprint, launch `server` with tiny.en model. It uses just over 111 MiB VRAM on our budget laptop. 48MiB with `./models/ggml-tiny.en-q4_0.bin` quantized to 4Bits.  `--convert` is required because we record in .mp3 format. We started using port 7777 because 8080 is used by other apps. Feel free to change it. As long as servers and clients agree, it should be no problem.
 
 ```shell
 ./server -l en -m models/ggml-tiny.en.bin --port 7777 --convert
@@ -194,6 +194,12 @@ export OPENAI_API_KEY=<my API key>
 ```
 
 If there is no API key, or if ChatGPT is busy, it will ping a private language model running on http://localhost:5000. There are language models on [huggingface](https://huggingface.co/models) that produce intelligible conversation with 1 Gb of video RAM. So now whisper_dictation has its own, privacy-focused chat bot. The default language model is for research only. It's pretty limited to fit into such limited space, but rather chatty. He seems to excel at writing poetry, but is lacking in factual information. It is recommended that you edit `app.py` and choose a larger language model if your system supports it.
+
+Having the chat bot talk back is novel, but it can be a pain with long answers. What you *really* want, for the best mix of privacy and knowledge power, is to install [llama.cpp](https://github.com/ggerganov/llama.cpp). Compile it with some type of acceleration, like cuBLAS. Use the [mistral-7b-openorca](https://huggingface.co/Open-Orca/Mistral-7B-OpenOrca) model. And quantize the model to 4B, as described in the [llama.cpp README](https://github.com/ggerganov/llama.cpp). OpenOrca is currently the best model under 30B that will run on budget video cards like ours, with less than 4GiB. Run the model in interactive mode. And just use dictation to type your questions into the interface. It won't talk back. But you won't have to listen to pages and pages of response text, either. 
+
+And just like that. We just saved you months of researching "What's the best AI that I can realistically use on my laptop?" The future is here! Launch codes:
+
+`./llama -m models/mistral-7b-openorca.Q4_0.gguf --multiline-input --color --interactive-first -p "You are a helpful and knowledgeable assistant.`
 
 **Mimic3.** If you install [mimic3](https://github.com/MycroftAI/mimic3) as a service, the computer will speak answers out loud. Follow the [instructions for setting up mimic3 as a Systemd Service](https://mycroft-ai.gitbook.io/docs/mycroft-technologies/mimic-tts/mimic-3#web-server). The `mimic3-server` is already lightening-fast on CPU. Do not bother with --cuda flag, which requires old `onnxruntime-gpu` that is not compatible with CUDA 12+ and won't compile with nvcc12... We got it working! And it just hogs all of VRAM and provides no noticeable speedup anyway. Regular `onnxruntime` works fine with mimic3.
 
