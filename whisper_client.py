@@ -1,4 +1,4 @@
-#!.venv/bin/python
+#!/usr/bin/python
 # -*- coding: utf-8 -*-
 ##
 ## Copyright 2023 Henry Kroll <nospam@thenerdshow.com>

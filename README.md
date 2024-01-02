@@ -77,7 +77,7 @@ To minimize GPU footprint, launch `server` with tiny.en model. It uses just over
 ./server -l en -m models/ggml-tiny.en.bin --port 7777 --convert
 ```
 
-Due to a [bug](https://github.com/ggerganov/whisper.cpp/issues/1587), it may be necessary to add the `-ng` flag but it does not seem to affect our performance with cuBLAS.
+Due to a [bug](https://github.com/ggerganov/whisper.cpp/issues/1587), it may be necessary to add the `-ng` flag. Though not ideal, matrix multiplcations will still use cuBLAS, for about 2x speedup.
 
 Edit `whisper_cpp.py` clients to change the server location from localhost to wherever the server resides on the network.
 
