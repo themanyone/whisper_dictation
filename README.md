@@ -71,13 +71,18 @@ Compile [Whisper.cpp](https://github.com/ggerganov/whisper.cpp) with some type o
 We had to had to modify `Makefile` to get it to compile:
 	`NVCCFLAGS = -allow-unsupported-compiler ...`
 
-To minimize GPU footprint, launch `server` with tiny.en model. It uses just over 111 MiB VRAM on our budget laptop. 48MiB with `./models/ggml-tiny.en-q4_0.bin` quantized to 4Bits.  `--convert` is required because we record in .mp3 format. We started using port 7777 because 8080 is used by other apps. Feel free to change it. As long as servers and clients agree, it should be no problem.
+To minimize GPU footprint, use the tiny.en model. It consumes just over 111 MiB VRAM on our budget laptop. 48MiB with `./models/ggml-tiny.en-q4_0.bin` quantized to 4Bits.  `--convert` is required because we record in .mp3 format. We started using port 7777 because 8080 is used by other apps. Feel free to change it. As long as servers and clients agree, it should be no problem.
+
+We launch `server` under the name, `whisper_cpp_server` to make it less confusing when it shows up in the process list.
 
 ```shell
-./server -l en -m models/ggml-tiny.en.bin --port 7777 --convert
+ln -s $(pwd)/server whisper_cpp_server
+./whisper_cpp_server -l en -m models/ggml-tiny.en.bin --port 7777 --convert
 ```
 
-Due to a [bug](https://github.com/ggerganov/whisper.cpp/issues/1587), it may be necessary to add the `-ng` flag. Though not ideal, matrix multiplcations will still use cuBLAS, for about 2x speedup.
+Due to a [bug](https://github.com/ggerganov/whisper.cpp/issues/1587), it might necessary to add the `-ng` flag. But this should be fixed as of whisper.cpp v1.5.3. Although `-ng` is not ideal, matrix multiplcations will still use cuBLAS, for about 2x speedup.
+
+If `whisper_cpp_server` refuses to start, reboot. Or, if applicable, reload the Nvidia uvm module `sudo modprobe -r nvidia_uvm && sudo modprobe nvidia_uvm`.
 
 Edit `whisper_cpp.py` clients to change the server location from localhost to wherever the server resides on the network.
 
@@ -104,7 +109,7 @@ Control your computer. Refer to the section on [spoken commands and program laun
 
 ## Whisper-JAX Setup.
 
-If `whisper.cpp` server does not work, or to compare back ends, we can also connect to Whisper-JAX.
+If not using `whisper.cpp`, or to compare back ends, we can also connect to Whisper-JAX.
 
 Go to https://github.com/google/jax#installation and follow through the steps to install cuda, cudnn, or whatever is missing. All these [whisper-jax](https://github.com/sanchit-gandhi/whisper-jax) dependencies and video drivers can be quite bulky, requiring about 5.6GiB of downloads.
 
@@ -116,7 +121,7 @@ Install `torch` for the chat server. But do not install it in the same conda or 
 
 The commands to install JAX for GPU(CUDA) are copied [from here](https://jax.readthedocs.io/en/latest/index.html).
 
-Install [whisper-jax](https://github.com/sanchit-gandhi/whisper-jax) and make sure the examples work. You may need to reboot to make CUDA work, after getting everything installed. And after each kernel update, and video driver upgrade/recompilation. Update: An alternative to rebooting is to reload the Nvidia uvm module `sudo modprobe -r nvidia_uvm && sudo modprobe nvidia_uvm`.
+Install [whisper-jax](https://github.com/sanchit-gandhi/whisper-jax) and make sure the examples work. You may need to reboot to properly initialize accelerated drivers, e.g. CUDA, after getting everything installed. And after each kernel update, and video driver upgrade/recompilation. An alternative to rebooting is to reload the module responsible for acceleration. For Nvidia, `sudo modprobe -r nvidia_uvm && sudo modprobe nvidia_uvm`.
 
 ```shell
 # activate conda or venv
