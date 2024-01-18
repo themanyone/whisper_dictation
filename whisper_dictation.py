@@ -195,18 +195,18 @@ def transcribe():
     while True:
         # transcribe audio from queue
         if f := audio_queue.get():
-            t = gettext(f)
-            print('\r' + t)
+            t = gettext(f).strip('\n')
+            print(t)
             # delete temporary audio file
             try: os.remove(f)
             except: pass
             if not t: break
-            
+
             # get lower-case spoken command string
             lower_case = t.lower().strip()
             if match := re.search(r"[^\w\s]$", lower_case):
                 lower_case = lower_case[:match.start()] # remove punctuation
-            
+
             # see list of actions and hotkeys at top of file :)
             # Go to Website.
             if s:=re.search("^(peter|computer).? (go|open|browse|visit|navigate)( up| to| the| website)* [a-zA-Z0-9-]{1,63}(\.[a-zA-Z0-9-]{1,63})+$", lower_case):
@@ -237,7 +237,7 @@ def transcribe():
                 start = now; pastetext(t)
         # continue looping every second
         else: time.sleep(0.5)
-        
+
 def recorder():
     # If it wasn't for Gst conflict with pyperclip,
     # we could import record.py instead of os.system()
@@ -272,7 +272,7 @@ def quit():
             if f[:5] == "/tmp/": # safety check
                 os.remove(f)
     except: pass
-    sys.stderr.write("Freeing system resources.")
+    sys.stderr.write("Freeing system resources.\n")
 
 if __name__ == '__main__':
     record_process = None

@@ -159,7 +159,7 @@ def chatGPT(prompt):
                 data = response.json()
                 completion = data["content"]
         except Exception as e:
-                sys.stderr.write("Chat had a problem. Here's the  message.")
+                sys.stderr.write("Chat had a problem. Here's the error message.")
                 sys.stderr.write(e)
     # Read back the response completion
     if completion:
@@ -180,8 +180,8 @@ def transcribe():
     while True:
         # transcribe audio from queue
         if f := audio_queue.get():
-            t = gettext(f)
-            print('\r' + t)
+            t = gettext(f).strip('\n')
+            print(t)
             # delete temporary audio file
             try: os.remove(f)
             except: pass
@@ -257,7 +257,7 @@ def quit():
             if f[:5] == "/tmp/": # safety check
                 os.remove(f)
     except: pass
-    sys.stderr.write("Freeing system resources.")
+    sys.stderr.write("Freeing system resources.\n")
 
 if __name__ == '__main__':
     record_process = None
