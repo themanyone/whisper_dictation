@@ -58,7 +58,8 @@ commands = {
 }
 hotkeys = {
     "^new paragraph.?$": [['enter'],['enter']],
-    "^page up.?$":     [['pageup']],
+    "^new line.?$":     [['enter']],
+    "^page up.?$":     	[['pageup']],
     "^page down.?$":    [['pagedown']],
     "^undo that.?$":    [['ctrl', 'z']],
     "^copy that.?$":    [['ctrl', 'c']],
