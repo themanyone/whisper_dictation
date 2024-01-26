@@ -20,7 +20,7 @@
 ##
 import pyautogui
 import pyperclip
-import os, shlex, time, queue, sys, re
+import os, time, queue, sys, re
 import webbrowser
 import tempfile
 import threading
@@ -58,27 +58,27 @@ commands = {
     },
 }
 hotkeys = {
-    "^new paragraph.?$": [['enter'],['enter']],
-    "^new line.?$":     [['enter']],
-    "^page up.?$":     	[['pageup']],
-    "^page down.?$":    [['pagedown']],
-    "^undo that.?$":    [['ctrl', 'z']],
-    "^copy that.?$":    [['ctrl', 'c']],
-    "^paste it.?$":     [['ctrl', 'v']],
+    r"^new paragraph.?$": [['enter'],['enter']],
+    r"^new line.?$":     [['enter']],
+    r"^page up.?$":     	[['pageup']],
+    r"^page down.?$":    [['pagedown']],
+    r"^undo that.?$":    [['ctrl', 'z']],
+    r"^copy that.?$":    [['ctrl', 'c']],
+    r"^paste it.?$":     [['ctrl', 'v']],
     }
 actions = {
-    "^left click.?$": "pyautogui.click()",
-    "^(click)( the)?( mouse).? ": "pyautogui.click()",
-    "^middle click.?$": "pyautogui.middleClick()",
-    "^right click.?$": "pyautogui.rightClick()",
-    "^(peter|computer).? (run|open|start|launch)(up)?( a| the)? ": "os.system(commands[sys.platform][q])",
-    "^(peter|computer).? closed? window": "pyautogui.hotkey('alt', 'F4')",
-    "^(peter|computer).? search( the)?( you| web| google| bing| online)?(.com)? for ": 
+    r"^left click.?$": "pyautogui.click()",
+    r"^(click)( the)?( mouse).? ": "pyautogui.click()",
+    r"^middle click.?$": "pyautogui.middleClick()",
+    r"^right click.?$": "pyautogui.rightClick()",
+    r"^(peter|computer).? (run|open|start|launch)(up)?( a| the)? ": "os.system(commands[sys.platform][q])",
+    r"^(peter|computer).? closed? window": "pyautogui.hotkey('alt', 'F4')",
+    r"^(peter|computer).? search( the)?( you| web| google| bing| online)?(.com)? for ": 
        "webbrowser.open('https://you.com/search?q=' + re.sub(' ','%20',q))",
-    "^(peter|computer).? (send|compose|write)( an| a) email to ": "os.popen('xdg-open \"mailto://' + q.replace(' at ', '@') + '\"')",
-    "^(peter|computer).? (i need )?(let's )?(see |have |show )?(us |me )?(an? )?(image|picture|draw|create|imagine|paint)(ing| of)? ": "os.popen(f'./sdapi.py \"{q}\"')",
-    "^(peter.? |computer.? )?(resume|zoom|continue|start|type) (typing|d.ctation|this)" : "exec('global chatting;global listening;chatting = False;listening = True')",
-    "^(peter|computer).? ": "chatGPT(q)"
+    r"^(peter|computer).? (send|compose|write)( an| a) email to ": "os.popen('xdg-open \"mailto://' + q.replace(' at ', '@') + '\"')",
+    r"^(peter|computer).? (i need )?(let's )?(see |have |show )?(us |me )?(an? )?(image|picture|draw|create|imagine|paint)(ing| of)? ": "os.popen(f'./sdapi.py \"{q}\"')",
+    r"^(peter.? |computer.? )?(resume|zoom|continue|start|type) (typing|d.ctation|this)" : "exec('global chatting;global listening;chatting = False;listening = True')",
+    r"^(peter|computer).? ": "chatGPT(q)"
     }
 
 def process_actions(tl):
@@ -92,7 +92,7 @@ def process_actions(tl):
     if chatting:
         chatGPT(tl); return True
     return False # no action
-    
+
 # fix race conditions
 audio_queue = queue.Queue()
 listening = True
@@ -195,15 +195,15 @@ def transcribe():
 
             # see list of actions and hotkeys at top of file :)
             # Go to Website.
-            if s:=re.search("^(peter|computer).? (go|open|browse|visit|navigate)( up| to| the| website)* [a-zA-Z0-9-]{1,63}(\.[a-zA-Z0-9-]{1,63})+$", lower_case):
+            if s:=re.search(r"^(peter|computer).? (go|open|browse|visit|navigate)( up| to| the| website)* [a-zA-Z0-9-]{1,63}(\.[a-zA-Z0-9-]{1,63})+$", lower_case):
                 q = lower_case[s.end():] # get q for command
                 webbrowser.open('https://' + q.strip())
                 continue
             # Stop dictation.
-            elif re.search("^.?stop.(d.ctation|listening).?$", lower_case):
+            elif re.search(r"^.?stop.(d.ctation|listening).?$", lower_case):
                 say("Shutting down.")
                 break
-            elif re.search("^.?(pause.d.ctation|positi.?i?cation).?$", lower_case):
+            elif re.search(r"^.?(pause.d.ctation|positi.?i?cation).?$", lower_case):
                 listening = False
                 say("okay")
                 #record_process.send_signal(signal.SIGINT)
