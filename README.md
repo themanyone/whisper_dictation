@@ -66,23 +66,54 @@ Now edit `whisper_cpp.py`, and set the address of cpp_url to the address of your
 
 ## Whisper.cpp Server
 
-Compile [Whisper.cpp](https://github.com/ggerganov/whisper.cpp) with some type of acceleration for best results. We are using cuBLAS.
+Compile [Whisper.cpp](https://github.com/ggerganov/whisper.cpp) with some type of acceleration for best results. We are using `cuBLAS`. Unfortunately, gcc versions later than 12 are not (currently) supported for building with `cuBLAS`*.
 
-We had to had to modify `Makefile` to get it to compile:
-	`NVCCFLAGS = -allow-unsupported-compiler ...`
+*TL-DR*. Our investigation has determined that the reason for `gcc-13` incompatibility is that `cuBLAS` libraries come pre-compiled with fixes for the now infamous [memcpy vs. memmove saga](https://www.win.tue.nl/~aeb/linux/misc/gcc-semibug.html) in glibc. The bug affected copying and moving memory (structs, pairs, and arrays which amount to what we call tensors). The `gcc-13` and `libstdc++13` toolchain now automatically attemps to fix the same bugs. Sinc later versions of Linux are shipping with `gcc-13` as the only option, we have a situation of double correction happening when we compile with `cuBLAS`, resulting in chaos.
+
+If you would like to experience this chaos for yourself, try using the unsupported compiler toolchain:
+	`NVCCFLAGS="-allow-unsupported-compiler LLAMA_CUBLAS=1 make -j`
+
+We now set up a `gcc-12` `conda` environment to keep things sane. We could also use a docker container for this.
+```
+conda create -n gcc12
+conda activate gcc12
+conda install -c conda-forge gxx=12
+```
+
+The Makefile expects cuda to be installed in /opt/cuda
+```
+sudo ln -s /etc/alternatives/cuda /opt/cuda
+sudo ln -s /etc/alternatives/cuda/lib64 /opt/cuda/lib64
+```
+
+And, after installing the package which provides `/usr/lib64/libpthread_nonshared.a` (`compat-libpthread-nonshared`), we can build with `cuBLAS`.
+```
+cd whisper.cpp
+git pull
+conda activate gcc12
+WHISPER_CUBLAS=1 make -j
+# ignore errors "local/cuda/lib64/libcublas.so: undefined reference to `memcpy@GLIBC_2.14'"
+
+# if there were errors, re-run make outside of conda to finish linking against modern GLIBC_2.14
+conda deactivate
+WHISPER_CUBLAS=1 make -j
+
+# test it
+./whisper.cpp -l en -m ./models/ggml-tiny.en.bin samples/jfk.wav
+```
 
 To minimize GPU footprint, use the tiny.en model. It consumes just over 111 MiB VRAM on our budget laptop. 48MiB with `./models/ggml-tiny.en-q4_0.bin` quantized to 4Bits.  `--convert` is required because we record in .mp3 format. We started using port 7777 because 8080 is used by other apps. Feel free to change it. As long as servers and clients agree, it should be no problem.
 
 We launch `server` under the name, `whisper_cpp_server` to make it less confusing when it shows up in the process list.
-
 ```shell
-ln -s $(pwd)/server whisper_cpp_server
+ln -sf $(pwd)/main whisper.cpp
+ln -sf $(pwd)/server whisper.cpp.server
 ./whisper_cpp_server -l en -m models/ggml-tiny.en.bin --port 7777 --convert
 ```
 
-Due to a [bug](https://github.com/ggerganov/whisper.cpp/issues/1587), it might necessary to add the `-ng` flag. But this should be fixed as of whisper.cpp v1.5.3. Although `-ng` is not ideal, matrix multiplcations will still use cuBLAS, for about 2x speedup.
+Due to [issues](https://github.com/ggerganov/whisper.cpp/issues/1587) using the aforementioned unsupported compiler, it might necessary to add the `-ng` flag. But even that has been reported to work as of whisper.cpp v1.5.3. Although `-ng` is not ideal, matrix multiplcations will still use cuBLAS, for about 2x speedup.
 
-If `whisper_cpp_server` refuses to start, reboot. Or, if applicable, reload the Nvidia uvm module `sudo modprobe -r nvidia_uvm && sudo modprobe nvidia_uvm`.
+If `whisper_cpp_server` refuses to start, reboot. Or, especially if using the unsupported compiler, we may have to reload the crashed Nvidia uvm module `sudo modprobe -r nvidia_uvm && sudo modprobe nvidia_uvm`. We are crazy hackers now, aren't we.
 
 Edit `whisper_cpp.py` clients to change the server location from localhost to wherever the server resides on the network.
 
@@ -202,13 +233,18 @@ If there is no API key, or if ChatGPT is busy, it will ping a private language m
 
 Having the chat bot talk back is novel, but it can be a pain with long answers. What you *really* want, for the best mix of privacy and knowledge power, is to install [llama.cpp](https://github.com/ggerganov/llama.cpp). An older version of `llama.cpp` is bundled with [GPT4All](https://github.com/nomic-ai/gpt4all) but we don't need all that. 
 
-Compile `llama.cpp` with some type of acceleration, like cuBLAS. Use the [mistral-7b-openorca](https://huggingface.co/Open-Orca/Mistral-7B-OpenOrca) model, which is the same one `GPT4All` uses. Even better, get [open chat](https://huggingface.co/openchat/openchat_3.5) or [code ninja](https://huggingface.co/beowolx/CodeNinja-1.0-OpenChat-7B) in GGUF format. Most other GGUF models will work too. To save VRAM, download the quantized models, or quantize them yourself, as described in the [llama.cpp README](https://github.com/ggerganov/llama.cpp). 
+Compile `llama.cpp` with some type of acceleration, like cuBLAS or openBLAS. Use the [mistral-7b-openorca](https://huggingface.co/Open-Orca/Mistral-7B-OpenOrca) model, which is the same one `GPT4All` uses. Even better, get [open chat](https://huggingface.co/openchat/openchat_3.5) or [code ninja](https://huggingface.co/beowolx/CodeNinja-1.0-OpenChat-7B) in GGUF format. Most other GGUF models will work too. To save RAM, download the quantized models, or quantize them yourself, as described in the [llama.cpp README](https://github.com/ggerganov/llama.cpp).
+
+If you followed our instructions for compiling `whisper.cpp` with `cuBLAS`, you should be all set to compile `llama.cpp`.
+```conda activatge gcc12
+cmake -B build -DWHISPER_CUBLAS=1
+```
 
 Run chat in interactive mode, in the terminal, using Whisper Dictation to type questions. It won't speak its answers. But you won't have to listen to pages and pages of response text, either.
 
-And just like that. We can explore the results of months of researching "What's the best AI that I can realistically use on my laptop?" The future is here! Launch codes:
+And just like that. We can explore the results of months of researching "What's the best AI that I can realistically use on my laptop?" The future is here! Use `-ngl` option for maximum warp. Launch codes:
 
-`./llama -m models/mistral-7b-openorca.Q4_0.gguf --multiline-input --color --interactive-first -p "You are a helpful and knowledgeable assistant.`
+`./llama -ngl 33 -m models/mistral-7b-openorca.Q4_0.gguf --multiline-input --color --interactive-first -p "You are a helpful and knowledgeable assistant.`
 
 **Mimic3.** If you install [mimic3](https://github.com/MycroftAI/mimic3) as a service, the computer will speak answers out loud. Follow the [instructions for setting up mimic3 as a Systemd Service](https://mycroft-ai.gitbook.io/docs/mycroft-technologies/mimic-tts/mimic-3#web-server). The `mimic3-server` is already lightening-fast on CPU. Do not bother with --cuda flag, which requires old `onnxruntime-gpu` that is not compatible with CUDA 12+ and won't compile with nvcc12... We got it working! And it just hogs all of VRAM and provides no noticeable speedup anyway. Regular `onnxruntime` works fine with mimic3.
 
