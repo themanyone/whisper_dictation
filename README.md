@@ -94,7 +94,7 @@ conda activate gcc12
 WHISPER_CUBLAS=1 make -j
 # ignore errors "local/cuda/lib64/libcublas.so: undefined reference to `memcpy@GLIBC_2.14'"
 
-# if there were errors, re-run make outside of conda to finish linking against modern GLIBC_2.14
+# if there were errors, re-run make outside of conda to finish linking.
 conda deactivate
 WHISPER_CUBLAS=1 make -j
 
@@ -106,8 +106,8 @@ To minimize GPU footprint, use the tiny.en model. It consumes just over 111 MiB 
 
 We launch `server` under the name, `whisper_cpp_server` to make it less confusing when it shows up in the process list.
 ```shell
-ln -sf $(pwd)/main whisper.cpp
-ln -sf $(pwd)/server whisper.cpp.server
+ln -sf $(pwd)/main whisper_cpp
+ln -sf $(pwd)/server whisper_cpp_server
 ./whisper_cpp_server -l en -m models/ggml-tiny.en.bin --port 7777 --convert
 ```
 
@@ -238,13 +238,15 @@ Compile `llama.cpp` with some type of acceleration, like cuBLAS or openBLAS. Use
 If you followed our instructions for compiling `whisper.cpp` with `cuBLAS`, you should be all set to compile `llama.cpp`.
 ```conda activatge gcc12
 cmake -B build -DWHISPER_CUBLAS=1
+ln -s $(pwd)/main llama_cpp
+ln -s $(pwd)/server llama_server
 ```
 
 Run chat in interactive mode, in the terminal, using Whisper Dictation to type questions. It won't speak its answers. But you won't have to listen to pages and pages of response text, either.
 
 And just like that. We can explore the results of months of researching "What's the best AI that I can realistically use on my laptop?" The future is here! Use `-ngl` option for maximum warp. Launch codes:
 
-`./llama -ngl 33 -m models/mistral-7b-openorca.Q4_0.gguf --multiline-input --color --interactive-first -p "You are a helpful and knowledgeable assistant.`
+`./llama_cpp -ngl 33 -m models/mistral-7b-openorca.Q4_0.gguf --multiline-input --color --interactive-first -p "You are a helpful and knowledgeable assistant.`
 
 **Mimic3.** If you install [mimic3](https://github.com/MycroftAI/mimic3) as a service, the computer will speak answers out loud. Follow the [instructions for setting up mimic3 as a Systemd Service](https://mycroft-ai.gitbook.io/docs/mycroft-technologies/mimic-tts/mimic-3#web-server). The `mimic3-server` is already lightening-fast on CPU. Do not bother with --cuda flag, which requires old `onnxruntime-gpu` that is not compatible with CUDA 12+ and won't compile with nvcc12... We got it working! And it just hogs all of VRAM and provides no noticeable speedup anyway. Regular `onnxruntime` works fine with mimic3.
 
@@ -296,7 +298,7 @@ By following these steps, you will have swapped the behavior of the "break" or "
 
 Now we are ready to change `whisper_cpp.py`, `whisper_dictation.py` or `whisper_client.py` to use Ctrl-V paste instead of middle click. Somewhere around line 144, change the line that says `pyautogui.middleClick()` to `pyautogui.hotkey('ctrl', 'v')`.
 
-**I want it to type slowly.** We would love to have it type text slowly, but typing has become unbearably-slow on sites like Twitter and Facebook. The theory is they are using JavaScript to restrict input from bots. But it is annoying as hell to fast typists too. If you enjoy watching the sunset while it types one, letter, at, a, time on social media, you can change the code to use `pyautogui.typewrite(t, typing_interval)` for everything, and set a `typing_interval` to whatever speed you want.
+**I want it to type slowly.** We would love to have it type text slowly, but typing has become unbearably-slow on sites like Twitter and Facebook. The theory is they are using JavaScript to restrict input from bots. But it is annoying for fast typists too. If occasional slow typing doesn't bother you, change the code to use `pyautogui.typewrite(t, typing_interval)` for everything, and set a `typing_interval` to whatever speed you want.
 
 ## JAX Issues.
 
