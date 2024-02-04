@@ -58,6 +58,8 @@ pip install ffmpeg
 pip install pyautogui
 pip install pyperclip
 pip install pygobject
+pip install openai
+pip install requests
 ```
 
 Now edit `whisper_cpp.py`, and set the address of cpp_url to the address of your server machine. In this case, it is already set up to use localhost.
@@ -80,7 +82,17 @@ conda activate gcc12
 conda install -c conda-forge gxx=12
 ```
 
-The Makefile expects cuda to be installed in /opt/cuda
+Since we intend to use this `gcc12` to build and install things for the host system, instead of just this conda environment, we will break it, by having it use the system `ld` and libraries. There might be a better way to do this, of which ignorance is bliss.
+```
+ln -sf /bin/ld $HOME/.conda/envs/gcc12/bin/x86_64-conda-linux-gnu-ld
+mv $HOME/.conda/envs/gcc12/x86_64-conda-linux-gnu/sysroot/lib64 $HOME/.conda/envs/gcc12/x86_64-conda-linux-gnu/sysroot/lib64.conda
+ln -sf /usr/lib $HOME/.conda/envs/gcc12/x86_64-conda-linux-gnu/sysroot/
+ln -sf /usr/lib64 $HOME/.conda/envs/gcc12/x86_64-conda-linux-gnu/sysroot/
+ln -sf /usr/include $HOME/.conda/envs/gcc12/x86_64-conda-linux-gnu/sysroot/
+ln -sf /usr/local $HOME/.conda/envs/gcc12/x86_64-conda-linux-gnu/sysroot/
+```
+
+The Makefile expects `cuda` to be installed in `/opt/cuda`
 ```
 sudo ln -s /etc/alternatives/cuda /opt/cuda
 sudo ln -s /etc/alternatives/cuda/lib64 /opt/cuda/lib64
@@ -92,14 +104,14 @@ cd whisper.cpp
 git pull
 conda activate gcc12
 WHISPER_CUBLAS=1 make -j
-# ignore errors "local/cuda/lib64/libcublas.so: undefined reference to `memcpy@GLIBC_2.14'"
+```
 
-# if there were errors, re-run make outside of conda to finish linking.
+If you didn't break your conda environment like we did, ignore errors "local/cuda/lib64/libcublas.so: undefined reference to `memcpy@GLIBC_2.14'"
+If there were errors, re-run make outside of conda to finish linking using the system `ld` and libraries. See what we did there?
+```
 conda deactivate
 WHISPER_CUBLAS=1 make -j
-
-# test it
-./whisper.cpp -l en -m ./models/ggml-tiny.en.bin samples/jfk.wav
+./whisper.cpp -l en -m ./models/ggml-tiny.en.bin samples/jfk.wav`
 ```
 
 To minimize GPU footprint, use the tiny.en model. It consumes just over 111 MiB VRAM on our budget laptop. 48MiB with `./models/ggml-tiny.en-q4_0.bin` quantized to 4Bits.  `--convert` is required because we record in .mp3 format. We started using port 7777 because 8080 is used by other apps. Feel free to change it. As long as servers and clients agree, it should be no problem.
@@ -138,34 +150,46 @@ webui.sh --api --medvram
 
 Control your computer. Refer to the section on [spoken commands and program launchers](#Spoken).
 
-## Whisper-JAX Setup.
+## Client / Server dependncies.
+
+Install some things to make the python apps work.
+```shell
+sudo dnf install python-devel gobject-introspection-devel python3-gobject-devel cairo-gobject-devel python3-tkinter python3-devel
+pip install ffmpeg
+pip install pyautogui
+pip install pyperclip
+pip install pygobject
+pip install --upgrade onnxruntime==1.15.1
+```
+
+
+## Whisper-JAX Setup and dependencies.
 
 If not using `whisper.cpp`, or to compare back ends, we can also connect to Whisper-JAX.
 
 Go to https://github.com/google/jax#installation and follow through the steps to install cuda, cudnn, or whatever is missing. All these [whisper-jax](https://github.com/sanchit-gandhi/whisper-jax) dependencies and video drivers can be quite bulky, requiring about 5.6GiB of downloads.
 
-```shell
-sudo dnf install python-devel gobject-introspection-devel python3-gobject-devel cairo-gobject-devel python3-tkinter python3-devel
-```
-
-Install `torch` for the chat server. But do not install it in the same conda or venv virtual environment as `whisper_dictation`. Or use your main python installation. If you install `torch` in the same virtual environment, it could downgrade `nvidia-cudnn-cu11` to an incompatible version. Then you will have to run something like `./.venv/bin/python -m pip install --upgrade nvidia-cudnn-cu11` from within the virtual environment to make `whisper-jax` work again. This difficulty might be addressed in another update. Or you can try building `torch` from source. But for now it's much easier to use conda or venv to keep things separate.
+Install `torch` for the chat server. It may be a challenge to install it in the same conda or venv virtual environment as `whisper_dictation`. We just install everything to the main python installation now. With an earlier version of `torch`, it would downgrade `nvidia-cudnn-cu11` to an incompatible version. Then it was necessary to run something like `./.venv/bin/python -m pip install --upgrade nvidia-cudnn-cu11` from within the virtual environment to make `whisper-jax` work again. It works now with the following install commands. Or you can try building `torch` from source. You still might be easier to use conda or venv to keep things separate.
 
 The commands to install JAX for GPU(CUDA) are copied [from here](https://jax.readthedocs.io/en/latest/index.html).
 
 Install [whisper-jax](https://github.com/sanchit-gandhi/whisper-jax) and make sure the examples work. You may need to reboot to properly initialize accelerated drivers, e.g. CUDA, after getting everything installed. And after each kernel update, and video driver upgrade/recompilation. An alternative to rebooting is to reload the module responsible for acceleration. For Nvidia, `sudo modprobe -r nvidia_uvm && sudo modprobe nvidia_uvm`.
 
 ```shell
-# activate conda or venv
+# activate conda or venv (optional)
 python3 -m venv .venv
 source .venv/bin/activate
-# install dependencies
-pip install  nvidia-cudnn-cu11
-pip install "jax[cuda]" -f https://storage.googleapis.com/jax-releases/jax_cuda_releases.html
+# install dependencies (links may need updating someday)
+pip install --upgrade onnxruntime==1.15.1
 pip install numpy
-pip install ffmpeg
-pip install pyautogui
-pip install pyperclip
-pip install pygobject
+pip install  nvidia-cudnn-cu11
+pip install --pre torch torchvision torchaudio --index-url https://download.pytorch.org/whl/nightly/cu123
+pip install --upgrade --no-deps --force-reinstall git+https://github.com/sanchit-gandhi/whisper-jax.git
+pip install --upgrade transformers>=4.27.4
+#GPU https://github.com/google/jax?tab=readme-ov-file#installation
+pip install -U "jax[cuda12_pip]" -f https://storage.googleapis.com/jax-releases/jax_cuda_releases.html
+#Or TPU
+pip install -U "jax[tpu]" -f https://storage.googleapis.com/jax-releases/libtpu_releases.html
 ```
 
 There may be other dependencies. Look in requirements.txt.
@@ -267,7 +291,7 @@ And just like that. We can explore the results of months of researching "What's 
 
 `jserver.py`: A `whisper-jax` server. Run it with `venv-run jserver.py`. You might also find that, although they start quickly, clients are slightly less-responsive, compared to the bundled version. This is because servers set aside extra resoures to handle multiple clients, resources which typically aren't necessary for one user. If only a handful of clients will use it, editing `jserver.py` in certain ways may speed it up somewhat. Make it use the "openai/whisper-tiny.en" checkpoint. Reduce BATCH_SIZE, CHUNK_LENGTH_S, NUM_PROC to the minimum necessary to support your needs.
 
-`record.py`: hands-free recording from the microphone. It waits up to 10 minutes listening for a minimum threshold sound level of, -20dB, but you can edit the script and change that. It stops recording when audio drops below that level for a couple seconds. You can run it separately. It creates a cropped audio soundbite named `audio.mp3`. Or you can supply an output file name on the command line.
+`record.py`: A sound-activated recorder for hands-free recording from the microphone. It waits up to 10 minutes listening for a minimum threshold sound level of, -20dB, but you can edit the script and change that. It stops recording when audio drops below that level for a couple seconds. You can run it separately. It creates a cropped audio soundbite named `audio.mp3`. Or you can supply an output file name on the command line.
 
 `app.py`: A local, privacy-focused AI chat server. Start it by typing `flask run` from within the directory where it resides. You can use almost any chat model on huggingface with it. Edit the file, and and change the model configuration. It is not a security-focused server, however. So beware using it outside the local network. And do not share its address with more than a few friends. In particular, flask apps have no built-in protection against distributed denial-of-service attacks (DDoS).
 
