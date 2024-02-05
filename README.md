@@ -84,7 +84,6 @@ conda install -c conda-forge gxx=12
 
 Since we intend to use this `gcc12` to build and install things for the host system, instead of just this conda environment, we will break it, by having it use the system `ld` and libraries. There might be a better way to do this, of which ignorance is bliss.
 ```
-ln -sf /bin/ld $HOME/.conda/envs/gcc12/bin/x86_64-conda-linux-gnu-ld
 mv $HOME/.conda/envs/gcc12/x86_64-conda-linux-gnu/sysroot/lib64 $HOME/.conda/envs/gcc12/x86_64-conda-linux-gnu/sysroot/lib64.conda
 ln -sf /usr/lib $HOME/.conda/envs/gcc12/x86_64-conda-linux-gnu/sysroot/
 ln -sf /usr/lib64 $HOME/.conda/envs/gcc12/x86_64-conda-linux-gnu/sysroot/
