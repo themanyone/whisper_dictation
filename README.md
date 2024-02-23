@@ -13,7 +13,7 @@ Fast! Offline, privacy-focused, hands-free voice typing, AI voice chat, voice co
 - Draws pictures with stable-diffusion-webui.
 - Client and server versions included.
 
-Get it from https://github.com/themanyone/whisper_dictation.git
+**Fredoms and responsibilities** Free and open-source software comes with NO WARRANTEES. You have permission to copy and modify for individual needs in accordance with the included LICENSE. Download the updated project from https://github.com/themanyone/whisper_dictation.git
 
 **The ship's computer.** Inspired by the *Star Trek* television series. Talk to your computer any time. And have it answer back with clear, easy-to-understand speech. Network it throughout the ship. Use your voice to write Captain's Log entries when the internet is down, when satellites are busy, or in the far reaches of the galaxy, "where no man has gone before."
 
