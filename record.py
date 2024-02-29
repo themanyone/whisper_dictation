@@ -47,7 +47,7 @@ class Record:
     lead_in_time = 0.25 # Lead-in time. Increase if it cuts off the beginning.
     lead_in = 0
     dB = -20.0 # threshold audio level, for detecting start of speech
-    quiet_period = 15 # in tenths: 10 = stop recording after 1 sec. of silence.
+    quiet_period = 10 # in tenths: 10 = stop recording after 1 sec. of silence.
     src = "autoaudiosrc" # audio source (alsasrc, pulsesrc, autoaudiosrc, etc.)
     count = 0
 
