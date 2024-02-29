@@ -19,7 +19,7 @@ Fast! Offline, privacy-focused, hands-free voice typing, AI voice chat, voice co
 
 **Privacy focused.** Most voice keyboards, dictation, translation, and chat bots depend on sending data to remote servers, which is a privacy concern. Keep data off the internet and confidential with your own, local servers. A CUDA-enabled video card with at least 1Gb is all that's needed to run an uncensored virtual assistant that listens and responds via voice. While being completely free, offline, and independent.
 
-**Dictation.** Start speaking and whatever you say will be pasted into the current window. This project now uses a client-server model. So other network users may use it without installing all these dependencies.
+**Dictation.** Start speaking and whatever you say will be pasted into the current window. This project now includes a couple clients. So other network users (even some phones and tablets that can run linux) can use it without installing all these dependencies.
 
 **Translation.** This app is optimised for dictation. It can do some translation into English. But that's not its primary task. To use it as a full-time translator, start whisper.cpp with `--translate` flag and use ggml-medium.bin or larger language model in place of ggml-small.en.bin.
 
@@ -29,7 +29,7 @@ Or if using JAX, set `task="transcribe"` to `task="translate"` inside `whisper_d
 
 For example, say, "Computer, search the web for places to eat". A browser opens up with a list of local restaurants. Say, "Computer, say hello to our guest". After a brief pause, there is a reply, either from `ChatGPT`, the included chat server on the local machine, or another, networked chat server that you set up. A voice, `mimic3` says some variation of, "Hello. Pleased to meet you. Welcome to our shop. Let me know how I can be of assistance". It's unique each time. Say, "Computer, open terminal". A terminal window pops up. Say "Computer, draw a picture of a Klingon warship". An image of a warship appears with buttons to save, print, and navigate through previously-generated images.
 
-**AI Images.** Now with the included stable-diffusion API, `sdapi.py`, images may be generated locally, or across the network. Requires [stable-diffusion-webui](https://github.com/AUTOMATIC1111/stable-diffusion-webui). Start `webui.sh` on the server with --medvram and --api options. If using remotely, configure our `sdapi.py` client with the server's address.
+**AI Images.** Now with the included stable-diffusion API, `sdapi.py`, images may be generated locally, or across the network. Requires [stable-diffusion-webui](https://github.com/AUTOMATIC1111/stable-diffusion-webui). Start `webui.sh` on the server with --medvram or --lowvram and --api options. If using remotely, configure our `sdapi.py` client with the server's address.
 
 **Chat.** You can converse with our own chat bot now. Start it with `flask run` whisper_dictation will use that. There is no need to say its name except to start the conversation. From then on it goes into a conversational mode. Say "Resume dictation" to start typing again.
 
@@ -37,15 +37,15 @@ Set the chat language model in `app.py`. The first time you use it, it will down
 
 ## Advantages and tradeoffs.
 
+**Security.** Older versions used a 10-minute audio buffer that stopped when it filled up. Now we recycle a tiny RAM buffer. Although this version can run continuously without filling up hard drives, there are valid concerns about letting it run unattended, because it can listen and also type commands. To prevent AI from taking over, *Please set screen saver to log out or lock the computer when not in use.* Or launch whisper_dictation with `timeout` utility to shut it off after a certain period of time.
+
 **Whisper JAX or Whisper.cpp?** Whisper AI is currently the state of the art for open-source Python voice transcription software. [Whisper JAX](https://github.com/sanchit-gandhi/whisper-jax) accelerates Whisper AI with optimised JAX code. [Whisper.cpp](https://github.com/ggerganov/whisper.cpp) takes a different route, and rewrites Whisper AI in bare-metal C++, so it might yield even better performance on some accelerated hardware. And, if you already have C++ development libraries, video drivers, tools, and experience, C++ eliminates having to download the roughly 5 GiB of Python dependencies for Whisper JAX.
 
-Our implementation may be adapted to use any back-end implimentation of Whisper AI. All we do is record audio when sound (hopefully speech) is detected. We transcribe the audio internally with `whsper-jax`, or send it to a `whisper-jax` server, a [Whisper.cpp](https://github.com/ggerganov/whisper.cpp), server, or another audio transcription service.
+Our implementation may be adapted to use any back-end implimentation of Whisper AI. All we do is record audio when sound (hopefully speech) is detected. `whisper_dictation.py` transcribes the audio internally with `whsper-jax`, `whisper_client.py` sends it to a `whisper-jax` server. `whisper_cpp.py`, sends audio to an accelerated [Whisper.cpp](https://github.com/ggerganov/whisper.cpp), server you set up, or another audio transcription service.
 
 The tradeoff with running Whisper continuously is that some VRAM stays reserved until shutting down the stand-alone application or server. Depending on hardware and workflow, you might experience issues with other video-intensive tasks, games mostly, while these things are running.
 
-**Time limits.** Our voice detection listens for 10 minutes before it gets bored and signs off. It then waits an additional 10 minutes for some type of acknowledgement or grunt before shutting down the client and freeing resources. Feel free to change the recording duration in `record.py`. Be aware that longer recordings use additional /tmp space, which usually resides in RAM.
-
-For an extremely-simple, light-weight, dictation-only client/server solution, try the [voice_typing](https://github.com/themanyone/voice_typing) app. It uses the bash shell to record and loads up whisper only when spoken-to. It now has a `whisper.cpp` thin client too. Or try the ancient, less-accurate [Freespeech](https://github.com/themanyone/freespeech-vr/tree/python3) project, which uses old-school Pocketsphinx, but is very light on resources.
+For a simpler, light-weight, dictation-only client/server solution, try the [voice_typing](https://github.com/themanyone/voice_typing) app. It uses the bash shell to record and loads up whisper only when spoken-to. It now has a `whisper.cpp` thin client too. Or try the ancient, less-accurate [Freespeech](https://github.com/themanyone/freespeech-vr/tree/python3) project, which uses old-school Pocketsphinx, but is very light on resources.
 
 Whisper Dictation is not optimised for making captions or transcripts of pre-recorded material. Use [Whisper.cpp](https://github.com/ggerganov/whisper.cpp) or [whisper-jax](https://github.com/sanchit-gandhi/whisper-jax) for that. They too have a [server with a web interface that makes transcripts for voice recordings and videos](https://github.com/sanchit-gandhi/whisper-jax/blob/main/app/app.py). If you want real-time AI captions translating everyone's conversations in the room into English. If you want to watch videos with accents that are difficult to understand. Or if you just don't want to miss what the job interviewer asked you during that zoom call... WHAT???, check out my other project, [Caption Anything](https://github.com/themanyone/caption_anything). And generate captions as you record live "what you hear" from the audio monitor device (any sounds that are playing through the computer).
 
@@ -70,7 +70,7 @@ Now edit `whisper_cpp.py`, and set the address of cpp_url to the address of your
 
 Compile [Whisper.cpp](https://github.com/ggerganov/whisper.cpp) with some type of acceleration for best results. We are using `cuBLAS`. Unfortunately, gcc versions later than 12 are not (currently) supported for building with `cuBLAS`*.
 
-*TL-DR*. Our investigation has determined that the reason for `gcc-13` incompatibility is that `cuBLAS` libraries come pre-compiled with fixes for the now infamous [memcpy vs. memmove saga](https://www.win.tue.nl/~aeb/linux/misc/gcc-semibug.html) in glibc. The bug affected copying and moving memory (structs, pairs, and arrays which amount to what we call tensors). The `gcc-13` and `libstdc++13` toolchain now automatically attemps to fix the same bugs. Sinc later versions of Linux are shipping with `gcc-13` as the only option, we have a situation of double correction happening when we compile with `cuBLAS`, resulting in chaos.
+*TL-DR*. Our investigation has determined that the reason for `gcc-13` incompatibility is that `cuBLAS` libraries come pre-compiled with fixes for the [memcpy vs. memmove saga](https://www.win.tue.nl/~aeb/linux/misc/gcc-semibug.html) in glibc. The bug affected copying and moving memory (structs, pairs, and arrays which amount to what we call tensors). The `gcc-13` and `libstdc++13` toolchain now automatically attemps to fix the same bugs, so there is a conflict.
 
 If you would like to experience this chaos for yourself, try using the unsupported compiler toolchain:
 	`NVCCFLAGS="-allow-unsupported-compiler LLAMA_CUBLAS=1 make -j`
@@ -98,6 +98,7 @@ sudo ln -s /etc/alternatives/cuda/lib64 /opt/cuda/lib64
 ```
 
 And, after installing the package which provides `/usr/lib64/libpthread_nonshared.a` (`compat-libpthread-nonshared`), we can build with `cuBLAS`.
+
 ```
 cd whisper.cpp
 git pull
@@ -107,6 +108,7 @@ WHISPER_CUBLAS=1 make -j
 
 If you didn't break your conda environment like we did, ignore errors "local/cuda/lib64/libcublas.so: undefined reference to `memcpy@GLIBC_2.14'"
 If there were errors, re-run make outside of conda to finish linking using the system `ld` and libraries. See what we did there?
+
 ```
 conda deactivate
 WHISPER_CUBLAS=1 make -j
@@ -122,9 +124,9 @@ ln -sf $(pwd)/server whisper_cpp_server
 ./whisper_cpp_server -l en -m models/ggml-tiny.en.bin --port 7777 --convert
 ```
 
-Due to [issues](https://github.com/ggerganov/whisper.cpp/issues/1587) using the aforementioned unsupported compiler, it might necessary to add the `-ng` flag. But even that has been reported to work as of whisper.cpp v1.5.3. Although `-ng` is not ideal, matrix multiplcations will still use cuBLAS, for about 2x speedup.
+When we used the wrong compiler, we used to have to add the `-ng` flag, which gives about 2x speedup instead of 4x or more.
 
-If `whisper_cpp_server` refuses to start, reboot. Or, especially if using the unsupported compiler, we may have to reload the crashed Nvidia uvm module `sudo modprobe -r nvidia_uvm && sudo modprobe nvidia_uvm`. We are crazy hackers now, aren't we.
+If `whisper_cpp_server` refuses to start, reboot. Or, especially if using the unsupported compiler like we did, reload the crashed Nvidia uvm module `sudo modprobe -r nvidia_uvm && sudo modprobe nvidia_uvm`. Hopefully this will no longer be necessary, but you never know. So we are leaving it here. We are crazy hackers now, aren't we.
 
 Edit `whisper_cpp.py` clients to change the server location from localhost to wherever the server resides on the network.
 
@@ -152,6 +154,7 @@ Control your computer. Refer to the section on [spoken commands and program laun
 ## Client / Server dependncies.
 
 Install some things to make the python apps work.
+
 ```shell
 sudo dnf install python-devel gobject-introspection-devel python3-gobject-devel cairo-gobject-devel python3-tkinter python3-devel
 pip install ffmpeg
@@ -161,14 +164,13 @@ pip install pygobject
 pip install --upgrade onnxruntime==1.15.1
 ```
 
-
 ## Whisper-JAX Setup and dependencies.
 
 If not using `whisper.cpp`, or to compare back ends, we can also connect to Whisper-JAX.
 
 Go to https://github.com/google/jax#installation and follow through the steps to install cuda, cudnn, or whatever is missing. All these [whisper-jax](https://github.com/sanchit-gandhi/whisper-jax) dependencies and video drivers can be quite bulky, requiring about 5.6GiB of downloads.
 
-Install `torch` for the chat server. It may be a challenge to install it in the same conda or venv virtual environment as `whisper_dictation`. We just install everything to the main python installation now. With an earlier version of `torch`, it would downgrade `nvidia-cudnn-cu11` to an incompatible version. Then it was necessary to run something like `./.venv/bin/python -m pip install --upgrade nvidia-cudnn-cu11` from within the virtual environment to make `whisper-jax` work again. It works now with the following install commands. Or you can try building `torch` from source. You still might be easier to use conda or venv to keep things separate.
+Install `torch` nightly version for the chat server. It may be a challenge to install it in the same conda or venv virtual environment as `whisper_dictation`. We just install everything to the main python installation now. With an earlier version of `torch`, it would downgrade `nvidia-cudnn-cu11` to an incompatible version. Then it was necessary to run something like `./.venv/bin/python -m pip install --upgrade nvidia-cudnn-cu11` from within the virtual environment to make `whisper-jax` work again. It works now with the following install commands. Or you can try building `torch` from source. You still might be easier to use conda or venv to keep things separate.
 
 The commands to install JAX for GPU(CUDA) are copied [from here](https://jax.readthedocs.io/en/latest/index.html).
 
@@ -237,7 +239,7 @@ Try saying:
 - Peter, compose a Facebook post about the sunny weather we're having.
 - Stop dictation. (quits program).
 
-** export your OPENAI_API_KEY to the environment if you want answers from ChatGPT. If your firm is worried about privacy and security, use the local chat bot with `flask run`. ChatGPT also has an enterprise version that they claim to be more private and secure. We are not affiliated with OpenAI, and therefor do not receive referral benefits.
+** export your OPENAI_API_KEY to the environment if you want answers from ChatGPT. If your firm is worried about privacy and security, use the local chat bot with `flask run` or `llama.cpp`. ChatGPT also has an enterprise version that they claim to be more private and secure. We are not affiliated with OpenAI, and therefor do not receive referral benefits.
 
 ### Optional chat and text-to-speech.
 
@@ -259,6 +261,7 @@ Having the chat bot talk back is novel, but it can be a pain with long answers. 
 Compile `llama.cpp` with some type of acceleration, like cuBLAS or openBLAS. Use the [mistral-7b-openorca](https://huggingface.co/Open-Orca/Mistral-7B-OpenOrca) model, which is the same one `GPT4All` uses. Even better, get [open chat](https://huggingface.co/openchat/openchat_3.5) or [code ninja](https://huggingface.co/beowolx/CodeNinja-1.0-OpenChat-7B) in GGUF format. Most other GGUF models will work too. To save RAM, download the quantized models, or quantize them yourself, as described in the [llama.cpp README](https://github.com/ggerganov/llama.cpp).
 
 If you followed our instructions for compiling `whisper.cpp` with `cuBLAS`, you should be all set to compile `llama.cpp`.
+
 ```conda activatge gcc12
 cmake -B build -DWHISPER_CUBLAS=1
 ln -s $(pwd)/main llama_cpp
