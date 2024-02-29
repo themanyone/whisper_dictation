@@ -124,7 +124,7 @@ class Record:
                 if rms < dB:
                     self.silence = self.silence + 1
                     if self.silence > self.quiet_period:
-                        to = convert_to_ffmpeg_time(self.count / 10 - self.lead_in_time)
+                        to = convert_to_ffmpeg_time(self.count / 10)
                         self.try_restart(self.ss, to); return # wrap it up, we're done!
                 # keep recording if there is more speech
                 elif rms > dB: # speech detected
