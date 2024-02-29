@@ -31,7 +31,7 @@ import subprocess, tempfile
 import signal
 import ffmpeg
 
-# Listen for 60 seconds before clearing the buffer and restarting.
+# Listen for 10 seconds before clearing the buffer and restarting.
 # quit recording after (seconds)
 buffer_seconds = 10
 
@@ -85,7 +85,6 @@ class Record:
         self.stop_recording()
         # trim time off temp audio, save to fname
         if ss:
-            print(ss, to)
             process = ( ffmpeg.input(self.audio_buffer, v=0, ss=ss, to=to)
                 .output(fname)
                 .overwrite_output()
@@ -96,6 +95,7 @@ class Record:
         else:
             os.truncate(self.audio_buffer, 0)
             self.count = 0
+            self.silence = 0
             self.lead_in = time.time() + self.lead_in_time
             self.rec_pipe.set_state(Gst.State.PLAYING)
             self.lvl_pipe.set_state(Gst.State.PLAYING)
