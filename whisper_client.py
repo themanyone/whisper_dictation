@@ -223,6 +223,9 @@ def transcribe():
                 start = now; pastetext(t)
         # continue looping every second
         else: time.sleep(0.5)
+        except KeyboardInterrupt:
+            say("Goodbye.")
+            break
 
 def recorder():
     # If it wasn't for Gst conflict with pyperclip,
