@@ -41,7 +41,7 @@ Set the chat language model in `app.py`. The first time you use it, it will down
 
 **Whisper JAX or Whisper.cpp?** Whisper AI is currently the state of the art for open-source Python voice transcription software. [Whisper JAX](https://github.com/sanchit-gandhi/whisper-jax) accelerates Whisper AI with optimised JAX code. [Whisper.cpp](https://github.com/ggerganov/whisper.cpp) takes a different route, and rewrites Whisper AI in bare-metal C++, so it might yield even better performance on some accelerated hardware. And, if you already have C++ development libraries, video drivers, tools, and experience, C++ eliminates having to download the roughly 5 GiB of Python dependencies for Whisper JAX.
 
-Our implementation may be adapted to use any back-end implimentation of Whisper AI. All we do is record audio when sound (hopefully speech) is detected. `whisper_dictation.py` transcribes the audio internally with `whsper-jax`, `whisper_client.py` sends it to a `whisper-jax` server. `whisper_cpp.py`, sends audio to an accelerated [Whisper.cpp](https://github.com/ggerganov/whisper.cpp), server you set up, or another audio transcription service.
+Our implementation may be adapted to use any back-end implimentation of Whisper AI. All we do is record audio when sound (hopefully speech) is detected. `whisper_dictation.py` transcribes the audio internally with `whsper-jax`, `whisper_client.py` sends it to a `whisper-jax` server. `whisper_cpp_client.py`, sends audio to an accelerated [Whisper.cpp](https://github.com/ggerganov/whisper.cpp), server you set up, or another audio transcription service.
 
 The tradeoff with running Whisper continuously is that some VRAM stays reserved until shutting down the stand-alone application or server. Depending on hardware and workflow, you might experience issues with other video-intensive tasks, games mostly, while these things are running.
 
@@ -62,7 +62,7 @@ pip install openai
 pip install requests
 ```
 
-Now edit `whisper_cpp.py`, and set the address of cpp_url to the address of your server machine. In this case, it is already set up to use localhost.
+Now edit `whisper_cpp_client.py`, and set the address of cpp_url to the address of your server machine. In this case, it is already set up to use localhost.
 
 `cpp_url = "http://127.0.0.1:7777/inference"`
 
@@ -128,13 +128,13 @@ When we used the wrong compiler, we used to have to add the `-ng` flag, which gi
 
 If `whisper_cpp_server` refuses to start, reboot. Or, especially if using the unsupported compiler like we did, reload the crashed Nvidia uvm module `sudo modprobe -r nvidia_uvm && sudo modprobe nvidia_uvm`. Hopefully this will no longer be necessary, but you never know. So we are leaving it here. We are crazy hackers now, aren't we.
 
-Edit `whisper_cpp.py` clients to change the server location from localhost to wherever the server resides on the network.
+Edit `whisper_cpp_client.py` clients to change the server location from localhost to wherever the server resides on the network.
 
 **Start a client.**
 
 ```shell
 cd whisper_dictation
-./whisper_cpp.py
+./whisper_cpp_client.py
 ```
 
 **Optionally start a chat server.**
@@ -285,7 +285,7 @@ And just like that. We can explore the results of months of researching "What's 
 
 ## File listing.
 
-`whisper_cpp.py`: A small and efficient Python client that connects to a running [Whisper.cpp](https://github.com/ggerganov/whisper.cpp) server on the local machine or across the network.
+`whisper_cpp_client.py`: A small and efficient Python client that connects to a running [Whisper.cpp](https://github.com/ggerganov/whisper.cpp) server on the local machine or across the network.
 
 `whisper_dictation.py`: A stand-alone app bundled with Whisper-JAX Python. (No server required.) It loads the language model and takes a long time to start up. It also uses more VRAM (adjustable with environment variables. See JAX documentation). But with those extra resources it might be more responsive than client/server solutions.
 
@@ -322,7 +322,7 @@ Various test files, including:
 
 By following these steps, you will have swapped the behavior of the "break" or "stop script" Ctrl-C, and the copy, Ctrl-Shift-C hotkeys in the Linux terminal.
 
-Now we are ready to change `whisper_cpp.py`, `whisper_dictation.py` or `whisper_client.py` to use Ctrl-V paste instead of middle click. Somewhere around line 144, change the line that says `pyautogui.middleClick()` to `pyautogui.hotkey('ctrl', 'v')`.
+Now we are ready to change `whisper_cpp_client.py`, `whisper_dictation.py` or `whisper_client.py` to use Ctrl-V paste instead of middle click. Somewhere around line 144, change the line that says `pyautogui.middleClick()` to `pyautogui.hotkey('ctrl', 'v')`.
 
 **I want it to type slowly.** We would love to have it type text slowly, but typing has become unbearably-slow on sites like Twitter and Facebook. The theory is they are using JavaScript to restrict input from bots. But it is annoying for fast typists too. If occasional slow typing doesn't bother you, change the code to use `pyautogui.typewrite(t, typing_interval)` for everything, and set a `typing_interval` to whatever speed you want.
 
