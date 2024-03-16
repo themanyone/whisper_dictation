@@ -26,15 +26,15 @@ import tempfile
 import threading
 import subprocess, signal
 import requests
-import json
 from mimic3_client import say
 from gradio_client import Client
 client = Client("http://localhost:7860/")
 
 # address of Fallback Chat Server.
 fallback_chat_url = 'http://localhost:5000'
-api_key = os.getenv("OPENAI_API_KEY")
+debug = False
 
+api_key = os.getenv("OPENAI_API_KEY")
 if (api_key):
     import openai
     openai.api_key = api_key
@@ -88,6 +88,8 @@ def process_actions(tl):
             q = tl[s.end():] # get q for action
             say("okay")
             eval(action)
+            if debug:
+                print(q)
             return True # success
     if chatting:
         chatGPT(tl); return True

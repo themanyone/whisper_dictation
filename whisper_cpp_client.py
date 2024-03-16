@@ -26,19 +26,19 @@ import tempfile
 import threading
 import subprocess, signal
 import requests
-import json
 from mimic3_client import say
 # address of whisper.cpp server
 cpp_url = "http://127.0.0.1:7777/inference"
 # address of Fallback Chat Server.
 fallback_chat_url = 'http://localhost:5000'
-api_key = os.getenv("OPENAI_API_KEY")
+debug = False
 
+api_key = os.getenv("OPENAI_API_KEY")
 if (api_key):
     import openai
     openai.api_key = api_key
 else:
-    sys.stderr.write("Export OPENAI_API_KEY if you want answers from ChatGPT.")
+    sys.stderr.write("Export OPENAI_API_KEY if you want answers from ChatGPT.\n")
 
 # commands and hotkeys for various platforms
 commands = {
@@ -87,6 +87,8 @@ def process_actions(tl):
             q = tl[s.end():] # get q for action
             say("okay")
             eval(action)
+            if debug:
+                print(q)
             return True # success
     if chatting:
         chatGPT(tl); return True
