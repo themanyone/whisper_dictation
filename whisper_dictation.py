@@ -194,50 +194,51 @@ def transcribe():
     global start
     global listening
     while True:
-        # transcribe audio from queue
-        if f := audio_queue.get():
-            t = gettext(f).strip('\n')
-            print(t)
-            # delete temporary audio file
-            try: os.remove(f)
-            except: pass
-            if not t: break
+        try:
+            # transcribe audio from queue
+            if f := audio_queue.get():
+                t = gettext(f).strip('\n')
+                print(t)
+                # delete temporary audio file
+                try: os.remove(f)
+                except: pass
+                if not t: break
 
-            # get lower-case spoken command string
-            lower_case = t.lower().strip()
-            if match := re.search(r"[^\w\s]$", lower_case):
-                lower_case = lower_case[:match.start()] # remove punctuation
+                # get lower-case spoken command string
+                lower_case = t.lower().strip()
+                if match := re.search(r"[^\w\s]$", lower_case):
+                    lower_case = lower_case[:match.start()] # remove punctuation
 
-            # see list of actions and hotkeys at top of file :)
-            # Go to Website.
-            if s:=re.search(r"^(peter|computer).? (go|open|browse|visit|navigate)( up| to| the| website)* [a-zA-Z0-9-]{1,63}(\.[a-zA-Z0-9-]{1,63})+$", lower_case):
-                q = lower_case[s.end():] # get q for command
-                webbrowser.open('https://' + q.strip())
-                continue
-            # Stop dictation.
-            elif re.search(r"^.?stop.(d.ctation|listening).?$", lower_case):
-                say("Shutting down.")
-                break
-            elif re.search(r"^.?(pause.d.ctation|positi.?i?cation).?$", lower_case):
-                listening = False
-                say("okay")
-                #record_process.send_signal(signal.SIGINT)
-                #record_process.wait()
-                #say("Acknowledged.")
-                #input("Paused. Press Enter to continue...")
-                #audio_queue.get() # discard truncated sample
-                #listening = True
-            elif process_actions(lower_case): continue
-            if not listening: continue
-            elif process_hotkeys(lower_case): continue
-            else:
-                now = time.time()
-                # Remove leading space from new paragraph
-                if now - start > 120: t = t.strip()
-                # Paste it now
-                start = now; pastetext(t)
-        # continue looping every second
-        else: time.sleep(0.5)
+                # see list of actions and hotkeys at top of file :)
+                # Go to Website.
+                if s:=re.search(r"^(peter|computer).? (go|open|browse|visit|navigate)( up| to| the| website)* [a-zA-Z0-9-]{1,63}(\.[a-zA-Z0-9-]{1,63})+$", lower_case):
+                    q = lower_case[s.end():] # get q for command
+                    webbrowser.open('https://' + q.strip())
+                    continue
+                # Stop dictation.
+                elif re.search(r"^.?stop.(d.ctation|listening).?$", lower_case):
+                    say("Shutting down.")
+                    break
+                elif re.search(r"^.?(pause.d.ctation|positi.?i?cation).?$", lower_case):
+                    listening = False
+                    say("okay")
+                    #record_process.send_signal(signal.SIGINT)
+                    #record_process.wait()
+                    #say("Acknowledged.")
+                    #input("Paused. Press Enter to continue...")
+                    #audio_queue.get() # discard truncated sample
+                    #listening = True
+                elif process_actions(lower_case): continue
+                if not listening: continue
+                elif process_hotkeys(lower_case): continue
+                else:
+                    now = time.time()
+                    # Remove leading space from new paragraph
+                    if now - start > 120: t = t.strip()
+                    # Paste it now
+                    start = now; pastetext(t)
+            # continue looping every second
+            else: time.sleep(0.5)
         except KeyboardInterrupt:
             say("Goodbye.")
             break

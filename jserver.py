@@ -1,7 +1,7 @@
-#!.venv/bin/python
+#!/usr/bin/python
 # -*- coding: utf-8 -*-
 ##
-## Copyright 2023 Henry Kroll <nospam@thenerdshow.com>
+## Copyright 2024 Henry Kroll <nospam@thenerdshow.com>
 ##
 ## This program is free software; you can redistribute it and/or modify
 ## it under the terms of the GNU General Public License as published by
@@ -223,12 +223,12 @@ if __name__ == "__main__":
     microphone_chunked = gr.Interface(
         fn=transcribe_chunked_audio,
         inputs=[
-            gr.components.Audio(source="microphone", type="filepath"),
+            gr.components.Audio(sources="microphone", type="filepath"),
             gr.components.Radio(["transcribe", "translate"], label="Task"),
-            gr.components.Checkbox(default=False, label="Return timestamps"),
+            gr.components.Checkbox(value=False, label="Return timestamps"),
         ],
         outputs=[
-            gr.components.Textbox(label="Transcription").style(show_copy_button=True),
+            gr.components.Textbox(label="Transcription", show_copy_button=True),
             gr.components.Textbox(label="Transcription Time (s)"),
         ],
         allow_flagging="never",
@@ -240,12 +240,12 @@ if __name__ == "__main__":
     audio_chunked = gr.Interface(
         fn=transcribe_chunked_audio,
         inputs=[
-            gr.components.Audio(source="upload", label="Audio file", type="filepath"),
+            gr.components.Audio(sources="upload", label="Audio file", type="filepath"),
             gr.components.Radio(["transcribe", "translate"], label="Task", ),
-            gr.components.Checkbox(default=False, label="Return timestamps"),
+            gr.components.Checkbox(value=False, label="Return timestamps"),
         ],
         outputs=[
-            gr.components.Textbox(label="Transcription").style(show_copy_button=True),
+            gr.components.Textbox(label="Transcription", show_copy_button=True),
             gr.components.Textbox(label="Transcription Time (s)"),
         ],
         allow_flagging="never",
@@ -258,12 +258,12 @@ if __name__ == "__main__":
         fn=transcribe_youtube,
         inputs=[
             gr.components.Textbox(lines=1, placeholder="Paste the URL to a YouTube video here", label="YouTube URL"),
-            gr.components.Radio(["transcribe", "translate"], label="Task", default="transcribe"),
-            gr.components.Checkbox(default=False, label="Return timestamps"),
+            gr.components.Radio(["transcribe", "translate"], label="Task", value="transcribe"),
+            gr.components.Checkbox(value=False, label="Return timestamps"),
         ],
         outputs=[
             gr.components.HTML(label="Video"),
-            gr.components.Textbox(label="Transcription").style(show_copy_button=True),
+            gr.components.Textbox(label="Transcription", show_copy_button=True),
             gr.components.Textbox(label="Transcription Time (s)"),
         ],
         allow_flagging="never",
@@ -279,5 +279,5 @@ if __name__ == "__main__":
     with demo:
         gr.TabbedInterface([microphone_chunked, audio_chunked, youtube], ["Microphone", "Audio File", "YouTube"])
 
-    demo.queue(concurrency_count=1, max_size=5)
-    demo.launch(server_name="0.0.0.0", show_api=False)
+    demo.queue(max_size=5)
+    demo.launch(server_name="0.0.0.0", ssl_keyfile=None, ssl_certfile=None, ssl_verify=False, share=False, share_server_protocol="http", show_api=False)

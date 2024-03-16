@@ -1,4 +1,4 @@
-#!/usr/bin/python3.10
+#!/usr/bin/python
 ## test.py
 ##
 ## Test torch, cuda, cudnn, onnxruntime-gpu
