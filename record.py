@@ -27,8 +27,7 @@
 ##
 
 import os, sys, time
-import subprocess, tempfile
-import signal
+import tempfile
 import ffmpeg
 
 # Listen for 10 seconds before clearing the buffer and restarting.
@@ -104,7 +103,6 @@ class Record:
     # handle sound-level messages 10 per second
     def on_sound_level(self, bus, message):
         dB = self.dB
-        Gst = self.Gst
         self.count += 1
         if message.get_structure().get_name() == 'level':
             rms = message.get_structure().get_value('rms')[0]
@@ -187,7 +185,6 @@ class Record:
 
 if __name__ == '__main__':
     Record = Record()
-    signal.signal(signal.SIGINT, Record.signal_handler)
     if len(sys.argv) > 1:
         fname = sys.argv[1]
     else: fname = "audio.mp3"
