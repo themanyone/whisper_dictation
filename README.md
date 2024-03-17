@@ -1,6 +1,6 @@
 # Whisper Dictation
 
-Fast! Offline, privacy-focused, hands-free voice typing, AI voice chat, voice control, in **under 1 Gb of VRAM** when optimised for dictation alone. "The works" all AI features now running concurrently on a laptop with under 4GiB of VRAM!
+Fast! Offline, privacy-focused, hands-free voice typing, AI voice chat, voice control, in **under 1 Gb of VRAM** when optimized for dictation alone. "The works" all AI features now running concurrently on a laptop with under 4 GiB of VRAM!
 
 <img src="img/ss.png" alt="example pic" title="App does dictation anywhere, even social media." width="300" align="right">
 
@@ -13,15 +13,15 @@ Fast! Offline, privacy-focused, hands-free voice typing, AI voice chat, voice co
 - Draws pictures with stable-diffusion-webui.
 - Client and server versions included.
 
-**Fredoms and responsibilities** Free and open-source software comes with NO WARRANTEES. You have permission to copy and modify for individual needs in accordance with the included LICENSE. Download the updated project from https://github.com/themanyone/whisper_dictation.git
+**Freedoms and responsibilities** Free and open-source software comes with NO WARRANTIES. You have permission to copy and modify for individual needs in accordance with the included LICENSE. Download the updated project from https://github.com/themanyone/whisper_dictation.git
 
 **The ship's computer.** Inspired by the *Star Trek* television series. Talk to your computer any time. And have it answer back with clear, easy-to-understand speech. Network it throughout the ship. Use your voice to write Captain's Log entries when the internet is down, when satellites are busy, or in the far reaches of the galaxy, "where no man has gone before."
 
-**Privacy focused.** Most voice keyboards, dictation, translation, and chat bots depend on sending data to remote servers, which is a privacy concern. Keep data off the internet and confidential with your own, local servers. A CUDA-enabled video card with at least 1Gb is all that's needed to run an uncensored virtual assistant that listens and responds via voice. While being completely free, offline, and independent.
+**Privacy focused.** Most voice keyboards, dictation, translation, and chat bots depend on sending data to remote servers, which is a privacy concern. Keep data off the internet and confidential with your own, local servers. A CUDA-enabled video card with at least 1 Gb is all that's needed to run an uncensored virtual assistant that listens and responds via voice. While being completely free, offline, and independent.
 
-**Dictation.** Start speaking and whatever you say will be pasted into the current window. This project now includes a couple clients. So other network users (even some phones and tablets that can run linux) can use it without installing all these dependencies.
+**Dictation.** Start speaking and whatever you say will be pasted into the current window. This project now includes a couple clients. So other network users (even some phones and tablets that can run Linux) can use it without installing all these dependencies.
 
-**Translation.** This app is optimised for dictation. It can do some translation into English. But that's not its primary task. To use it as a full-time translator, start whisper.cpp with `--translate` flag and use ggml-medium.bin or larger language model in place of ggml-small.en.bin.
+**Translation.** This app is optimized for dictation. It can do some translation into English. But that's not its primary task. To use it as a full-time translator, start whisper.cpp with `--translate` flag and use ggml-medium.bin or larger language model in place of ggml-small.en.bin.
 
 Or if using JAX, set `task="transcribe"` to `task="translate"` inside `whisper_dictation.py`, and, if there is enough VRAM, choose a larger model for the pipeline, such as `openai/whisper-large-v2` for improved translation results.
 
@@ -35,19 +35,19 @@ For example, say, "Computer, search the web for places to eat". A browser opens 
 
 Set the chat language model in `app.py`. The first time you use it, it will download the language model from huggingface. Our chat implementation keeps track of the current chat session only. The conversation is stored in RAM, and simply discarded after the program exits. It is never saved to the cloud, or made available to the Galactic Federation for the authorities at Star Fleet to go over with a fine-toothed comb...
 
-## Advantages and tradeoffs.
+## Advantages and trade-offs.
 
 **Security.** Older versions used a 10-minute audio buffer that stopped when it filled up. Now we recycle a tiny RAM buffer. Although this version can run continuously without filling up hard drives, there are valid concerns about letting it run unattended, because it can listen and also type commands. To prevent AI from taking over, *Please set screen saver to log out or lock the computer when not in use.* Or launch whisper_dictation with `timeout` utility to shut it off after a certain period of time.
 
-**Whisper JAX or Whisper.cpp?** Whisper AI is currently the state of the art for open-source Python voice transcription software. [Whisper JAX](https://github.com/sanchit-gandhi/whisper-jax) accelerates Whisper AI with optimised JAX code. [Whisper.cpp](https://github.com/ggerganov/whisper.cpp) takes a different route, and rewrites Whisper AI in bare-metal C++, so it might yield even better performance on some accelerated hardware. And, if you already have C++ development libraries, video drivers, tools, and experience, C++ eliminates having to download the roughly 5 GiB of Python dependencies for Whisper JAX.
+**Whisper JAX or Whisper.cpp?** Whisper AI is currently the state of the art for open-source Python voice transcription software. [Whisper JAX](https://github.com/sanchit-gandhi/whisper-jax) accelerates Whisper AI with optimized JAX code. [Whisper.cpp](https://github.com/ggerganov/whisper.cpp) takes a different route, and rewrites Whisper AI in bare-metal C++, so it might yield even better performance on some accelerated hardware. And, if you already have C++ development libraries, video drivers, tools, and experience, C++ eliminates having to download the roughly 5 GiB of Python dependencies for Whisper JAX.
 
-Our implementation may be adapted to use any back-end implimentation of Whisper AI. All we do is record audio when sound (hopefully speech) is detected. `whisper_dictation.py` transcribes the audio internally with `whsper-jax`, `whisper_client.py` sends it to a `whisper-jax` server. `whisper_cpp_client.py`, sends audio to an accelerated [Whisper.cpp](https://github.com/ggerganov/whisper.cpp), server you set up, or another audio transcription service.
+Our implementation may be adapted to use any back-end implementation of Whisper AI. All we do is record audio when sound (hopefully speech) is detected. `whisper_dictation.py` transcribes the audio internally with `whisper-jax`, `whisper_client.py` sends it to a `whisper-jax` server. `whisper_cpp_client.py`, sends audio to an accelerated [Whisper.cpp](https://github.com/ggerganov/whisper.cpp), server you set up, or another audio transcription service.
 
-The tradeoff with running Whisper continuously is that some VRAM stays reserved until shutting down the stand-alone application or server. Depending on hardware and workflow, you might experience issues with other video-intensive tasks, games mostly, while these things are running.
+The trade-off with running Whisper continuously is that some VRAM stays reserved until shutting down the stand-alone application or server. Depending on hardware and workflow, you might experience issues with other video-intensive tasks, games mostly, while these things are running.
 
 For a simpler, light-weight, dictation-only client/server solution, try the [voice_typing](https://github.com/themanyone/voice_typing) app. It uses the bash shell to record and loads up whisper only when spoken-to. It now has a `whisper.cpp` thin client too. Or try the ancient, less-accurate [Freespeech](https://github.com/themanyone/freespeech-vr/tree/python3) project, which uses old-school Pocketsphinx, but is very light on resources.
 
-Whisper Dictation is not optimised for making captions or transcripts of pre-recorded material. Use [Whisper.cpp](https://github.com/ggerganov/whisper.cpp) or [whisper-jax](https://github.com/sanchit-gandhi/whisper-jax) for that. They too have a [server with a web interface that makes transcripts for voice recordings and videos](https://github.com/sanchit-gandhi/whisper-jax/blob/main/app/app.py). If you want real-time AI captions translating everyone's conversations in the room into English. If you want to watch videos with accents that are difficult to understand. Or if you just don't want to miss what the job interviewer asked you during that zoom call... WHAT???, check out my other project, [Caption Anything](https://github.com/themanyone/caption_anything). And generate captions as you record live "what you hear" from the audio monitor device (any sounds that are playing through the computer).
+Whisper Dictation is not optimized for making captions or transcripts of pre-recorded material. Use [Whisper.cpp](https://github.com/ggerganov/whisper.cpp) or [whisper-jax](https://github.com/sanchit-gandhi/whisper-jax) for that. They too have a [server with a web interface that makes transcripts for voice recordings and videos](https://github.com/sanchit-gandhi/whisper-jax/blob/main/app/app.py). If you want real-time AI captions translating everyone's conversations in the room into English. If you want to watch videos with accents that are difficult to understand. Or if you just don't want to miss what the job interviewer asked you during that zoom call... WHAT???, check out my other project, [Caption Anything](https://github.com/themanyone/caption_anything). And generate captions as you record live "what you hear" from the audio monitor device (any sounds that are playing through the computer).
 
 ## Whisper.cpp Client
 
@@ -70,9 +70,9 @@ Now edit `whisper_cpp_client.py`, and set the address of cpp_url to the address 
 
 Compile [Whisper.cpp](https://github.com/ggerganov/whisper.cpp) with some type of acceleration for best results. We are using `cuBLAS`. Unfortunately, gcc versions later than 12 are not (currently) supported for building with `cuBLAS`*.
 
-*TL-DR*. Our investigation has determined that the reason for `gcc-13` incompatibility is that `cuBLAS` libraries come pre-compiled with fixes for the [memcpy vs. memmove saga](https://www.win.tue.nl/~aeb/linux/misc/gcc-semibug.html) in glibc. The bug affected copying and moving memory (structs, pairs, and arrays which amount to what we call tensors). The `gcc-13` and `libstdc++13` toolchain now automatically attemps to fix the same bugs, so there is a conflict.
+*TL-DR*. Our investigation has determined that the reason for `gcc-13` incompatibility is that `cuBLAS` libraries come pre-compiled with fixes for the [memcpy vs. memmove saga](https://www.win.tue.nl/~aeb/linux/misc/gcc-semibug.html) in glibc. The bug affected copying and moving memory (structs, pairs, and arrays which amount to what we call tensors). The `gcc-13` and `libstdc++13` tool chain now automatically attempts to fix the same bugs, so there is a conflict.
 
-If you would like to experience this chaos for yourself, try using the unsupported compiler toolchain:
+If you would like to experience this chaos for yourself, try using the unsupported compiler tool chain:
 	`NVCCFLAGS="-allow-unsupported-compiler LLAMA_CUBLAS=1 make -j`
 
 We now set up a `gcc-12` `conda` environment to keep things sane. We could also use a docker container for this.
@@ -115,7 +115,7 @@ WHISPER_CUBLAS=1 make -j
 ./whisper.cpp -l en -m ./models/ggml-tiny.en.bin samples/jfk.wav`
 ```
 
-To minimize GPU footprint, use the tiny.en model. It consumes just over 111 MiB VRAM on our budget laptop. 48MiB with `./models/ggml-tiny.en-q4_0.bin` quantized to 4Bits.  `--convert` is required because we record in .mp3 format. We started using port 7777 because 8080 is used by other apps. Feel free to change it. As long as servers and clients agree, it should be no problem.
+To minimize GPU footprint, use the tiny.en model. It consumes just over 111 MiB VRAM on our budget laptop. 48MiB with `./models/ggml-tiny.en-q4_0.bin` quantized to 4 Bits.  `--convert` is required because we record in .mp3 format. We started using port 7777 because 8080 is used by other apps. Feel free to change it. As long as servers and clients agree, it should be no problem.
 
 We launch `server` under the name, `whisper_cpp_server` to make it less confusing when it shows up in the process list.
 ```shell
@@ -126,7 +126,7 @@ ln -sf $(pwd)/server whisper_cpp_server
 
 When we used the wrong compiler, we used to have to add the `-ng` flag, which gives about 2x speedup instead of 4x or more.
 
-If `whisper_cpp_server` refuses to start, reboot. Or, especially if using the unsupported compiler like we did, reload the crashed Nvidia uvm module `sudo modprobe -r nvidia_uvm && sudo modprobe nvidia_uvm`. Hopefully this will no longer be necessary, but you never know. So we are leaving it here. We are crazy hackers now, aren't we.
+If `whisper_cpp_server` refuses to start, reboot. Or, especially if using the unsupported compiler like we did, reload the crashed NVIDIA uvm module `sudo modprobe -r nvidia_uvm && sudo modprobe nvidia_uvm`. Hopefully this will no longer be necessary, but you never know. So we are leaving it here. We are crazy hackers now, aren't we.
 
 Edit `whisper_cpp_client.py` clients to change the server location from localhost to wherever the server resides on the network.
 
@@ -151,7 +151,7 @@ webui.sh --api --medvram
 
 Control your computer. Refer to the section on [spoken commands and program launchers](#Spoken).
 
-## Client / Server dependncies.
+## Client / Server dependencies.
 
 Install some things to make the python apps work.
 
@@ -168,7 +168,7 @@ pip install --upgrade onnxruntime==1.15.1
 
 If not using `whisper.cpp`, or to compare back ends, we can also connect to Whisper-JAX.
 
-Go to https://github.com/google/jax#installation and follow through the steps to install cuda, cudnn, or whatever is missing. All these [whisper-jax](https://github.com/sanchit-gandhi/whisper-jax) dependencies and video drivers can be quite bulky, requiring about 5.6GiB of downloads.
+Go to https://github.com/google/jax#installation and follow through the steps to install cuda, cudnn, or whatever is missing. All these [whisper-jax](https://github.com/sanchit-gandhi/whisper-jax) dependencies and video drivers can be quite bulky, requiring about 5.6 GiB of downloads.
 
 Install `torch` nightly version for the chat server. It may be a challenge to install it in the same conda or venv virtual environment as `whisper_dictation`. We just install everything to the main python installation now. With an earlier version of `torch`, it would downgrade `nvidia-cudnn-cu11` to an incompatible version. Then it was necessary to run something like `./.venv/bin/python -m pip install --upgrade nvidia-cudnn-cu11` from within the virtual environment to make `whisper-jax` work again. It works now with the following install commands. Or you can try building `torch` from source. You still might be easier to use conda or venv to keep things separate.
 
@@ -212,7 +212,7 @@ Refer to the section on [GPU memory usage](#Issues).
 
 If it complains about missing files, modify `whisper_dictation.py` and, in the first line, set the location of Python to the one inside the virtual environment that works with Whisper-JAX. The one you installed everything in. The default for our usage is `.venv/bin/python` which should load the correct one. But if it doesn't, you can change this to the path of python inside the conda or venv environment. Then you don't have to source or activate the virtual environment each time. You can just change to the directory and run it.
 
-Feel free to change the FlaxWhisperPipline language, or use "openai/whisper-large-v2" if your video card can afford having more than 1Gb VRAM tied-up. It defaults to `openai/whisper-small.en` which uses around 975MiB VRAM when [optimised for size](#Issues). But in fact, we get *fantastic* results even with `openai/whisper-tiny.en` So you might want to go tiny instead. Then it might even work with a tiny video card. We would be interested to know.
+Feel free to change the FlaxWhisperPipline language, or use "openai/whisper-large-v2" if your video card can afford having more than 1Gb VRAM tied-up. It defaults to `openai/whisper-small.en` which uses around 975 MiB VRAM when [optimized for size](#Issues). But in fact, we get *fantastic* results even with `openai/whisper-tiny.en` So you might want to go tiny instead. Then it might even work with a tiny video card. We would be interested to know.
 
 ### Spoken commands and program launchers.
 
@@ -262,7 +262,7 @@ Compile `llama.cpp` with some type of acceleration, like cuBLAS or openBLAS. Use
 
 If you followed our instructions for compiling `whisper.cpp` with `cuBLAS`, you should be all set to compile `llama.cpp`.
 
-```conda activatge gcc12
+```conda activate gcc12
 cmake -B build -DWHISPER_CUBLAS=1
 ln -s $(pwd)/main llama_cpp
 ln -s $(pwd)/server llama_server
@@ -291,7 +291,7 @@ And just like that. We can explore the results of months of researching "What's 
 
 `whisper_client.py`: A client version of Whisper Dictation. The client connects to a local [Whisper JAX server](https://jserver.py) running on the machine, the local network, or the internet. Edit `whisper_client.py` to configure the server location. Clients make dictation available even on budget laptops and old phones that can run linux/python from the app store.
 
-`jserver.py`: A `whisper-jax` server. Run it with `venv-run jserver.py`. You might also find that, although they start quickly, clients are slightly less-responsive, compared to the bundled version. This is because servers set aside extra resoures to handle multiple clients, resources which typically aren't necessary for one user. If only a handful of clients will use it, editing `jserver.py` in certain ways may speed it up somewhat. Make it use the "openai/whisper-tiny.en" checkpoint. Reduce BATCH_SIZE, CHUNK_LENGTH_S, NUM_PROC to the minimum necessary to support your needs.
+`jserver.py`: A `whisper-jax` server. Run it with `venv-run jserver.py`. You might also find that, although they start quickly, clients are slightly less-responsive, compared to the bundled version. This is because servers set aside extra resources to handle multiple clients, resources which typically aren't necessary for one user. If only a handful of clients will use it, editing `jserver.py` in certain ways may speed it up somewhat. Make it use the "openai/whisper-tiny.en" checkpoint. Reduce BATCH_SIZE, CHUNK_LENGTH_S, NUM_PROC to the minimum necessary to support your needs.
 
 `record.py`: A sound-activated recorder for hands-free recording from the microphone. It waits up to 10 minutes listening for a minimum threshold sound level of, -20dB, but you can edit the script and change that. It stops recording when audio drops below that level for a couple seconds. You can run it separately. It creates a cropped audio soundbite named `audio.mp3`. Or you can supply an output file name on the command line.
 
@@ -305,7 +305,7 @@ Various test files, including:
 
 ### Improvements.
 
-**Stable-Diffusion.** Stable-Diffusion normally requires upwards of 16Gb of VRAM. But we were able to get it running with a mere 2Gb using the `--medvram` option with [The Stable Diffuion Web UI](https://techtactician.com/stable-diffusion-low-vram-memory-errors-fix/). 
+**Stable-Diffusion.** Stable-Diffusion normally requires upwards of 16 GiB of VRAM. But we were able to get it running with a mere 2 GiB using the `--medvram` option with [The Stable Diffusion Web UI](https://techtactician.com/stable-diffusion-low-vram-memory-errors-fix/). 
 
 **Text goes to wrong place.** We now use `pyperclip` and `pyautogui` to paste text, instead of typing responses into the current window. We use middle-click paste on Linux, so that it also works in terminals. If you miss and it doesn't put text where you want, you can always manually middle-click it somewhere else.
 
@@ -328,15 +328,15 @@ Now we are ready to change `whisper_cpp_client.py`, `whisper_dictation.py` or `w
 
 ## JAX Issues.
 
-**GPU memory usage.** According to [JAX documentation](https://jax.readthedocs.io/en/latest/gpu_memory_allocation.html), JAX preallocates around 75% of VRAM to reduce allocation overhead and memory fragmentation. Configure JAX GPU usage through environment variables to save space.
+**GPU memory usage.** According to [JAX documentation](https://jax.readthedocs.io/en/latest/gpu_memory_allocation.html), JAX pre-allocates around 75% of VRAM to reduce allocation overhead and memory fragmentation. Configure JAX GPU usage through environment variables to save space.
 
-`export XLA_PYTHON_CLIENT_ALLOCATOR=platform` provides the smallest GPU footprint, 983MiB with `openai/whisper-small.en`. We noticed no performance penalty, and no memory fragmentation with this setting. Because Whisper Dictation only uses one compiled JAX process, and reuses it each time. Put in `~/.bashrc` or `~/.bash_profile` to make changes persistent.
+`export XLA_PYTHON_CLIENT_ALLOCATOR=platform` provides the smallest GPU footprint, 983 MiB with `openai/whisper-small.en`. We noticed no performance penalty, and no memory fragmentation with this setting. Because Whisper Dictation only uses one compiled JAX process, and reuses it each time. Put in `~/.bashrc` or `~/.bash_profile` to make changes persistent.
 
 If the above setting causes problems, try the following.
 
-`export XLA_PYTHON_CLIENT_PREALLOCATE=false` This uses around 2048MiB of VRAM. We did not notice *any* performance boost preallocating half of our laptop's VRAM. But mileage may vary.
+`export XLA_PYTHON_CLIENT_PREALLOCATE=false` This uses around 2048 MiB of VRAM. We did not notice *any* performance boost pre-allocating half of our laptop's VRAM. But mileage may vary.
 
-`export XLA_PYTHON_CLIENT_MEM_FRACTION=.XX` If the above preallocation is enabled, this makes JAX preallocate XX% of the total GPU memory, instead of the default 75%.
+`export XLA_PYTHON_CLIENT_MEM_FRACTION=.XX` If the above pre-allocation is enabled, this makes JAX pre-allocate XX% of the total GPU memory, instead of the default 75%.
 
 Monitor JAX memory usage with [jax-smi](https://github.com/ayaka14732/jax-smi), `nvidia-smi`, or by installing the bloated, GreenWithEnvy (gwe) from Nvidia that does the exact-same thing with a graphical interface.
 
