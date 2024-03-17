@@ -1,0 +1,17 @@
+ffmpeg_python==0.2.0
+Flask==3.0.2
+gradio==4.21.0
+gradio_client==0.12.0
+jax==0.4.23
+numpy==1.24.4
+onnxruntime==1.15.1
+onnxruntime_gpu==1.17.1
+openai==1.14.1
+Pillow==10.2.0
+PyAutoGUI==0.9.54
+pyperclip==1.8.2
+Requests==2.31.0
+torch==2.3.0.dev20240203+cu121
+transformers==4.34.1
+whisper_jax==0.0.1
+yt_dlp==2024.3.10
