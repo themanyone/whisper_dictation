@@ -115,13 +115,13 @@ WHISPER_CUBLAS=1 make -j
 ./whisper.cpp -l en -m ./models/ggml-tiny.en.bin samples/jfk.wav`
 ```
 
-To minimize GPU footprint, use the tiny.en model. It consumes just over 111 MiB VRAM on our budget laptop. 48MiB with `./models/ggml-tiny.en-q4_0.bin` quantized to 4 Bits.  `--convert` is required because we record in .mp3 format. We started using port 7777 because 8080 is used by other apps. Feel free to change it. As long as servers and clients agree, it should be no problem.
+To minimize GPU footprint, use the tiny.en model. It consumes just over 111 MiB VRAM on our budget laptop. 48MiB with `./models/ggml-tiny.en-q4_0.bin` quantized to 4 Bits.  `--convert` is no longer required since we started using wav files instead of `.mp3` which whisper.cpp ffmpeg is having difficulty with lately. We started using port 7777 because 8080 is used by other apps. Feel free to change it. As long as servers and clients agree, it should be no problem.
 
 We launch `server` under the name, `whisper_cpp_server` to make it less confusing when it shows up in the process list.
 ```shell
 ln -sf $(pwd)/main whisper_cpp
 ln -sf $(pwd)/server whisper_cpp_server
-./whisper_cpp_server -l en -m models/ggml-tiny.en.bin --port 7777 --convert
+./whisper_cpp_server -l en -m models/ggml-tiny.en.bin --port 7777
 ```
 
 When we used the wrong compiler, we used to have to add the `-ng` flag, which gives about 2x speedup instead of 4x or more.
