@@ -35,7 +35,7 @@ For example, say, "Computer, search the web for places to eat". A browser opens 
 
 Set the chat language model in `app.py`. The first time you use it, it will download the language model from huggingface. Our chat implementation keeps track of the current chat session only. The conversation is stored in RAM, and simply discarded after the program exits. It is never saved to the cloud, or made available to the Galactic Federation for the authorities at Star Fleet to go over with a fine-toothed comb...
 
-## Advantages and trade-offs.
+## Advantages and trade-offs
 
 **Security.** Older versions used a 10-minute audio buffer that stopped when it filled up. Now we recycle a tiny RAM buffer. Although this version can run continuously without filling up hard drives, there are valid concerns about letting it run unattended, because it can listen and also type commands. To prevent AI from taking over, *Please set screen saver to log out or lock the computer when not in use.* Or launch whisper_dictation with `timeout` utility to shut it off after a certain period of time.
 
@@ -68,7 +68,7 @@ Now edit `whisper_cpp_client.py`, and set the address of cpp_url to the address 
 
 ## Whisper.cpp Server
 
-Compile [Whisper.cpp](https://github.com/ggerganov/whisper.cpp) with some type of acceleration for best results. We are using `cuBLAS`. Unfortunately, gcc versions later than 12 are not (currently) supported for building with `cuBLAS`*.
+Compile [Whisper.cpp](https://github.com/ggerganov/whisper.cpp) with some type of acceleration for best results. We are using `cuBLAS`. Unfortunately, gcc versions later than 12 are not (currently) supported for building with `cuBLAS`*. If not using cuBLAS, you can follow whatever advice they have the Whisper.cpp docs and skip this section.
 
 *TL-DR*. Our investigation has determined that the reason for `gcc-13` incompatibility is that `cuBLAS` libraries come pre-compiled with fixes for the [memcpy vs. memmove saga](https://www.win.tue.nl/~aeb/linux/misc/gcc-semibug.html) in glibc. The bug affected copying and moving memory (structs, pairs, and arrays which amount to what we call tensors). The `gcc-13` and `libstdc++13` tool chain now automatically attempts to fix the same bugs, so there is a conflict.
 
@@ -151,7 +151,7 @@ webui.sh --api --medvram
 
 Control your computer. Refer to the section on [spoken commands and program launchers](#Spoken).
 
-## Client / Server dependencies.
+## Client / Server dependencies
 
 Install some things to make the python apps work.
 
@@ -164,7 +164,7 @@ pip install pygobject
 pip install --upgrade onnxruntime==1.15.1
 ```
 
-## Whisper-JAX Setup and dependencies.
+## Whisper-JAX Setup and dependencies
 
 If not using `whisper.cpp`, or to compare back ends, we can also connect to Whisper-JAX.
 
@@ -201,7 +201,7 @@ Again, explore the examples on the [Whisper-Jax](https://github.com/sanchit-gand
 
 Now we are ready to try dictation.
 
-## Usage.
+## Usage
 
 ```shell
 cd whisper_dictation
@@ -214,7 +214,7 @@ If it complains about missing files, modify `whisper_dictation.py` and, in the f
 
 Feel free to change the FlaxWhisperPipline language, or use "openai/whisper-large-v2" if your video card can afford having more than 1Gb VRAM tied-up. It defaults to `openai/whisper-small.en` which uses around 975 MiB VRAM when [optimized for size](#Issues). But in fact, we get *fantastic* results even with `openai/whisper-tiny.en` So you might want to go tiny instead. Then it might even work with a tiny video card. We would be interested to know.
 
-### Spoken commands and program launchers.
+### Spoken commands and program launchers
 
 The computer responds to commands. You can also call him Peter.
 
@@ -241,7 +241,7 @@ Try saying:
 
 ** export your OPENAI_API_KEY to the environment if you want answers from ChatGPT. If your firm is worried about privacy and security, use the local chat bot with `flask run` or `llama.cpp`. ChatGPT also has an enterprise version that they claim to be more private and secure. We are not affiliated with OpenAI, and therefor do not receive referral benefits.
 
-### Optional chat and text-to-speech.
+### Optional chat and text-to-speech
 
 ```shell
 # in another terminal, not using the .venv reserved for whisper_dictation
@@ -256,11 +256,15 @@ export OPENAI_API_KEY=<my API key>
 
 If there is no API key, or if ChatGPT is busy, it will ping a private language model running on http://localhost:5000. There are language models on [huggingface](https://huggingface.co/models) that produce intelligible conversation with 1 Gb of video RAM. So now whisper_dictation has its own, privacy-focused chat bot. The default language model is for research only. It's pretty limited to fit into such limited space, but rather chatty. He seems to excel at writing poetry, but is lacking in factual information. It is recommended that you edit `app.py` and choose a larger language model if your system supports it.
 
-Having the chat bot talk back is novel, but it can be a pain with long answers. What you *really* want, for the best mix of privacy and knowledge power, is to install [llama.cpp](https://github.com/ggerganov/llama.cpp). An older version of `llama.cpp` is bundled with [GPT4All](https://github.com/nomic-ai/gpt4all) but we don't need all that. 
+# Run a powerful chatbot locally
 
-Compile `llama.cpp` with some type of acceleration, like cuBLAS or openBLAS. Use the [mistral-7b-openorca](https://huggingface.co/Open-Orca/Mistral-7B-OpenOrca) model, which is the same one `GPT4All` uses. Even better, get [open chat](https://huggingface.co/openchat/openchat_3.5) or [code ninja](https://huggingface.co/beowolx/CodeNinja-1.0-OpenChat-7B) in GGUF format. Most other GGUF models will work too. To save RAM, download the quantized models, or quantize them yourself, as described in the [llama.cpp README](https://github.com/ggerganov/llama.cpp).
+Having the included chat bot talk back is novel, but it can be a pain with long answers. What you *really* want, for the best mix of privacy and knowledge power, is to install [llama.cpp](https://github.com/ggerganov/llama.cpp). An older version of `llama.cpp` is bundled with [GPT4All](https://github.com/nomic-ai/gpt4all) but we don't need all that. 
 
-If you followed our instructions for compiling `whisper.cpp` with `cuBLAS`, you should be all set to compile `llama.cpp`.
+## Get llama.cpp
+
+Compile [llama.cpp](https://github.com/ggerganov/llama.cpp) with some type of acceleration as indicated in their docs. We use cuBLAS and openBLAS.
+
+If you followed our instructions for compiling `whisper.cpp` with `cuBLAS`, you should be all set to compile `llama.cpp`. Again, if not using cuBLAS, skip this section.
 
 ```conda activate gcc12
 cmake -B build -DWHISPER_CUBLAS=1
@@ -268,11 +272,19 @@ ln -s $(pwd)/main llama_cpp
 ln -s $(pwd)/server llama_server
 ```
 
+## Download a language model
+
+For language models, use the [mistral-7b-openorca](https://huggingface.co/Open-Orca/Mistral-7B-OpenOrca) model, which is the same one `GPT4All` uses. Even better, get [internlm](https://huggingface.co/bartowski/internlm2_5-7b-chat-1m-GGUF), [open chat](https://huggingface.co/openchat/openchat_3.5), or [code ninja](https://huggingface.co/beowolx/CodeNinja-1.0-OpenChat-7B) in GGUF format. Most other GGUF models will work too. Look at the [leaderboard](https://huggingface.co/spaces/open-llm-leaderboard/open_llm_leaderboard) to see which models are the best. Then search for the model in .gguf format. To save RAM, download the quantized models, or quantize them yourself, as described in the [llama.cpp README](https://github.com/ggerganov/llama.cpp).
+
+## Start chatting
+
 Run chat in interactive mode, in the terminal, using Whisper Dictation to type questions. It won't speak its answers. But you won't have to listen to pages and pages of response text, either.
 
 And just like that. We can explore the results of months of researching "What's the best AI that I can realistically use on my laptop?" The future is here! Use `-ngl` option for maximum warp. Launch codes:
 
 `./llama_cpp -ngl 33 -m models/mistral-7b-openorca.Q4_0.gguf --multiline-input --color --interactive-first -p "You are a helpful and knowledgeable assistant.`
+
+## Give it a voice
 
 **Mimic3.** If you install [mimic3](https://github.com/MycroftAI/mimic3) as a service, the computer will speak answers out loud. Follow the [instructions for setting up mimic3 as a Systemd Service](https://mycroft-ai.gitbook.io/docs/mycroft-technologies/mimic-tts/mimic-3#web-server). The `mimic3-server` is already lightening-fast on CPU. Do not bother with --cuda flag, which requires old `onnxruntime-gpu` that is not compatible with CUDA 12+ and won't compile with nvcc12... We got it working! And it just hogs all of VRAM and provides no noticeable speedup anyway. Regular `onnxruntime` works fine with mimic3.
 
@@ -283,7 +295,7 @@ And just like that. We can explore the results of months of researching "What's 
     params = { 'text': text, "voice": "en_US/vctk_low" }
 ```
 
-## File listing.
+# Files in this project
 
 `whisper_cpp_client.py`: A small and efficient Python client that connects to a running [Whisper.cpp](https://github.com/ggerganov/whisper.cpp) server on the local machine or across the network.
 
@@ -303,7 +315,7 @@ Various test files, including:
 
 `test_cuda.py`: test your torch, pytorch, cuda, and optional onnxruntime installation
 
-### Improvements.
+### Improvements
 
 **Stable-Diffusion.** Stable-Diffusion normally requires upwards of 16 GiB of VRAM. But we were able to get it running with a mere 2 GiB using the `--medvram` option with [The Stable Diffusion Web UI](https://techtactician.com/stable-diffusion-low-vram-memory-errors-fix/). 
 
@@ -326,7 +338,7 @@ Now we are ready to change `whisper_cpp_client.py`, `whisper_dictation.py` or `w
 
 **I want it to type slowly.** We would love to have it type text slowly, but typing has become unbearably-slow on sites like Twitter and Facebook. The theory is they are using JavaScript to restrict input from bots. But it is annoying for fast typists too. If occasional slow typing doesn't bother you, change the code to use `pyautogui.typewrite(t, typing_interval)` for everything, and set a `typing_interval` to whatever speed you want.
 
-## JAX Issues.
+## JAX Issues
 
 **GPU memory usage.** According to [JAX documentation](https://jax.readthedocs.io/en/latest/gpu_memory_allocation.html), JAX pre-allocates around 75% of VRAM to reduce allocation overhead and memory fragmentation. Configure JAX GPU usage through environment variables to save space.
 
