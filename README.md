@@ -260,16 +260,23 @@ If there is no API key, or if ChatGPT is busy, it will ping a private language m
 
 Having the included chat bot talk back is novel, but it can be a pain with long answers. What you *really* want, for the best mix of privacy and knowledge power, is to install [llama.cpp](https://github.com/ggerganov/llama.cpp). An older version of `llama.cpp` is bundled with [GPT4All](https://github.com/nomic-ai/gpt4all) but we don't need all that. 
 
-## Get llama.cpp
+## Get llama.cpp working
 
 Compile [llama.cpp](https://github.com/ggerganov/llama.cpp) with some type of acceleration as indicated in their docs. We use cuBLAS and openBLAS.
 
 If you followed our instructions for compiling `whisper.cpp` with `cuBLAS`, you should be all set to compile `llama.cpp`. Again, if not using cuBLAS, skip this section.
 
-```conda activate gcc12
-cmake -B build -DWHISPER_CUBLAS=1
-ln -s $(pwd)/main llama_cpp
-ln -s $(pwd)/server llama_server
+```
+conda activate gcc12
+LLAMA_CUDA=1 make -j 8
+```
+
+Or in our particular case...
+```
+conda activate gcc12
+CFLAGS="-fno-finite-math-only" LLAMA_FAST=1 LLAMA_CUDA_F16=1 LLAMA_CUDA=1 make -j 8
+conda deactivate
+CFLAGS="-fno-finite-math-only" LLAMA_FAST=1 LLAMA_CUDA_F16=1 LLAMA_CUDA=1 make -j 8
 ```
 
 ## Download a language model
