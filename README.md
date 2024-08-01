@@ -94,7 +94,6 @@ ln -sf /usr/local $HOME/.conda/envs/gcc12/x86_64-conda-linux-gnu/sysroot/
 The Makefile expects `cuda` to be installed in `/opt/cuda`
 ```
 sudo ln -s /etc/alternatives/cuda /opt/cuda
-sudo ln -s /etc/alternatives/cuda/lib64 /opt/cuda/lib64
 ```
 
 And, after installing the package which provides `/usr/lib64/libpthread_nonshared.a` (`compat-libpthread-nonshared`), we can build with `cuBLAS`.
@@ -124,7 +123,7 @@ ln -sf $(pwd)/server whisper_cpp_server
 ./whisper_cpp_server -l en -m models/ggml-tiny.en.bin --port 7777
 ```
 
-When we used the wrong compiler, we used to have to add the `-ng` flag, which gives about 2x speedup instead of 4x or more.
+Earlier versions of this document said you could compile with `gcc13`, and then add the `-ng` flag, but that cuts performance in half, compared with using `gcc12` and getting a full CUDA build.
 
 If `whisper_cpp_server` refuses to start, reboot. Or, especially if using the unsupported compiler like we did, reload the crashed NVIDIA uvm module `sudo modprobe -r nvidia_uvm && sudo modprobe nvidia_uvm`. Hopefully this will no longer be necessary, but you never know. So we are leaving it here. We are crazy hackers now, aren't we.
 
@@ -212,7 +211,7 @@ Refer to the section on [GPU memory usage](#Issues).
 
 If it complains about missing files, modify `whisper_dictation.py` and, in the first line, set the location of Python to the one inside the virtual environment that works with Whisper-JAX. The one you installed everything in. The default for our usage is `.venv/bin/python` which should load the correct one. But if it doesn't, you can change this to the path of python inside the conda or venv environment. Then you don't have to source or activate the virtual environment each time. You can just change to the directory and run it.
 
-Feel free to change the FlaxWhisperPipline language, or use "openai/whisper-large-v2" if your video card can afford having more than 1Gb VRAM tied-up. It defaults to `openai/whisper-small.en` which uses around 975 MiB VRAM when [optimized for size](#Issues). But in fact, we get *fantastic* results even with `openai/whisper-tiny.en` So you might want to go tiny instead. Then it might even work with a tiny video card. We would be interested to know.
+Feel free to change the FlaxWhisperPipline language, or use "openai/whisper-large-v2" if your video card can afford having more than 1Gb VRAM tied-up. It defaults to `openai/whisper-small.en` which uses around 975 MiB VRAM when [optimized for size](#Issues). But in fact, we get *fantastic* results even with `openai/whisper-tiny.en` So you might want to go tiny instead. Then it might even work with a tiny video card.
 
 ### Spoken commands and program launchers
 
@@ -239,7 +238,7 @@ Try saying:
 - Peter, compose a Facebook post about the sunny weather we're having.
 - Stop dictation. (quits program).
 
-** export your OPENAI_API_KEY to the environment if you want answers from ChatGPT. If your firm is worried about privacy and security, use the local chat bot with `flask run` or `llama.cpp`. ChatGPT also has an enterprise version that they claim to be more private and secure. We are not affiliated with OpenAI, and therefor do not receive referral benefits.
+** export your OPENAI_API_KEY to the environment if you want answers from ChatGPT. If your firm is worried about privacy and security, use the local chat bot with `flask run` or `llama.cpp` as explained below. ChatGPT also has an enterprise version that they claim to be more private and secure. We are not affiliated with OpenAI, and therefor do not receive referral benefits.
 
 ### Optional chat and text-to-speech
 
@@ -254,7 +253,7 @@ flask run
 export OPENAI_API_KEY=<my API key>
 ```
 
-If there is no API key, or if ChatGPT is busy, it will ping a private language model running on http://localhost:5000. There are language models on [huggingface](https://huggingface.co/models) that produce intelligible conversation with 1 Gb of video RAM. So now whisper_dictation has its own, privacy-focused chat bot. The default language model is for research only. It's pretty limited to fit into such limited space, but rather chatty. He seems to excel at writing poetry, but is lacking in factual information. It is recommended that you edit `app.py` and choose a larger language model if your system supports it.
+If there is no API key, or if ChatGPT is busy, it will ping a private language model running on http://localhost:5000. There are language models on [huggingface](https://huggingface.co/spaces/open-llm-leaderboard/open_llm_leaderboard) that produce useful results with < 4GiB of video RAM. So now whisper_dictation has its own, privacy-focused chat bot. Edit `app.py` and choose a larger language model if your system supports it.
 
 # Run a powerful chatbot locally
 
@@ -262,34 +261,34 @@ Having the included chat bot talk back is novel, but it can be a pain with long 
 
 ## Get llama.cpp working
 
-Compile [llama.cpp](https://github.com/ggerganov/llama.cpp) with some type of acceleration as indicated in their docs. We use cuBLAS and openBLAS.
+Compile [llama.cpp](https://github.com/ggerganov/llama.cpp) with some type of acceleration as indicated in their docs. We compile with CUDA after installing nvidia drivers and openBLAS.
 
 If you followed our instructions for compiling `whisper.cpp` with `cuBLAS`, you should be all set to compile `llama.cpp`. Again, if not using cuBLAS, skip this section.
 
 ```
 conda activate gcc12
-LLAMA_CUDA=1 make -j 8
+GGML_CUDA=1 make -j
 ```
 
 Or in our particular case...
 ```
 conda activate gcc12
-CFLAGS="-fno-finite-math-only" LLAMA_FAST=1 LLAMA_CUDA_F16=1 LLAMA_CUDA=1 make -j 8
+LLAMA_FAST=1 LLAMA_CUDA_F16=1 LLAMA_CUDA=1 make -j 8
 conda deactivate
-CFLAGS="-fno-finite-math-only" LLAMA_FAST=1 LLAMA_CUDA_F16=1 LLAMA_CUDA=1 make -j 8
+LLAMA_FAST=1 LLAMA_CUDA_F16=1 LLAMA_CUDA=1 make -j 8
 ```
 
 ## Download a language model
 
-For language models, use the [mistral-7b-openorca](https://huggingface.co/Open-Orca/Mistral-7B-OpenOrca) model, which is the same one `GPT4All` uses. Even better, get [internlm](https://huggingface.co/bartowski/internlm2_5-7b-chat-1m-GGUF), [open chat](https://huggingface.co/openchat/openchat_3.5), or [code ninja](https://huggingface.co/beowolx/CodeNinja-1.0-OpenChat-7B) in GGUF format. Most other GGUF models will work too. Look at the [leaderboard](https://huggingface.co/spaces/open-llm-leaderboard/open_llm_leaderboard) to see which models are the best. Then search for the model in .gguf format. To save RAM, download the quantized models, or quantize them yourself, as described in the [llama.cpp README](https://github.com/ggerganov/llama.cpp).
+For a good, small languag model, use [hellork/gemma-2-2b-it-Q4_K_M-GGUF](https://huggingface.co/hellork/gemma-2-2b-it-Q4_K_M-GGUF). Look at the [leaderboard](https://huggingface.co/spaces/open-llm-leaderboard/open_llm_leaderboard) to see which models are the best that can fit into your VRAM. Then search for the model in .gguf format. To save VRAM and time, download the quantized models, or [quantize them here](https://huggingface.co/spaces/ggml-org/gguf-my-repo). We were able to run gemma-2 (2B) with all layers loaded (-ngl 27) on 3GiB VRAM. Larger 7B models can only load a few layers (-ngl 16), perform slowly, and we have to close other applications. (Or we can quantize them to 3 bits and severely degrade quality).
 
 ## Start chatting
 
-Run chat in interactive mode, in the terminal, using Whisper Dictation to type questions. It won't speak its answers. But you won't have to listen to pages and pages of response text, either.
+Run chat in interactive mode, in the terminal, using Whisper Dictation to type questions. It won't speak its answers. But you won't have to listen to pages and pages of response text, either. But you could also restrict the number of response tokens (-n).
 
 And just like that. We can explore the results of months of researching "What's the best AI that I can realistically use on my laptop?" The future is here! Use `-ngl` option for maximum warp. Launch codes:
 
-`./llama_cpp -ngl 33 -m models/mistral-7b-openorca.Q4_0.gguf --multiline-input --color --interactive-first -p "You are a helpful and knowledgeable assistant.`
+`./llama-cli -ngl 27 -m models/gemma-2-2b-it-q4_k_m.gguf --multiline-input --color --interactive-first -p "You are a helpful and knowledgeable assistant.`
 
 ## Give it a voice
 
@@ -324,11 +323,11 @@ Various test files, including:
 
 ### Improvements
 
-**Stable-Diffusion.** Stable-Diffusion normally requires upwards of 16 GiB of VRAM. But we were able to get it running with a mere 2 GiB using the `--medvram` option with [The Stable Diffusion Web UI](https://techtactician.com/stable-diffusion-low-vram-memory-errors-fix/). 
+**Stable-Diffusion.** Stable-Diffusion normally requires upwards of 16 GiB of VRAM. But we were able to get it running with a mere 2 GiB using the `--medvram` or `--lowvram` option with [The Stable Diffusion Web UI](https://techtactician.com/stable-diffusion-low-vram-memory-errors-fix/). 
 
 **Text goes to wrong place.** We now use `pyperclip` and `pyautogui` to paste text, instead of typing responses into the current window. We use middle-click paste on Linux, so that it also works in terminals. If you miss and it doesn't put text where you want, you can always manually middle-click it somewhere else.
 
-**Fixing Linux paste.** "No. I don't want to use middle-click on Linux!" The alternative to using middle click on Linux is to change the behavior of the Linux terminal. Are you tired of having to remember to use Ctrl-Shift-C and Ctrl-Shift-V in the terminal, instead of Ctrl-C and Ctrl-V? The beauty of Linux is being able to customize. So let's do it!
+**Fixing Linux paste.** "No. I don't want to use middle-click on Linux!" The alternative to faking middle click on Linux is to change the behavior of the Linux terminal. Are you tired of having to remember to use Ctrl-Shift-C and Ctrl-Shift-V in the terminal, instead of Ctrl-C and Ctrl-V? The beauty of Linux is being able to customize. So let's do it!
 
 [Modifying Terminal Settings](https://askubuntu.com/questions/53688/making-ctrlc-copy-text-in-gnome-terminal)
 
@@ -357,7 +356,7 @@ If the above setting causes problems, try the following.
 
 `export XLA_PYTHON_CLIENT_MEM_FRACTION=.XX` If the above pre-allocation is enabled, this makes JAX pre-allocate XX% of the total GPU memory, instead of the default 75%.
 
-Monitor JAX memory usage with [jax-smi](https://github.com/ayaka14732/jax-smi), `nvidia-smi`, or by installing the bloated, GreenWithEnvy (gwe) from Nvidia that does the exact-same thing with a graphical interface.
+Monitor JAX memory usage with [jax-smi](https://github.com/ayaka14732/jax-smi), `nvtop`, `nvidia-smi`, or by installing the bloated, GreenWithEnvy (gwe) from Nvidia that does the exact-same thing with a graphical interface.
 
 This is a fairly new project. There are bound to be more issues. Share them on the [issues section on GitHub](https://github.com/themanyone/whisper_dictation/issues). Or fork the project, create a new branch with proposed changes. And submit a pull request.
 
