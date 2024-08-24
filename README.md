@@ -280,7 +280,7 @@ LLAMA_FAST=1 LLAMA_CUDA_F16=1 LLAMA_CUDA=1 make -j 8
 
 ## Download a language model
 
-For a good, small languag model, use [hellork/gemma-2-2b-it-Q4_K_M-GGUF](https://huggingface.co/hellork/gemma-2-2b-it-Q4_K_M-GGUF). Look at the [leaderboard](https://huggingface.co/spaces/open-llm-leaderboard/open_llm_leaderboard) to see which models are the best that can fit into your VRAM. Then search for the model in .gguf format. To save VRAM and time, download the quantized models, or [quantize them here](https://huggingface.co/spaces/ggml-org/gguf-my-repo). We were able to run gemma-2 (2B) with all layers loaded (-ngl 27) on 3GiB VRAM. Larger 7B models can only load a few layers (-ngl 16), perform slowly, and we have to close other applications. (Or we can quantize them to 3 bits and severely degrade quality).
+For a good, small languag model, try [the ones on our page](https://huggingface.co/hellork). Look at the [leaderboard](https://huggingface.co/spaces/open-llm-leaderboard/open_llm_leaderboard) to see which models are the best that can fit into your VRAM. Then search for the model in .gguf format. To save VRAM and time, download the quantized models, or [quantize them here](https://huggingface.co/spaces/ggml-org/gguf-my-repo). We were able to run a quantized gemma-2 (2B) with all layers loaded (-ngl 27) on 2GiB VRAM. Larger 7B models can only load a few layers (-ngl 16), perform slowly, and we have to close other applications. (Or we can quantize them to 3 bits with a noticeable loss in quality).
 
 ## Start chatting
 
