@@ -20,7 +20,11 @@
 ##
 import pyautogui
 import pyperclip
-import os, time, queue, sys, re
+import os
+import time
+import queue
+import sys
+import re
 import webbrowser
 import tempfile
 import threading
@@ -37,7 +41,7 @@ if (api_key):
     import openai
     openai.api_key = api_key
 else:
-    sys.stderr.write("Export OPENAI_API_KEY if you want answers from ChatGPT.")
+    sys.stderr.write("Export OPENAI_API_KEY if you want answers from ChatGPT.\n")
 
 # commands and hotkeys for various platforms
 commands = {
@@ -79,7 +83,7 @@ actions = {
     r"^(peter|computer).? ": "chatGPT(q)"
     }
 
-def process_actions(tl):
+def process_actions(tl:str) -> bool:
     for input, action in actions.items():
         # look for action in list
         if s:=re.search(input, tl):
@@ -99,7 +103,7 @@ listening = True
 chatting = False
 
 # search text for hotkeys
-def process_hotkeys(txt):
+def process_hotkeys(txt: str) -> bool:
     global start
     for key,val in hotkeys.items():
         # if hotkey command
@@ -126,7 +130,7 @@ from whisper_jax import FlaxWhisperPipline
 # openai/whisper-large-v2   1550M
 pipeline = FlaxWhisperPipline("openai/whisper-small.en")
 
-def gettext(f):
+def gettext(f) -> str:
     try:
         outputs = pipeline(f, task="transcribe", language="English")
     except:
@@ -135,8 +139,8 @@ def gettext(f):
 
 def preload():
     gettext("click.wav")
-    
-def pastetext(t):
+
+def pastetext(t:str):
     # paste text in window
     if t == " you" or t == " Thanks for watching!" or "[" in t:
         return # ignoring you
@@ -153,7 +157,7 @@ say("Computer ready.")
 
 messages = [{ "role": "system", "content": "In this conversation between `user:` and `assistant:`, play the role of assistant. Reply as a helpful assistant." },]
 
-def chatGPT(prompt):
+def chatGPT(prompt: str):
     global chatting, messages
     messages.append({"role": "user", "content": prompt})
     completion = ""
@@ -203,7 +207,7 @@ def transcribe():
                 print(t)
                 # delete temporary audio file
                 try: os.remove(f)
-                except: pass
+                except Exception: pass
                 if not t: break
 
                 # get lower-case spoken command string
@@ -268,17 +272,17 @@ def quit():
     try:
         record_process.send_signal(signal.SIGINT)
         record_process.wait()
-    except:
+    except Exception:
         pass
     time.sleep(1)
     record_thread.join()
     # clean up
     try:
         while f := audio_queue.get_nowait():
-            sys.stderr.write("Removing temporary file: ", f)
+            sys.stderr.write(f"Removing temporary file: {f}")
             if f[:5] == "/tmp/": # safety check
                 os.remove(f)
-    except: pass
+    except Exception: pass
     sys.stderr.write("Freeing system resources.\n")
 
 if __name__ == '__main__':
