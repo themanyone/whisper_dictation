@@ -215,7 +215,7 @@ Feel free to change the FlaxWhisperPipline language, or use "openai/whisper-larg
 
 ### Spoken commands and program launchers
 
-The computer responds to commands. You can also call him Peter.
+The computer responds to commands. You can also call him Peter. (Or Samantha, if using female voice).
 
 **Mute button.** There is no mute button. Say "pause dictation" to turn off text generation. It will keep listening to commands. Say "resume dictation", or "Computer, type this out" to have it start typing again. Say "stop listening" or "stop dictation" to quit the program entirely. You could configure a button to mute your mic, but that is no longer necessary and beyond the scope of this program.
 

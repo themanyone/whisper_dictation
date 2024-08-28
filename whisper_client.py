@@ -75,14 +75,14 @@ actions = {
     r"^(click)( the)?( mouse).? ": "pyautogui.click()",
     r"^middle click.?$": "pyautogui.middleClick()",
     r"^right click.?$": "pyautogui.rightClick()",
-    r"^(peter|computer).? (run|open|start|launch)(up)?( a| the)? ": "os.system(commands[sys.platform][q])",
-    r"^(peter|computer).? closed? window": "pyautogui.hotkey('alt', 'F4')",
-    r"^(peter|computer).? search( the)?( you| web| google| bing| online)?(.com)? for ": 
+    r"^(peter|samantha|computer).? (run|open|start|launch)(up)?( a| the)? ": "os.system(commands[sys.platform][q])",
+    r"^(peter|samantha|computer).? closed? window": "pyautogui.hotkey('alt', 'F4')",
+    r"^(peter|samantha|computer).? search( the)?( you| web| google| bing| online)?(.com)? for ": 
        "webbrowser.open('https://you.com/search?q=' + re.sub(' ','%20',q))",
-    r"^(peter|computer).? (send|compose|write)( an| a) email to ": "os.popen('xdg-open \"mailto://' + q.replace(' at ', '@') + '\"')",
-    r"^(peter|computer).? (i need )?(let's )?(see |have |show )?(us |me )?(an? )?(image|picture|draw|create|imagine|paint)(ing| of)? ": "os.popen(f'./sdapi.py \"{q}\"')",
-    r"^(peter.? |computer.? )?(resume|zoom|continue|start|type) (typing|d.ctation|this)" : "exec('global chatting;global listening;chatting = False;listening = True')",
-    r"^(peter|computer).? ": "chatGPT(q)"
+    r"^(peter|samantha|computer).? (send|compose|write)( an| a) email to ": "os.popen('xdg-open \"mailto://' + q.replace(' at ', '@') + '\"')",
+    r"^(peter|samantha|computer).? (i need )?(let's )?(see |have |show )?(us |me )?(an? )?(image|picture|draw|create|imagine|paint)(ing| of)? ": "os.popen(f'./sdapi.py \"{q}\"')",
+    r"^(peter|samantha|computer).? (resume|zoom|continue|start|type) (typing|d.ctation|this)" : "exec('global chatting;global listening;chatting = False;listening = True')",
+    r"^(peter|samantha|computer).? ": "chatGPT(q)"
     }
 
 def process_actions(tl:str) -> bool:
