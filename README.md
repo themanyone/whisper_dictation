@@ -180,7 +180,7 @@ Install [whisper-jax](https://github.com/sanchit-gandhi/whisper-jax) and make su
 python3 -m venv .venv
 source .venv/bin/activate
 # install dependencies (links may need updating someday)
-pip install --upgrade onnxruntime==1.15.1
+pip install --upgrade onnxruntime>=1.15.1
 pip install numpy
 pip install  nvidia-cudnn-cu11
 pip install --pre torch torchvision torchaudio --index-url https://download.pytorch.org/whl/nightly/cu123

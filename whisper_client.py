@@ -119,7 +119,7 @@ def process_hotkeys(txt: str) -> bool:
             return True
     return False
 
-def gettext(f) -> str::
+def gettext(f) -> str:
     result = ['']
     if f and os.path.isfile(f):
         result = client.predict(f, "transcribe", False, api_name="/predict")
@@ -244,18 +244,18 @@ def recorder():
     while running:
         # record some (more) audio to queue
         temp_name = tempfile.mktemp()+ '.wav'
-        record_process = subprocess.Popen(["python", "./record.py", temp_name])
+        record_process = subprocess.Popen(["./record.py", temp_name])
         record_process.wait()
         audio_queue.put(temp_name)
 
 def quit():
-    sys.stderr.write("Stopping...")
+    sys.stderr.write("\nStopping...")
     global running
     global listening
     listening = False
     running = False
     try:
-        record_process.send_signal(signal.SIGINT)
+        record_process.send_signal(signal.SIGHUP)
         record_process.wait()
     except Exception:
         pass
@@ -268,7 +268,7 @@ def quit():
             if f[:5] == "/tmp/": # safety check
                 os.remove(f)
     except Exception: pass
-    sys.stderr.write("Freeing system resources.\n")
+    sys.stderr.write("\nFreeing system resources.\n")
 
 if __name__ == '__main__':
     record_process = None

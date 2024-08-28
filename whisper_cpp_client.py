@@ -261,13 +261,13 @@ def recorder():
         audio_queue.put(temp_name)
 
 def quit():
-    sys.stderr.write("Stopping...")
+    sys.stderr.write("\nStopping...")
     global running
     global listening
     listening = False
     running = False
     try:
-        record_process.send_signal(signal.SIGINT)
+        record_process.send_signal(signal.SIGHUP)
         record_process.wait()
     except Exception:
         pass
@@ -280,7 +280,7 @@ def quit():
             if f[:5] == "/tmp/": # safety check
                 os.remove(f)
     except Exception: pass
-    sys.stderr.write("Freeing system resources.\n")
+    sys.stderr.write("\nFreeing system resources.\n")
 
 if __name__ == '__main__':
     record_process = None
