@@ -127,8 +127,10 @@ def gettext(f) -> str:
 
 def pastetext(t:str):
     # paste text in window
-    if t == " you" or t == " Thanks for watching!" or "[" in t:
+    if t == " you" or t == " Thanks for watching!":
         return # ignoring you
+    # filter (noise), (hiccups), *barking* and [system messages]
+    t = re.sub(r'(\s*[\*\[\(][^\]\)]*[\]\)\*])*', '', t)
     pyperclip.copy(t) # weird that primary won't work the first time
     if pyautogui.platform.system() == "Linux":
         pyperclip.copy(t, primary=True) # now it works
@@ -189,11 +191,11 @@ def transcribe():
             # transcribe audio from queue
             if f := audio_queue.get():
                 t = gettext(f).strip('\n')
-                print(t)
                 # delete temporary audio file
                 try: os.remove(f)
                 except Exception: pass
                 if not t: break
+                print(t)
 
                 # get lower-case spoken command string
                 lower_case = t.lower().strip()
@@ -213,23 +215,17 @@ def transcribe():
                 elif re.search(r"^.?(pause.d.ctation|positi.?i?cation).?$", lower_case):
                     listening = False
                     say("okay")
-                    #record_process.send_signal(signal.SIGINT)
-                    #record_process.wait()
-                    #say("Acknowledged.")
-                    #input("Paused. Press Enter to continue...")
-                    #audio_queue.get() # discard truncated sample
-                    #listening = True
                 elif process_actions(lower_case): continue
                 if not listening: continue
                 elif process_hotkeys(lower_case): continue
                 else:
                     now = time.time()
-                    # Remove leading space from new paragraph
-                    if now - start > 120: t = t.strip()
+                    # Remove leading space from new postings
+                    if (now - start) > 40: t = t.strip()
                     # Paste it now
                     start = now; pastetext(t)
-            # continue looping every second
-            else: time.sleep(0.5)
+            # continue looping every 1/10 second
+            else: time.sleep(0.1)
         except KeyboardInterrupt:
             say("Goodbye.")
             break
