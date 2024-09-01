@@ -127,10 +127,10 @@ def gettext(f) -> str:
 
 def pastetext(t:str):
     # paste text in window
-    if t == " you" or t == " Thanks for watching!":
-        return # ignoring you
     # filter (noise), (hiccups), *barking* and [system messages]
     t = re.sub(r'(\s*[\*\[\(][^\]\)]*[\]\)\*])*', '', t)
+    if not t or t == " you" or t == " Thanks for watching!":
+        return # ignoring you
     pyperclip.copy(t) # weird that primary won't work the first time
     if pyautogui.platform.system() == "Linux":
         pyperclip.copy(t, primary=True) # now it works
