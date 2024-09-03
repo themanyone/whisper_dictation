@@ -107,7 +107,7 @@ class Record:
             try:
                 process.execute()
             except Exception:
-                logging.critical(f"\nFfmpeg quit. It's probably an encoder problem")
+                logging.critical("\nFfmpeg quit. It's probably an encoder problem")
             self.main_loop.quit();
         else:
             os.truncate(self.audio_buffer, 0)
@@ -129,12 +129,10 @@ class Record:
 
             # if not recording
             if self.ss == "":
-                if self.count % (10 * buffer_seconds) == 0:
-                    # print(sys.argv[0]+":  Still listening...", file=sys.stderr)
+                # count is 1/10 seconds, so buffer * 10
+                if self.count % (buffer_seconds * 10) == 0:
                     self.try_restart("", ""); return
-                if rms < dB: # wait for startup clicks and pops to die down
-                    self.silence = 1 # got it, we have silence!
-                elif rms > dB and self.silence: # now wait for voice
+                if rms > dB: # sound detected
                     self.ss = convert_to_ffmpeg_time(ss)
             else: # stop recording after quiet_period is detected
                 if rms < dB:
@@ -202,10 +200,10 @@ class Record:
                 logging.critical(f'{enc} unknown. Did you mean {matches[0]}?')
             # specify an encoder to get high quality audio (no rate limit!)
             else:
-                logging.info(f'Setting rate to default, best')
+                logging.info('Setting rate to default, best')
                 rate = ""
         elif enc is None:
-            logging.info(f'Use gst-inspect-1.0 to find an encoder')
+            logging.info('Use gst-inspect-1.0 to find an encoder')
             raise ValueError(f"File extension: {fname} requires an encoder.")
 
         # record to audio buffer
