@@ -138,10 +138,10 @@ def gettext(f:str) -> str:
         return ""
 
 def pastetext(t:str):
-    # paste text in window
     # filter (noise), (hiccups), *barking* and [system messages]
     t = re.sub(r'(\s*[\*\[\(][^\]\)]*[\]\)\*])*', '', t)
     if not t or t == " you" or t == " Thanks for watching!":
+        start = 0;
         return # ignoring you
     pyperclip.copy(t) # weird that primary won't work the first time
     if pyautogui.platform.system() == "Linux":
@@ -233,7 +233,7 @@ def transcribe():
                 else:
                     now = time.time()
                     # Remove leading space from new postings
-                    if (now - start) > 40: t = t.strip()
+                    if (now - start) > 60: t = t.strip()
                     # Paste it now
                     start = now; pastetext(t)
             # continue looping every 1/10 second
