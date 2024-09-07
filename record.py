@@ -8,8 +8,8 @@
 ## ./record.py filename.wav
 ## ./record.py filename.mp3
 ##
-## Specify an encoder to record highest quality audio (no rate limit!)
-## ./record.py filename.flac flacenc
+## Specify any 2nd argumnt to record high quality audio.
+## ./record.py filename.flac HQ
 ##
 ## Copyright 2024 Henry Kroll <nospam@thenerdshow.com>
 ##
@@ -29,123 +29,153 @@
 ## MA 02110-1301, USA.
 ##
 
-import os, sys, time
-import tempfile
-from ffmpeg import FFmpeg
+import gi
+import os
+import sys
+import time
+import math
 import logging
-from difflib import get_close_matches
+gi.require_version("Gst", "1.0")
+from gi.repository import Gst, GObject, GLib
+
+# Initialize GStreamer
+Gst.init(None)
 
 logging.basicConfig(
-	level=logging.CRITICAL,
-	format="%(asctime)s [%(levelname)s] %(message)s",
+	level=logging.DEBUG,
+	format="%(asctime)s [%(levelname)s] %(lineno)d %(message)s",
 	handlers=[
 #		logging.FileHandler('/tmp/rec.log'),
 		logging.StreamHandler()
 	]
 )
-
-# Buffer ~30 seconds until sound, possibly speech, is detected.
-# A longer buffer won't help much, and just uses memory.
-buffer_seconds = 30
-
-def convert_to_ffmpeg_time(t):
-    hours = int(t // 3600)
-    minutes = int((t % 3600) // 60)
-    seconds = int(t % 60)
-    milliseconds = round((t % 1) * 1000)
-    return f"{hours:02d}:{minutes:02d}:{seconds:02d}.{milliseconds:03d}"
-
-class Record:
-    # frequently-configured variables
-    lead_in_time = 0.25 # Lead-in time. Increase if it cuts off the beginning.
-    lead_in = 0
-    dB = -20.0 # threshold audio level, for detecting start of speech
-    quiet_period = 10 # in tenths: 10 = stop recording after 1 sec. of silence.
-    src = "autoaudiosrc" # audio source (alsasrc, pulsesrc, autoaudiosrc, etc.)
-    count = 0
-
+class delayRecord:
     def __init__(self):
-        import gi
-        gi.require_version('Gst', '1.0')
-        from gi.repository import Gst, GLib
-        # Initialize GStreamer
-        Gst.init(None)
-        self.Gst = Gst
-        self.GLib = GLib
-        self.audio_buffer = tempfile.mktemp()+ '.mp3'
-        self.silence = 0
-        self.ss = ""
-
-    def stop_recording(self):
-        Gst = self.Gst
-        # Send EOS event to the pipeline to stop them
-        self.lvl_pipe.send_event(Gst.Event.new_eos())
-        self.rec_pipe.send_event(Gst.Event.new_eos())
-        # Wait until the recording pipeline has finished
-        bus = self.rec_pipe.get_bus()
-        bus.timed_pop_filtered(Gst.CLOCK_TIME_NONE, Gst.MessageType.EOS)
-        self.lvl_pipe.set_state(Gst.State.NULL)
-        self.rec_pipe.set_state(Gst.State.NULL)
-
-    # CTRL-C is pressed
-    def signal_handler(self, signal, frame):
-        self.stop_recording()
-        self.main_loop.quit()
-
-    # buffer_seconds has elapsed
-    def try_restart(self, ss, to):
-        Gst = self.Gst
-        self.stop_recording()
-        # trim time off temp audio, save to fname
-        if ss:
-            process = (
-            FFmpeg()
-                .input(self.audio_buffer, v=0, ss=ss, to=to)
-                .output(self.fname)
-            )
-            logging.debug(f'\ntrimmed ss: {ss} to: {to}')
-            try:
-                process.execute()
-            except Exception:
-                logging.critical("\nFfmpeg quit. It's probably an encoder problem")
-            self.main_loop.quit();
+        # set default options
+        self.quiet_timer = self.sound_timer = time.time() # start timers
+        
+        self.process_options()
+        self.recording          = False
+        file_name       = self.file_name
+        self.ext    = os.path.splitext(file_name)[1].lower()
+        
+        # Avoid overwriting files
+        i = 1
+        while os.path.exists(file_name):
+            file_name = f'{os.path.splitext(file_name)[0].split('(')[0]}({i}){self.ext}'
+            i += 1
+        if (i > 1):
+            logging.critical(f"File exists. Recording to '{file_name}'")
         else:
-            os.truncate(self.audio_buffer, 0)
-            self.count = 0
-            self.silence = 0
-            self.lead_in = time.time() + self.lead_in_time
-            self.rec_pipe.set_state(Gst.State.PLAYING)
-            self.lvl_pipe.set_state(Gst.State.PLAYING)
-            return
+            logging.debug(f"Recording to '{file_name}'")
+        self.file_name = file_name
+        self.create_pipes()
+
+        # Set up bus to monitor messages from the pipeline
+        self.bus = self.pipeline.get_bus()
+        self.bus.add_signal_watch()
+        # Connect to the 'level' signal
+        self.bus.connect("message", self.on_bus_message)
+        self.bus.connect('message::element', self.monitor_levels)
+        
+    def create_pipes(self):
+        # Create GStreamer elements
+        self.pipeline = Gst.Pipeline.new("audio_pipeline")
+        # recording source (alsasrc, pulsesrc, autoaudiosrc, etc.)
+        self.source = Gst.ElementFactory.make("autoaudiosrc", "source")
+        encodings = {
+            ".aiff": "aiffenc",
+            ".mp3": "lamemp3enc",
+            ".flac": "flacenc",
+            ".gsm": "gsmsenc",
+            ".ogg": "vorbisenc ! oggmux",
+            ".ogx": "vorbisenc ! oggmux",
+            ".opus": "opusenc ! oggmux",
+            ".spx": "speexenc ! oggmux",
+            ".wav": "wavenc",
+            ".m4a": "avenc_aac ! mp4mux",
+            ".wma": "wmav2enc ! asfmuxtype=Audio",
+        }
+        enc = encodings.get(self.ext) or 'wavenc'
+        # vorbisenc doesn't support 16-bit rates
+        rate = "" if self.ext[1] in "o" else self.rate
+        logging.debug(f"format {rate}")
+        logging.debug(f"using {enc} encoder")
+        src = "autoaudiosrc" # alsasrc | pulsesrc
+        delay = "ladspa-delay-so-delay-5s"
+        # valve-type elements require async=off downstream
+        self.pipeline = Gst.parse_launch(
+        f"{src} ! tee name=t ! {delay} name=d ! valve name=v ! {self.gstreamer} audioconvert ! queue ! audioresample ! {rate} {enc} ! filesink name=fs location={self.file_name} async=false t. ! queue ! level ! fakesink"
+        )
+        self.filesink = self.pipeline.get_by_name('fs')
+        self.delay = self.pipeline.get_by_name('d')
+        self.delay.set_property("delay", self.preroll)
+        self.delay.set_property("dry-wet-balance", 1.0)
+        self.valve = self.pipeline.get_by_name('v')
+        self.valve.set_property("drop", True)
 
     # handle sound-level messages 10 per second
-    def on_sound_level(self, bus, message):
-        dB = self.dB
-        self.count += 1
-        if message.get_structure().get_name() == 'level':
-            rms = message.get_structure().get_value('rms')[0]
-            # seconds of silence to trim off beginning of audio
-            ss = time.time() - self.lead_in
+    def monitor_levels(self, bus, message):
+        rms = message.get_structure().get_value('rms')[0]
+        # peak = message.get_structure().get_value('peak')[0]
+        if math.isnan(rms): return True
+        self.draw_meter(rms)
+        reset = time.time()
+        seconds_of_quiet = reset - self.quiet_timer
+        seconds_of_sound = reset - self.sound_timer
+        # Check sound level
+        if rms > self.threshold:
+            # Stop recording if recording time exceeded
+            if seconds_of_sound / 60 > self.minutes:
+                logging.critical('Recording time exceeded. Quitting.')
+                pipeline.send_event(Gst.Event.new_eos())
+                
+            # Start recording when there are sustained sound levels
+            elif self.notice < seconds_of_sound and not self.recording:
+                logging.debug("Recording started")
+                self.valve.set_property("drop", False)
+                self.recording = True
+            self.quiet_timer = reset # reset quiet timer
+        else:
+            if self.recording and self.stop_after < seconds_of_quiet:
+                self.pipeline.send_event(Gst.Event.new_eos())
+            elif not self.recording:
+                self.sound_timer = reset # wait for sounds
 
-            # if not recording
-            if self.ss == "":
-                # count is 1/10 seconds, so buffer * 10
-                if self.count % (buffer_seconds * 10) == 0:
-                    self.try_restart("", ""); return
-                if rms > dB: # sound detected
-                    self.ss = convert_to_ffmpeg_time(ss)
-            else: # stop recording after quiet_period is detected
-                if rms < dB:
-                    self.silence = self.silence + 1
-                    if self.silence > self.quiet_period:
-                        to = convert_to_ffmpeg_time(self.count / 10)
-                        self.try_restart(self.ss, to); return # wrap it up, we're done!
-                # keep recording if there is more speech
-                elif rms > dB: # speech detected
-                    self.silence = 1 # reset silence counter
+    def stop_recording(self):
+        logging.debug(f"\n\nRecording stopped.\n")
+        self.pause_request = True  # Signal to pause
+        self.pipeline.send_event(Gst.Event.new_flush_stop())
+        self.pipeline.set_state(Gst.State.PAUSED)
+        while self.pipeline.get_state(0)[1] != Gst.State.PAUSED:
+            Gst.Context.iterate()
+        self.pause_request = False  # Reset flag
 
-                # show VU meter display
-                self.draw_meter(rms)
+    def on_bus_message(self, bus, message):
+        if message.type == Gst.MessageType.EOS:
+            self.pipeline.set_state(Gst.State.NULL)
+            logging.debug("End of stream")
+            sys.exit(0)
+        elif message.type == Gst.MessageType.ERROR:
+            err, debug = message.parse_error()
+            logging.debug(f"Error: {err}, {debug}")
+            self.pipeline.set_state(Gst.State.NULL)
+            sys.exit(1)
+
+    def run(self):
+        # Start playing the pipeline
+        self.pipeline.set_state(Gst.State.PLAYING)
+        logging.debug("Listening for voice...")
+
+        # Main loop
+        try:
+            GLib.MainLoop().run()
+        except Exception as e:
+            logging.debug(f"Stopping...{e}")
+
+        # Clean up
+        logging.debug("Cleanup")
+        self.pipeline.set_state(Gst.State.NULL)
 
     # Draw a VU meter in the terminal
     def draw_meter(self, level:float):
@@ -165,90 +195,64 @@ class Record:
             print(f"\r{meterString}", end='')
         except Exception:
             logging.exception("Failed writing volume meter to terminal!")
-    # Create the lvl and rec pipes
-    def create_pipes(self, fname):
-        Gst = self.Gst
-        src = self.src
-        encodings = {
-            "mp3": "lamemp3enc",
-            "ogg": "oggenc",
-            "gsm": "gsmsenc",
-            "wav": "wavenc",
-        }
-        enc = encodings.get(fname.split(".")[-1].lower())
-        # default to "speech quality" audio that whisper.cpp expects
-        rate = "audio/x-raw,rate=16000,channels=1,format=S16LE ! "
-        if len(sys.argv) > 2:
-            extra_encoders = [
-"alawenc",
-"amrnbenc",
-"fdkaacenc",
-"flacenc",
-"gsmenc",
-"ldacenc",
-"mulawenc",
-"opusenc",
-"speexenc",
-"voamrwbenc",
-"vorbisenc",
-"wavenc",
-"wavpackenc"
-]
-            enc = sys.argv[2]
-            if enc not in extra_encoders:
-                matches = get_close_matches(enc, extra_encoders, n=1, cutoff=0.6)
-                logging.critical(f'{enc} unknown. Did you mean {matches[0]}?')
-            # specify an encoder to get high quality audio (no rate limit!)
-            else:
-                logging.info('Setting rate to default, best')
-                rate = ""
-        elif enc is None:
-            logging.info('Use gst-inspect-1.0 to find an encoder')
-            raise ValueError(f"File extension: {fname} requires an encoder.")
 
-        # record to audio buffer
-        self.rec_pipe = Gst.parse_launch(
-        src + ' ! audioconvert ! audioresample ! ' + rate
-            + enc + ' ! filesink location=' + self.audio_buffer)
-        self.rec_pipe.set_state(Gst.State.PLAYING)
-        # give recording 0.25 sec. lead-in time
-        self.lead_in = time.time() + self.lead_in_time
-        self.lvl_pipe = Gst.parse_launch(
-        src + ' ! audioconvert ! level name=level ! fakesink')
-        # Create a bus to get messages from the lvl_pipe
-        bus = self.lvl_pipe.get_bus()
-        bus.add_signal_watch()
-        bus.connect('message::element', self.on_sound_level)
-        self.lvl_pipe.set_state(Gst.State.PLAYING)
+    def print_help(self, options):
+        print("""Usage:  record.py
 
-    def to_file(self, fname):
-        Gst = self.Gst
-        i = 1
-        while os.path.exists(fname):
-            fname = f'{os.path.splitext(fname)[0]}_{i}{os.path.splitext(fname)[1]}'
-            i += 1
-        if (i > 1):
-            logging.critical(f'\nFile exists. Saving to {fname}')
-        self.fname = fname
-        # Start the pipes
-        self.create_pipes(fname)
-
-        # Run the main loop
-        self.main_loop = self.GLib.MainLoop()
-        self.main_loop.run()
-
-        # Stop the pipes when the main loop exits
-        try:
-            os.remove(self.audio_buffer)
-            self.lvl_pipe.set_state(Gst.State.NULL)
-            self.rec_pipe.set_state(Gst.State.NULL)
-        except:
-            pass
+        No arguments. Simply record voice to audio.wav until I stop speaking.
+        
+        Optional arguments.
+        
+        record.py [-options] [file_name.[aiff|flac|gsm|m4a|mp3|ogg|ogx|spx|wav|wma]]
+        """)
+        for k in options:
+            print(f"\t-{k}: {options[k]}")
         print()
+        sys.exit(0)
 
-if __name__ == '__main__':
-    Record = Record()
-    if len(sys.argv) > 1:
-        fname = sys.argv[1]
-    else: fname = "audio.mp3"
-    Record.to_file(fname)
+    def process_options(self):
+        self.quality    = False
+        self.file_name  = "audio.wav"
+        self.gstreamer  = ""
+        self.minutes    = 10
+        self.notice     = 0.3
+        self.preroll    = 0.6
+        self.stop_after = 1.2
+        self.threshold  = -20
+        self.rate       = "audio/x-raw,rate=16000,channels=1,format=S16LE ! "
+        lsa = len(sys.argv)
+        if lsa == 1: return
+        options = {
+            "h": "print_help(options) # Print this help message",
+            "q": "quality    = True # use device bitrate",
+            "f": f"file_name  = next_str or '{self.file_name}'  # name of audio file",
+            "g": f"gstreamer  = next_str or ''           # gstreamer-1.0 filters, etc.",
+            "m": f"minutes    = next_float or {self.minutes}         # force stop after (minutes)",
+            "n": f"notice     = next_float or {self.notice}        # ignore clicks < (seconds)",
+            "p": f"preroll    = next_float or {self.preroll}        # preroll delay (seconds)",
+            "s": f"stop_after = next_float or {self.stop_after}        # stop after (seconds of silence)",
+            "t": f"threshold  = next_float or {self.threshold}        # wait for sound above this level (dB)",
+        }
+        for i in range(1, lsa):
+            try:
+                next_str = sys.argv[i+1] if i < lsa -1 else None
+                next_float = float(sys.argv[i+1]) if i < lsa -1 else 0.0
+            except ValueError:
+                pass
+            arg = sys.argv[i]
+            if arg[0]=='-':
+                for j in arg[1:]:
+                    oj = options.get(j)
+                    if oj: exec("self."+oj)
+                    else:
+                        logging.critical(f" Option '-{j}' not recognized.")
+                        self.print_help(options)
+        if self.quality: self.rate = ""
+        # ensure supplied plugin connects to stream
+        if self.gstreamer and self.gstreamer[-1] != '!':
+            self.gstreamer += ' !'
+            logging.debug(f"Custom gstreamer options '{self.gstreamer}'")
+
+if __name__ == "__main__":
+    rec     = delayRecord()
+    rec.run()

@@ -49,6 +49,10 @@ For a simpler, light-weight, dictation-only client/server solution, try the [voi
 
 Whisper Dictation is not optimized for making captions or transcripts of pre-recorded material. Use [Whisper.cpp](https://github.com/ggerganov/whisper.cpp) or [whisper-jax](https://github.com/sanchit-gandhi/whisper-jax) for that. They too have a [server with a web interface that makes transcripts for voice recordings and videos](https://github.com/sanchit-gandhi/whisper-jax/blob/main/app/app.py). If you want real-time AI captions translating everyone's conversations in the room into English. If you want to watch videos with accents that are difficult to understand. Or if you just don't want to miss what the job interviewer asked you during that zoom call... WHAT???, check out my other project, [Caption Anything](https://github.com/themanyone/caption_anything). And generate captions as you record live "what you hear" from the audio monitor device (any sounds that are playing through the computer).
 
+## Dependencies
+
+This project requires [GStreamer](https://gstreamer.freedesktop.org/) for voice processing, which should be available in various package managers. We hav been using `python3.12` and `python3.10`. But other versions might work.
+
 ## Whisper.cpp Client
 
 We will need a few dependencies to get the `whisper.cpp` client running.
@@ -311,7 +315,9 @@ And just like that. We can explore the results of months of researching "What's 
 
 `jserver.py`: A `whisper-jax` server. Run it with `venv-run jserver.py`. You might also find that, although they start quickly, clients are slightly less-responsive, compared to the bundled version. This is because servers set aside extra resources to handle multiple clients, resources which typically aren't necessary for one user. If only a handful of clients will use it, editing `jserver.py` in certain ways may speed it up somewhat. Make it use the "openai/whisper-tiny.en" checkpoint. Reduce BATCH_SIZE, CHUNK_LENGTH_S, NUM_PROC to the minimum necessary to support your needs.
 
-`record.py`: A sound-activated recorder for hands-free recording from the microphone. It waits up to 10 minutes listening for a minimum threshold sound level of, -20dB, but you can edit the script and change that. It stops recording when audio drops below that level for a couple seconds. You can run it separately. It creates a cropped audio soundbite named `audio.mp3`. Or you can supply an output file name on the command line.
+`record.py`: A sound-activated recorder for hands-free recording from the microphone. You can run it separately. It creates a cropped audio soundbite named `audio.wav`. Supply optional command line arguments to change the file name, quality, formats, add filters, etc. See `./record.py -h` for help. Some formats require `gst-plugins-bad` or `gst-plugins-ugly`, depending on your distribution. This update provides a powerful option that lets you insert plugins, mixers, filters, controllrs, and effects directly into the GStreamer pipeline. See the [G-streamer documentation](https://gstreamer.freedesktop.org/) for details. Literally, hundreds of audio and video plugins are available. See `gst-inspect-1.0` for a list. For example, the following applies an echo effect and dynamic range compression to a quality mp3 recording.
+
+`./record.py -g 'audioecho delay=250000000 intensity=0.25 ! audiodynamic' -qf echo.mp3`
 
 `app.py`: A local, privacy-focused AI chat server. Start it by typing `flask run` from within the directory where it resides. You can use almost any chat model on huggingface with it. Edit the file, and and change the model configuration. It is not a security-focused server, however. So beware using it outside the local network. And do not share its address with more than a few friends. In particular, flask apps have no built-in protection against distributed denial-of-service attacks (DDoS).
 

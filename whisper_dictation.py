@@ -255,7 +255,7 @@ def recorder():
     while running:
         # record some (more) audio to queue
         temp_name = tempfile.mktemp()+ '.wav'
-        record_process = subprocess.Popen(["./record.py", temp_name])
+        record_process = subprocess.Popen(["record.py", "-f", temp_name])
         record_process.wait()
         audio_queue.put(temp_name)
 
