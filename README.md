@@ -31,7 +31,7 @@ This project requires [GStreamer](https://gstreamer.freedesktop.org/) for voice 
 pip install -r requirements.txt
 git clone https://github.com/ggerganov/whisper.cpp
 cd whisper.cpp
-WHISPER_CUDA=1 make -j
+GGML_CUDA=1 make -j # assuming CUDA is available. see docs
 ln -s server ~/local/bin/whisper_cpp_server
 ```
 
@@ -42,9 +42,19 @@ whisper_cpp_server -l en -m models/ggml-tiny.en.bin --port 7777
 ./whisper_cpp_client.py
 ```
 
+If VRAM is scarce, quantize `ggml-tiny.en.bin` according to whisper.cpp docs.
+
 ## Local chat server
 
-### Download a language model
+Supposing any chat server will do. Many use `llama.cpp` behind the scenes, so we went directly to the source.
+
+```shell
+git clone https://github.com/ggerganov/llama.cpp
+cd llama.cpp
+GGML_CUDA=1 make -j
+```
+
+### Download language model
 
 Try [the ones on our page](https://huggingface.co/hellork). Look at the [leaderboard](https://huggingface.co/spaces/open-llm-leaderboard/open_llm_leaderboard) to see which models are the best that can fit into your VRAM. Then search for the model in .gguf format. To save VRAM and time, download quantized models.
 
@@ -53,6 +63,8 @@ Try [the ones on our page](https://huggingface.co/hellork). Look at the [leaderb
 ```shell
 ./llama-server -m models/gemma-2-2b-it-q4_k_m.gguf -c 2048 -ngl 33 --port 8888
 ```
+ 
+Either dictate into the handy web interface at http://localhost:8888 or use the API endpoint by saying "Computer... What is the capital of France!" etc.
 
 ## Give it a voice
 
@@ -95,16 +107,7 @@ Now edit `whisper_cpp_client.py`, and set the address of cpp_url to the address 
 
 `cpp_url = "http://127.0.0.1:7777/inference"`
 
-## Whisper.cpp Server
 
-Compile [Whisper.cpp](https://github.com/ggerganov/whisper.cpp) with some type of acceleration for best results. Our setup.
-
-```shell
-# git clone https://github.com/ggerganov/whisper.cpp
-cd whisper.cpp
-git pull
-WHISPER_CUBLAS=1 make -j
-```
 
 Test client and server.
 
@@ -154,23 +157,6 @@ Try saying:
 
 ** export your OPENAI_API_KEY to the environment if you want answers from ChatGPT. If your firm is worried about privacy and security, use `llama.cpp` as explained below. ChatGPT also has an enterprise version that they claim to be more private and secure. We are not affiliated with OpenAI, and therefor do not receive referral benefits.
 
-## Get llama.cpp working
-
-Compile [llama.cpp](https://github.com/ggerganov/llama.cpp) with some type of acceleration as indicated in their docs. We compile with CUDA after installing nvidia drivers and cuBLAS, or openBLAS.
-
-If you followed our instructions for compiling `whisper.cpp` with `cuBLAS`, you should be all set to compile `llama.cpp`. Again, if not using cuBLAS, skip this section.
-
-```shell
-GGML_CUDA=1 make -j
-```
-
-Or in our particular case...
-```shell
-conda activate gcc12
-GGML_CUDA_F16=1 GGML_CUDA=1 make -j
-conda deactivate
-GGML_CUDA_F16=1 GGML_CUDA=1 make -j
-```
 
 # Files in this project
 

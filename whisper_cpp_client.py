@@ -25,24 +25,34 @@ import time
 import queue
 import sys
 import re
+import openai
 import webbrowser
 import tempfile
 import threading
 import subprocess, signal
 import requests
+import logging
 from mimic3_client import say
+
+logging.basicConfig(
+	level=logging.INFO,
+	format="[%(levelname)s] %(lineno)d %(message)s",
+	handlers=[
+#		logging.FileHandler('/tmp/rec.log'),
+		logging.StreamHandler()
+	]
+)
 # address of whisper.cpp server
 cpp_url = "http://127.0.0.1:7777/inference"
 # address of Fallback Chat Server.
-fallback_chat_url = 'http://localhost:8087'
+fallback_chat_url = "http://localhost:8888/v1"
 debug = False
 
 api_key = os.getenv("OPENAI_API_KEY")
 if (api_key):
-    import openai
     openai.api_key = api_key
 else:
-    sys.stderr.write("Export OPENAI_API_KEY if you want answers from ChatGPT.\n")
+    logging.debug("Export OPENAI_API_KEY if you want answers from ChatGPT.\n")
 
 # commands and hotkeys for various platforms
 commands = {
@@ -105,11 +115,9 @@ chatting = False
 
 # search text for hotkeys
 def process_hotkeys(txt: str) -> bool:
-    global start
     for key,val in hotkeys.items():
         # if hotkey command
         if re.search(key, txt):
-            start = 0 # reset paragraph timer
             # unpack list of key combos such as ctrl-v
             for x in val:
                 # press each key combo in turn
@@ -133,7 +141,7 @@ def gettext(f:str) -> str:
             return result[0]['text']
 
         except requests.exceptions.RequestException as e:
-            sys.stderr.write(f"Error: {e}")
+            logging.debug(f"Error: {e}")
             return ""
         return ""
 
@@ -141,7 +149,6 @@ def pastetext(t:str):
     # filter (noise), (hiccups), *barking* and [system messages]
     t = re.sub(r'(\s*[\*\[\(][^\]\)]*[\]\)\*])*', '', t)
     if not t or t == " you" or t == " Thanks for watching!":
-        start = 0;
         return # ignoring you
     pyperclip.copy(t) # weird that primary won't work the first time
     if pyautogui.platform.system() == "Linux":
@@ -157,6 +164,7 @@ say("Computer ready.")
 messages = [{ "role": "system", "content": "In this conversation between `user:` and `assistant:`, play the role of assistant. Reply as a helpful assistant." },]
 
 def chatGPT(prompt: str):
+    logging.debug("ChatGPT called") 
     global chatting, messages
     messages.append({"role": "user", "content": prompt})
     completion = ""
@@ -169,20 +177,22 @@ def chatGPT(prompt: str):
             )
             completion = completion.choices[0].message.content
         except Exception as e:
-                sys.stderr.write("ChatGPT had a problem. Here's the error message.")
-                sys.stderr.write(e)
+                logging.debug("ChatGPT had a problem. Here's the error message.")
+                logging.debug(e)
+                
     # Fallback to localhost
     if not completion:
-        try:
-            msg = {"messages": messages}
-            response = requests.post(fallback_chat_url, json=msg)
-            if response.status_code == 200:
-                data = response.json()
-                completion = data["content"]
-        except Exception as e:
-                sys.stderr.write("Chat had a problem. Here's the error message.")
-                sys.stderr.write(e)
-    # Read back the response completion
+        # ref. llama.cpp/examples/server/README.md
+        client = openai.OpenAI(
+            base_url=fallback_chat_url,
+            api_key = "sk-no-key-required")
+        
+        completion = client.chat.completions.create(
+            model="gpt-3.5-turbo",
+            messages=messages
+        )
+        completion = completion.choices[0].message.content
+ 
     if completion:
         if completion == "< nooutput >": completion = "No comment."
         print(completion)
@@ -196,13 +206,12 @@ def chatGPT(prompt: str):
             messages.remove(messages[1])
 
 def transcribe():
-    global start
     global listening
     while True:
         try:
             # transcribe audio from queue
             if f := audio_queue.get():
-                t = gettext(f).strip('\n')
+                t = gettext(f).strip()
                 # delete temporary audio file
                 try: os.remove(f)
                 except Exception: pass
@@ -210,7 +219,7 @@ def transcribe():
                 print(t)
 
                 # get lower-case spoken command string
-                lower_case = t.lower().strip()
+                lower_case = t.lower()
                 if match := re.search(r"[^\w\s]$", lower_case):
                     lower_case = lower_case[:match.start()] # remove punctuation
 
@@ -232,57 +241,44 @@ def transcribe():
                 elif process_hotkeys(lower_case): continue
                 else:
                     now = time.time()
-                    # Remove leading space from new postings
-                    if (now - start) > 60: t = t.strip()
-                    # Paste it now
-                    start = now; pastetext(t)
-            # continue looping every 1/10 second
-            else: time.sleep(0.1)
+                    start = now; pastetext(t + ' ')
+            # continue looping every 1/5 second
+            else: time.sleep(0.2)
         except KeyboardInterrupt:
             say("Goodbye.")
             break
 
-def recorder():
-    # If it wasn't for Gst conflict with pyperclip,
-    # we could import record.py instead of os.system()
-    # from record import Record
-    # rec = Record()
+def record_to_queue():
+    from record import delayRecord
     global record_process
     global running
     while running:
-        # record some (more) audio to queue
-        temp_name = tempfile.mktemp()+ '.wav'
-        record_process = subprocess.Popen(["record.py", "-f", temp_name])
-        record_process.wait()
-        audio_queue.put(temp_name)
+        record_process = delayRecord(tempfile.mktemp()+ '.wav')
+        record_process.start()
+        audio_queue.put(record_process.file_name)
 
 def quit():
-    sys.stderr.write("\nStopping...")
+    logging.debug("\nStopping...")
     global running
     global listening
     listening = False
     running = False
-    try:
-        record_process.send_signal(signal.SIGHUP)
-        record_process.wait()
-    except Exception:
-        pass
-    time.sleep(1)
+    if record_process:
+        record_process.stop_recording()
     record_thread.join()
     # clean up
     try:
         while f := audio_queue.get_nowait():
-            sys.stderr.write(f"Removing temporary file: {f}")
+            logging.debug(f"Removing temporary file: {f}")
             if f[:5] == "/tmp/": # safety check
                 os.remove(f)
     except Exception: pass
-    sys.stderr.write("\nFreeing system resources.\n")
+    logging.debug("\nFreeing system resources.\n")
 
 if __name__ == '__main__':
     record_process = None
     running = True
-    record_thread = threading.Thread(target=recorder)
+    record_thread = threading.Thread(target=record_to_queue)
     record_thread.start()
-    start = 0
     transcribe()
     quit()
