@@ -35,7 +35,7 @@ GGML_CUDA=1 make -j # assuming CUDA is available. see docs
 ln -s server ~/local/bin/whisper_cpp_server
 ```
 
-## Quick start
+## Quick start dictation
 
 ```shell
 whisper_cpp_server -l en -m models/ggml-tiny.en.bin --port 7777
@@ -70,44 +70,28 @@ Either dictate into the handy web interface at http://localhost:8888 or use the 
 
 **Mimic3.** If you install [mimic3](https://github.com/MycroftAI/mimic3) as a service, the computer will speak answers out loud. Follow the [instructions for setting up mimic3 as a Systemd Service](https://mycroft-ai.gitbook.io/docs/mycroft-technologies/mimic-tts/mimic-3#web-server). The `mimic3-server` is already lightening-fast on CPU. Do not bother with --cuda flag, which requires old `onnxruntime-gpu` that is not compatible with CUDA 12+ and won't compile with nvcc12... We got it working! And it just hogs all of VRAM and provides barely any speedup.
 
-**Female voice.** For a pleasant, female voice, use  `mimic3-download` to obtain `en_US/vctk_low` and change the `params` line in `mimic3_client`, commenting the other line out, like so.
+**Female voice.** For a pleasant, female voice, use  `mimic3-download` to obtain `en_US/vctk_low` To accomodate this change, we edited the `params` line in `mimic3_client`, and commented the other line out, like so.
 
 ```
     # params = { 'text': text, "lengthScale": "0.6" }
     params = { 'text': text, "voice": "en_US/vctk_low" }
 ```
 
-We already set up `mimic3_client.py` to use the new voice.
-
 ## Optional ChatGPT
 
-In `.bashrc`, or other startup file:
+Export the OPENAI_API_KEY and it will know to get answers from ChatGPT. Edit `.bashrc`, or other startup file:
 
 ```shell
 export OPENAI_API_KEY=<my API key>
 ```
 
-If there is no API key, or if ChatGPT is busy, it will try to visit the configured local chat server instead.
-
 **AI Images.** Now with the included stable-diffusion API, `sdapi.py`, images may be generated locally, or across the network. Requires [stable-diffusion-webui](https://github.com/AUTOMATIC1111/stable-diffusion-webui). Start `webui.sh` on the server with --medvram or --lowvram and --api options. If using remotely, configure our `sdapi.py` client with the server's address.
 
-## Whisper.cpp Client
+## Troubleshooting.
 
-We will need a few dependencies to get the [Whisper.cpp](https://github.com/ggerganov/whisper.cpp) client running.
+If `whisper_cpp_server` refuses to start, reboot. Or, especially if using the unsupported compiler like we did, reload the crashed NVIDIA uvm module `sudo modprobe -r nvidia_uvm && sudo modprobe nvidia_uvm`. Hopefully this will no longer be necessary, but you never know. So we are leaving it here for postrity.
 
-```shell
-pip install pyautogui
-pip install pyperclip
-pip install pygobject
-pip install openai
-pip install requests
-```
-
-Now edit `whisper_cpp_client.py`, and set the address of cpp_url to the address of your server machine. This is what we have.
-
-`cpp_url = "http://127.0.0.1:7777/inference"`
-
-
+Edit `whisper_cpp_client.py` clients to change the server location from localhost to wherever the server resides on the network.
 
 Test client and server.
 
@@ -117,12 +101,6 @@ ln -sf $(pwd)/main whisper_cpp
 ln -sf $(pwd)/server whisper_cpp_server
 ./whisper_cpp_server -l en -m models/ggml-tiny.en.bin --port 7777
 ```
-
-## Troubleshooting.
-
-If `whisper_cpp_server` refuses to start, reboot. Or, especially if using the unsupported compiler like we did, reload the crashed NVIDIA uvm module `sudo modprobe -r nvidia_uvm && sudo modprobe nvidia_uvm`. Hopefully this will no longer be necessary, but you never know. So we are leaving it here for postrity.
-
-Edit `whisper_cpp_client.py` clients to change the server location from localhost to wherever the server resides on the network.
 
 **Optionally start stable-diffusion webui**
 
@@ -158,27 +136,23 @@ Try saying:
 ** export your OPENAI_API_KEY to the environment if you want answers from ChatGPT. If your firm is worried about privacy and security, use `llama.cpp` as explained below. ChatGPT also has an enterprise version that they claim to be more private and secure. We are not affiliated with OpenAI, and therefor do not receive referral benefits.
 
 
-# Files in this project
+# Files in this branch
 
 `whisper_cpp_client.py`: A small and efficient Python client that connects to a running [Whisper.cpp](https://github.com/ggerganov/whisper.cpp) server on the local machine or across the network.
 
-`whisper_dictation.py`: A stand-alone app bundled with Whisper-JAX Python. (No server required.) It loads the language model and takes a long time to start up. It also uses more VRAM (adjustable with environment variables. See JAX documentation). But with those extra resources it might be more responsive than client/server solutions.
+`record.py`: A sound-activated recorder for hands-free recording from the microphone. You can run it separately. It creates a cropped audio soundbite named `audio.wav`. Supply optional command line arguments to change the file name, quality, formats, add filters, etc. See `./record.py -h` for help. Some formats require `gst-plugins-bad` or `gst-plugins-ugly`, depending on your distribution.
 
-`whisper_client.py`: A client version of Whisper Dictation. The client connects to a local [Whisper JAX server](https://jserver.py) running on the machine, the local network, or the internet. Edit `whisper_client.py` to configure the server location. Clients make dictation available even on budget laptops and old phones that can run linux/python from the app store.
+This update provides a powerful option that lets you insert plugins, mixers, filters, controllrs, and effects directly into the GStreamer pipeline. See the [G-streamer documentation](https://gstreamer.freedesktop.org/) for details. Many audio and video plugins are available. See `gst-inspect-1.0` for a list. The following records in a high quality, lossless format with echo effect and dynamic range compression.
 
-`jserver.py`: A `whisper-jax` server. Run it with `venv-run jserver.py`. You might also find that, although they start quickly, clients are slightly less-responsive, compared to the bundled version. This is because servers set aside extra resources to handle multiple clients, resources which typically aren't necessary for one user. If only a handful of clients will use it, editing `jserver.py` in certain ways may speed it up somewhat. Make it use the "openai/whisper-tiny.en" checkpoint. Reduce BATCH_SIZE, CHUNK_LENGTH_S, NUM_PROC to the minimum necessary to support your needs.
+`./record.py -gq 'audioecho delay=250000000 intensity=0.25 ! audiodynamic' echo.flac`
 
-`record.py`: A sound-activated recorder for hands-free recording from the microphone. You can run it separately. It creates a cropped audio soundbite named `audio.wav`. Supply optional command line arguments to change the file name, quality, formats, add filters, etc. See `./record.py -h` for help. Some formats require `gst-plugins-bad` or `gst-plugins-ugly`, depending on your distribution. This update provides a powerful option that lets you insert plugins, mixers, filters, controllrs, and effects directly into the GStreamer pipeline. See the [G-streamer documentation](https://gstreamer.freedesktop.org/) for details. Many audio and video plugins are available. See `gst-inspect-1.0` for a list. For example, the following applies an echo effect and dynamic range compression to a quality mp3 recording.
-
-`./record.py -g 'audioecho delay=250000000 intensity=0.25 ! audiodynamic' -qf echo.mp3`
-
-`app.py`: A local, privacy-focused AI chat server. Start it by typing `flask run` from within the directory where it resides. You can use almost any chat model on huggingface with it. Edit the file, and and change the model configuration. It is not a security-focused server, however. So beware using it outside the local network. And do not share its address with more than a few friends. In particular, flask apps have no built-in protection against distributed denial-of-service attacks (DDoS).
+`sdapi.py` The client we made to connect to a running instance of [stable-diffusion-webui](https://github.com/AUTOMATIC1111/stable-diffusion-webui). This is what gets called when you say, "Computer...Draw a picture of a horse."
 
 Various test files, including:
 
 `mimic3_client.py`: a client to query and test `mimic3-server` voice output servers.
 
-`test_cuda.py`: test your torch, pytorch, cuda, and optional onnxruntime installation
+`test_cuda.py`: torch, pytorch, cuda, and onnxruntime are no longer required. But you can still test them here!
 
 ### Improvements
 
@@ -194,18 +168,20 @@ Various test files, including:
     Go to the terminal's menu and select "Edit" or "Preferences".
     Look for the "Shortcuts" or "Keyboard" section.
     Find the entry for "Copy" or "Interrupt" and modify the keybinding from CTRL-Shift-C to CTRL-C. Do the same for CTRL-Shift-V, changing it to CTRL-V.
-    The interrupt or "stop script" hotkey will automatically be remapped from CTRL-C to Ctrl-Shift-C.
+    The interrupt or "stop script" hotkey should automatically trade places from CTRL-C to Ctrl-Shift-C. But if it doesn't, you can do that manually.
         Note: The exact steps may vary depending on your terminal emulator. Refer to the above link or help resources specific to your terminal emulator for more information.
 
 By following these steps, you will have swapped the behavior of the "break" or "stop script" Ctrl-C, and the copy, Ctrl-Shift-C hotkeys in the Linux terminal.
 
-Now we are ready to change `whisper_cpp_client.py`, `whisper_dictation.py` or `whisper_client.py` to use Ctrl-V paste instead of middle click. Somewhere around line 144, change the line that says `pyautogui.middleClick()` to `pyautogui.hotkey('ctrl', 'v')`.
+Now we are ready to change `whisper_cpp_client.py`, `whisper_dictation.py` or `whisper_client.py` to use Ctrl-V paste instead of middle click. Somewhere around line 155, change the line that says `pyautogui.middleClick()` to `pyautogui.hotkey('ctrl', 'v')`.
 
 **I want it to type slowly.** We would love to have it type text slowly, but typing has become unbearably-slow on sites like Twitter and Facebook. The theory is they are using JavaScript to restrict input from bots. But it is annoying for fast typists too. If occasional slow typing doesn't bother you, change the code to use `pyautogui.typewrite(t, typing_interval)` for everything, and set a `typing_interval` to whatever speed you want.
 
-**Legacy versions & Other Projects** Those who prefer the old `whisper_dictation.py` and `whisper-jax` version, please switch to the `legacy` branch with `git checkout legacy`. For a simpler, light-weight, dictation-only client/server solution, try the [voice_typing](https://github.com/themanyone/voice_typing) app. It uses the bash shell to record and load up whisper only when spoken-to. It now has a `whisper.cpp` thin client too. Or try the ancient, less-accurate [Freespeech](https://github.com/themanyone/freespeech-vr/tree/python3) project, which uses old-school Pocketsphinx, but is very light on resources.
+## Other Projects
 
-Whisper Dictation is not optimized for making captions or transcripts of pre-recorded material. Use [Whisper.cpp](https://github.com/ggerganov/whisper.cpp) or [whisper-jax](https://github.com/sanchit-gandhi/whisper-jax) for that. They too have a [server with a web interface that makes transcripts for voice recordings and videos](https://github.com/sanchit-gandhi/whisper-jax/blob/main/app/app.py). If you want real-time AI captions translating everyone's conversations in the room into English. If you want to watch videos with accents that are difficult to understand. Or if you just don't want to miss what the job interviewer asked you during that zoom call... WHAT???, check out my other project, [Caption Anything](https://github.com/themanyone/caption_anything). And generate captions as you record live "what you hear" from the audio monitor device (any sounds that are playing through the computer).
+Whisper Dictation is not optimized for making captions or transcripts of pre-recorded material. Use [Whisper.cpp](https://github.com/ggerganov/whisper.cpp) or [whisper-jax](https://github.com/sanchit-gandhi/whisper-jax) for that. They too have a [server with a web interface that makes transcripts for voice recordings and videos](https://github.com/sanchit-gandhi/whisper-jax/blob/main/app/app.py). 
+
+If you want real-time AI captions translating everyone's conversations in the room into English. If you want to watch videos with accents that are difficult to understand. Or if you just don't want to miss what the job interviewer asked you during that zoom call... WHAT???, check out my other project, [Caption Anything](https://github.com/themanyone/caption_anything). And generate captions as you record live "what you hear" from the audio monitor device (any sounds that are playing through the computer).
 
 ### Thanks for trying out Whisper Dictation!
 

@@ -37,7 +37,7 @@ from gi.repository import Gst, GObject, GLib
 Gst.init(None)
 
 logging.basicConfig(
-	level=logging.INFO,
+	level=logging.DEBUG,
 	format="%(asctime)s [%(levelname)s] %(lineno)d %(message)s",
 	handlers=[
 #		logging.FileHandler('/tmp/rec.log'),
@@ -235,7 +235,7 @@ class delayRecord:
                         self.print_help(options)
             else:
                 ext = os.path.splitext(arg)[1]
-                if (len(ext) == 3 or len(ext) == 4) and ext[1] > '9':
+                if (len(ext) == 4 or len(ext) == 5) and ext[1] > '9':
                     file_name = arg
         if self.quality: self.rate = ""
         # connect plugin to pipeline
