@@ -45,14 +45,14 @@ logging.basicConfig(
 	]
 )
 class delayRecord:
-    def __init__(self):
+    def __init__(self, file_name = ""):
         # set default options
+        self.recording   = False
         self.quiet_timer = self.sound_timer = time.time() # start timers
-
-        self.process_options()
-        self.recording          = False
-        file_name       = self.file_name
-        self.ext = ext = os.path.splitext(file_name)[1].lower()
+        from_options = self.process_options()
+        if not file_name: file_name = from_options
+        ext = os.path.splitext(file_name)[1].lower()
+        
         # Avoid overwriting files
         i = 1
         while os.path.exists(file_name):
@@ -63,8 +63,7 @@ class delayRecord:
         else:
             logging.debug(f"Recording to '{file_name}'")
         self.file_name = file_name
-
-    def create_pipes(self):
+        
         # Create GStreamer elements
         self.pipeline = Gst.Pipeline.new("audio_pipeline")
         # recording source (alsasrc, pulsesrc, autoaudiosrc, etc.)
@@ -82,16 +81,16 @@ class delayRecord:
             ".m4a": "avenc_aac ! mp4mux",
             ".wma": "wmav2enc ! asfmuxtype=Audio",
         }
-        enc = encodings.get(self.ext) or 'wavenc'
+        enc = encodings.get(ext) or 'wavenc'
         # vorbisenc doesn't support 16-bit rates
-        rate = "" if self.ext[1] in "o" else self.rate
+        rate = "" if ext[2] in "g" else self.rate
         logging.debug(f"format {rate}")
         logging.debug(f"using {enc} encoder")
         src = "autoaudiosrc" # alsasrc | pulsesrc
         delay = "ladspa-delay-so-delay-5s"
         # valve-type elements require async=off downstream
         self.pipeline = Gst.parse_launch(
-        f"{src} ! tee name=t ! {delay} name=d ! valve name=v ! {self.gstreamer} audioconvert ! queue ! audioresample ! {rate} {enc} ! filesink name=fs location={self.file_name} async=false t. ! queue ! level ! fakesink"
+        f"{src} ! tee name=t ! {delay} name=d ! valve name=v ! {self.gstreamer} audioconvert ! queue ! audioresample ! {rate} {enc} ! filesink name=fs location={file_name} async=false t. ! queue ! level ! fakesink"
         )
         self.filesink = self.pipeline.get_by_name('fs')
         self.delay = self.pipeline.get_by_name('d')
@@ -117,7 +116,7 @@ class delayRecord:
                 pipeline.send_event(Gst.Event.new_eos())
 
             # Start recording when there are sustained sound levels
-            elif self.notice < seconds_of_sound and not self.recording:
+            elif self.ignore < seconds_of_sound and not self.recording:
                 logging.debug("Recording started")
                 self.valve.set_property("drop", False)
                 self.recording = True
@@ -128,25 +127,21 @@ class delayRecord:
             elif not self.recording:
                 self.sound_timer = reset # wait for sounds
 
+    # If loaded as a module, the parent process can call this
     def stop_recording(self):
         logging.debug(f"\n\nRecording stopped.\n")
-        self.pipeline.send_event(Gst.Event.new_eos())
         self.pipeline.set_state(Gst.State.NULL)
         self.loop.quit()
 
     def on_bus_message(self, bus, message):
         if message.type == Gst.MessageType.EOS:
-            self.pipeline.set_state(Gst.State.NULL)
-            logging.debug("End of stream")
-            self.loop.quit()
+            self.stop_recording()
         elif message.type == Gst.MessageType.ERROR:
             err, debug = message.parse_error()
             logging.debug(f"Error: {err}, {debug}")
-            self.pipeline.set_state(Gst.State.NULL)
-            sys.exit(1)
+            elf.stop_recording()
 
-    def run(self):
-        self.create_pipes()
+    def start(self):
         # Set up bus to monitor messages from the pipeline
         self.bus = self.pipeline.get_bus()
         self.bus.add_signal_watch()
@@ -193,34 +188,33 @@ class delayRecord:
 
         No arguments. Simply record voice to audio.wav until I stop speaking.
         
-        Optional arguments.
+        record.py [file_name.ogg]
         
         record.py [-options] [file_name.[aiff|flac|gsm|m4a|mp3|ogg|ogx|spx|wav|wma]]
         """)
         for k in options:
             print(f"\t-{k}: {options[k]}")
         print()
-        sys.exit(0)
+        sys.exit(2)
 
     def process_options(self):
+        file_name  = "audio.wav"
         self.quality    = False
-        self.file_name  = "audio.wav"
         self.gstreamer  = ""
         self.minutes    = 10
-        self.notice     = 0.3
+        self.ignore     = 0.3
         self.preroll    = 0.6
         self.stop_after = 1.2
         self.threshold  = -20
         self.rate       = "audio/x-raw,rate=16000,channels=1,format=S16LE ! "
         lsa = len(sys.argv)
-        if lsa == 1: return
+        if lsa == 1: return file_name
         options = {
             "h": "print_help(options) # Print this help message",
             "q": "quality    = True # use device bitrate",
-            "f": f"file_name  = next_str or '{self.file_name}'  # name of audio file",
             "g": f"gstreamer  = next_str or ''           # gstreamer-1.0 filters, etc.",
             "m": f"minutes    = next_float or {self.minutes}         # force stop after (minutes)",
-            "n": f"notice     = next_float or {self.notice}        # ignore clicks < (seconds)",
+            "i": f"ignore     = next_float or {self.ignore}        # ignore clicks < (seconds)",
             "p": f"preroll    = next_float or {self.preroll}        # preroll delay (seconds)",
             "s": f"stop_after = next_float or {self.stop_after}        # stop after (seconds of silence)",
             "t": f"threshold  = next_float or {self.threshold}        # wait for sound above this level (dB)",
@@ -239,12 +233,17 @@ class delayRecord:
                     else:
                         logging.critical(f" Option '-{j}' not recognized.")
                         self.print_help(options)
+            else:
+                ext = os.path.splitext(arg)[1]
+                if (len(ext) == 3 or len(ext) == 4) and ext[1] > '9':
+                    file_name = arg
         if self.quality: self.rate = ""
-        # ensure supplied plugin connects to stream
+        # connect plugin to pipeline
         if self.gstreamer and self.gstreamer[-1] != '!':
             self.gstreamer += ' !'
             logging.debug(f"Custom gstreamer options '{self.gstreamer}'")
-
+        return file_name
+        
 if __name__ == "__main__":
     rec     = delayRecord()
-    rec.run()
+    rec.start()
