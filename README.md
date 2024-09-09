@@ -17,7 +17,7 @@ Fast! Offline, privacy-focused, hands-free voice typing, AI voice chat, voice co
 
 **The ship's computer.** Inspired by the *Star Trek* television series. Talk to your computer. Have it answer back with clear, easy-to-understand speech. Network it throughout the ship. Use your voice to write Captain's Log entries when the internet is down, when satellites are busy, or in the far reaches of the galaxy, "where no man has gone before.
 
-**Translation.** This app is optimized for dictation. It can do some translation into English. But that's not its primary task. To use it as a full-time translator, start `whisper.cpp` with `--translate` and language flags. Use `ggml-medium.bin` or larger language model in place of `ggml-small.en.bin`.
+**Translation.** This app is optimized for dictation. It can do some translation into English. But that's not its primary task. To use it as a full-time translator, start `whisper.cpp` with `--translate` and language flags. Use `ggml-medium.bin` or larger language model in place of `ggml-tiny.en.bin`.
 
 **Voice control.** The bot responds to commands.
 
@@ -108,6 +108,12 @@ export OPENAI_API_KEY=<my API key>
 
 We heard OpenAI also has enterprise endoints for ChatGPT that offer some privacy and security. But we have never been contacted by OpenAI and make no claims about its proprietary domains.
 
+## Optional Google AI integration
+
+* Sign up for a [GOOGLE_API_KEY](https://aistudio.google.com)
+* `pip install -q -U google-generativeai`
+* `export GENAI_KEY=<YOUR API_KEY>`
+
 **AI Images.** Now with `sdapi.py`, images may be generated locally, or across the network. Requires [stable-diffusion-webui](https://github.com/AUTOMATIC1111/stable-diffusion-webui). Start `webui.sh` on the server with --api options. Also use --medvram or --lowvram if your video is as bad as ours. If using remotely, configure our `sdapi.py` client with the server's address.
 
 **Start stable-diffusion webui**
@@ -169,7 +175,7 @@ Various test files, including:
 
 [Modifying Terminal Settings](https://askubuntu.com/questions/53688/making-ctrlc-copy-text-in-gnome-terminal)
 
-    Open your terminal emulator (e.g., gnome-terminal, xterm, etc.).
+    Open your terminal emulator (gnome-terminal, lxterminal, qterminal, etc.).
     Go to the terminal's menu and select "Edit" or "Preferences".
     Look for the "Shortcuts" or "Keyboard" section.
     Find the entry for "Copy" or "Interrupt" and modify the keybinding from CTRL-Shift-C to CTRL-C. Do the same for CTRL-Shift-V, changing it to CTRL-V.

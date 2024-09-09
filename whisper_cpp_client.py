@@ -48,11 +48,18 @@ cpp_url = "http://127.0.0.1:7777/inference"
 fallback_chat_url = "http://localhost:8888/v1"
 debug = False
 
-api_key = os.getenv("OPENAI_API_KEY")
-if (api_key):
-    openai.api_key = api_key
+gpt_key = os.getenv("OPENAI_API_KEY")
+if (gpt_key):
+    openai.api_key = gpt_key
 else:
     logging.debug("Export OPENAI_API_KEY if you want answers from ChatGPT.\n")
+gem_key = os.getenv("GENAI_TOKEN")
+if (gem_key):
+    import google.generativeai as genai
+    genai.configure(api_key=gem_key)
+    model = genai.GenerativeModel("gemini-1.5-flash")
+else:
+    logging.debug("Export GENAI_TOKEN if you want answers from Gemini.\n")
 
 # commands and hotkeys for various platforms
 commands = {
@@ -68,6 +75,7 @@ commands = {
     "terminal":     "xterm -bg gray20 -fg gray80 -fa 'Liberation Sans Mono' -fs 12 -rightbar&",
     "browser":      "htmlview&",
     "web browser":   "htmlview&",
+    "webcam":       "fswebcam",
     },
 }
 hotkeys = {
@@ -81,20 +89,23 @@ hotkeys = {
     }
 actions = {
     r"^left click.?$": "pyautogui.click()",
-    r"^(click)( the)?( mouse).? ": "pyautogui.click()",
+    r"^(click)( the)?( mouse).?": "pyautogui.click()",
     r"^middle click.?$": "pyautogui.middleClick()",
     r"^right click.?$": "pyautogui.rightClick()",
-    r"^(peter|samantha|computer).? (run|open|start|launch)(up)?( a| the)? ": "os.system(commands[sys.platform][q])",
-    r"^(peter|samantha|computer).? closed? window": "pyautogui.hotkey('alt', 'F4')",
-    r"^(peter|samantha|computer).? search( the)?( you| web| google| bing| online)?(.com)? for ": 
+    r"^(peter|samantha|computer).?,? (run|open|start|launch)(up)?( a| the)? ": "os.system(commands[sys.platform][q])",
+    r"^(peter|samantha|computer).?,? closed? window": "pyautogui.hotkey('alt', 'F4')",
+    r"^(peter|samantha|computer).?,? search( the)?( you| web| google| bing| online)?(.com)? for ": 
        "webbrowser.open('https://you.com/search?q=' + re.sub(' ','%20',q))",
-    r"^(peter|samantha|computer).? (send|compose|write)( an| a) email to ": "os.popen('xdg-open \"mailto://' + q.replace(' at ', '@') + '\"')",
-    r"^(peter|samantha|computer).? (i need )?(let's )?(see |have |show )?(us |me )?(an? )?(image|picture|draw|create|imagine|paint)(ing| of)? ": "os.popen(f'./sdapi.py \"{q}\"')",
-    r"^(peter|samantha|computer).? (resume|zoom|continue|start|type) (typing|d.ctation|this)" : "exec('global chatting;global listening;chatting = False;listening = True')",
-    r"^(peter|samantha|computer).? ": "chatGPT(q)"
+    r"^(peter|samantha|computer).?,? (send|compose|write)( an| a) email to ": "os.popen('xdg-open \"mailto://' + q.replace(' at ', '@') + '\"')",
+    r"^(peter|samantha|computer).?,? (i need )?(let's )?(see |have |show )?(us |me )?(an? )?(image|picture|draw|create|imagine|paint)(ing| of)? ": "os.popen(f'./sdapi.py \"{q}\"')",
+    r"^(peter|samantha|computer)?.?,? ?(resume|zoom|continue|start|type) (typing|d.ctation|this)" : "exec(chatting = False,listening = True)",
+    r"^(peter|samantha|computer)?.?,? ?(on\s?screen|show the webcam|take a picture)" : "os.popen('fswebcam')",
+    r"^(peter|samantha|computer).?,? ": "generate_text(q)"
     }
 
 def process_actions(tl:str) -> bool:
+    global chatting
+    global listening
     for input, action in actions.items():
         # look for action in list
         if s:=re.search(input, tl):
@@ -105,7 +116,7 @@ def process_actions(tl:str) -> bool:
                 print(q)
             return True # success
     if chatting:
-        chatGPT(tl); return True
+        generate_text(tl); return True
     return False # no action
 
 # fix race conditions
@@ -163,13 +174,13 @@ say("Computer ready.")
 
 messages = [{ "role": "system", "content": "In this conversation between `user:` and `assistant:`, play the role of assistant. Reply as a helpful assistant." },]
 
-def chatGPT(prompt: str):
-    logging.debug("ChatGPT called") 
+def generate_text(prompt: str):
+    logging.debug("Asking ChatGPT") 
     global chatting, messages
     messages.append({"role": "user", "content": prompt})
     completion = ""
-    # Call chatGPT
-    if api_key:
+    # Try chatGPT
+    if gpt_key:
         try:
             completion = openai.ChatCompletion.create(
               model="gpt-3.5-turbo",
@@ -179,9 +190,21 @@ def chatGPT(prompt: str):
         except Exception as e:
                 logging.debug("ChatGPT had a problem. Here's the error message.")
                 logging.debug(e)
-                
+    
+    # Fallback to Google Gemini
+    if gem_key and not completion:
+        logging.debug("Asking Gemini") 
+        chat = model.start_chat(
+            history=[
+            {"role": "user" if x["role"] == "user" else "model",
+                "parts": x["content"]}for x in messages]
+        )
+        response = chat.send_message(prompt)
+        completion = response.text
+
     # Fallback to localhost
     if not completion:
+        logging.debug(f"Querying {fallback_chat_url}") 
         # ref. llama.cpp/examples/server/README.md
         client = openai.OpenAI(
             base_url=fallback_chat_url,
