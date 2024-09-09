@@ -23,9 +23,13 @@ Fast! Offline, privacy-focused, hands-free voice typing, AI voice chat, voice co
 
 For example, say, "Computer, search the web for places to eat". A browser opens up with a list of local restaurants. Say, "Computer, say hello to our guest". After a brief pause, there is a reply, either from `ChatGPT`, the included chat server on the local machine, or another, networked chat server that you set up. A voice, `mimic3` says some variation of, "Hello. Pleased to meet you. Welcome to our shop. Let me know how I can be of assistance". It's unique each time. Say, "Computer, open terminal". A terminal window pops up. Say "Computer, draw a picture of a Klingon warship". An image of a warship appears with buttons to save, print, and navigate through previously-generated images.
 
-## Dependencies
+## Whats new in this branch.
 
-This project requires [GStreamer](https://gstreamer.freedesktop.org/) for voice processing, which should be available in various package managers. We have been using `python3.12` and `python3.10`. But other versions might work.
+**Less dependencies.** We saved over 1Gb of downloads and hours of setup by eliminating pytorch, pycuda dependencies. Those older versions can be found in the `legacy` branch.
+
+## Preparation
+
+[GStreamer](https://gstreamer.freedesktop.org/) is necessary to record audio files for STT voice transcription. It should be available from various package managers.
 
 ```shell
 pip install -r requirements.txt
@@ -35,7 +39,7 @@ GGML_CUDA=1 make -j # assuming CUDA is available. see docs
 ln -s server ~/local/bin/whisper_cpp_server
 ```
 
-## Quick start dictation
+## Quick start
 
 ```shell
 whisper_cpp_server -l en -m models/ggml-tiny.en.bin --port 7777
@@ -44,56 +48,13 @@ whisper_cpp_server -l en -m models/ggml-tiny.en.bin --port 7777
 
 If VRAM is scarce, quantize `ggml-tiny.en.bin` according to whisper.cpp docs.
 
-## Local chat server
-
-Supposing any chat server will do. Many use `llama.cpp` behind the scenes, so we went directly to the source.
-
-```shell
-git clone https://github.com/ggerganov/llama.cpp
-cd llama.cpp
-GGML_CUDA=1 make -j
-```
-
-### Download language model
-
-Try [the ones on our page](https://huggingface.co/hellork). Look at the [leaderboard](https://huggingface.co/spaces/open-llm-leaderboard/open_llm_leaderboard) to see which models are the best that can fit into your VRAM. Then search for the model in .gguf format. To save VRAM and time, download quantized models.
-
-### Start chatting
-
-```shell
-./llama-server -m models/gemma-2-2b-it-q4_k_m.gguf -c 2048 -ngl 33 --port 8888
-```
- 
-Either dictate into the handy web interface at http://localhost:8888 or use the API endpoint by saying "Computer... What is the capital of France!" etc.
-
-## Give it a voice
-
-**Mimic3.** If you install [mimic3](https://github.com/MycroftAI/mimic3) as a service, the computer will speak answers out loud. Follow the [instructions for setting up mimic3 as a Systemd Service](https://mycroft-ai.gitbook.io/docs/mycroft-technologies/mimic-tts/mimic-3#web-server). The `mimic3-server` is already lightening-fast on CPU. Do not bother with --cuda flag, which requires old `onnxruntime-gpu` that is not compatible with CUDA 12+ and won't compile with nvcc12... We got it working! And it just hogs all of VRAM and provides barely any speedup.
-
-**Female voice.** For a pleasant, female voice, use  `mimic3-download` to obtain `en_US/vctk_low` To accomodate this change, we edited the `params` line in `mimic3_client`, and commented the other line out, like so.
-
-```
-    # params = { 'text': text, "lengthScale": "0.6" }
-    params = { 'text': text, "voice": "en_US/vctk_low" }
-```
-
-## Optional ChatGPT
-
-Export the OPENAI_API_KEY and it will know to get answers from ChatGPT. Edit `.bashrc`, or other startup file:
-
-```shell
-export OPENAI_API_KEY=<my API key>
-```
-
-**AI Images.** Now with the included stable-diffusion API, `sdapi.py`, images may be generated locally, or across the network. Requires [stable-diffusion-webui](https://github.com/AUTOMATIC1111/stable-diffusion-webui). Start `webui.sh` on the server with --medvram or --lowvram and --api options. If using remotely, configure our `sdapi.py` client with the server's address.
-
 ## Troubleshooting.
 
-If `whisper_cpp_server` refuses to start, reboot. Or, especially if using the unsupported compiler like we did, reload the crashed NVIDIA uvm module `sudo modprobe -r nvidia_uvm && sudo modprobe nvidia_uvm`. Hopefully this will no longer be necessary, but you never know. So we are leaving it here for postrity.
+If `whisper_cpp_server` refuses to start, reboot. Or try and reload the crashed NVIDIA uvm module `sudo modprobe -r nvidia_uvm && sudo modprobe nvidia_uvm`.
 
-Edit `whisper_cpp_client.py` clients to change the server location from localhost to wherever the server resides on the network.
+Edit `whisper_cpp_client.py` client to change server locations from localhost to wherever they reside on the network.
 
-Test client and server.
+Test clients and servers.
 
 ```shell
 ./whisper.cpp -l en -m ./models/ggml-tiny.en.bin samples/jfk.wav`
@@ -102,7 +63,62 @@ ln -sf $(pwd)/server whisper_cpp_server
 ./whisper_cpp_server -l en -m models/ggml-tiny.en.bin --port 7777
 ```
 
-**Optionally start stable-diffusion webui**
+## Local chat server
+
+Supposing any chat server will do. Many use `llama.cpp` behind the scenes, so we also use that.
+
+```shell
+git clone https://github.com/ggerganov/llama.cpp
+cd llama.cpp
+GGML_CUDA=1 make -j # assuming CUDA is available. see docs
+```
+
+### Download a language model
+
+Save hundreds on annual subscriptions by running your own AI servers for every task. Look at the [leaderboard](https://huggingface.co/spaces/open-llm-leaderboard/open_llm_leaderboard) to see which models perform best in the categories you want. As a rule of thumb, quantized 7B models are about the maximum our 4GiB VRAM can handle. Search for quantized models in .gguf format, or try [the ones on our page](https://huggingface.co/hellork).
+
+Help get us a better video card.
+<form action="https://www.paypal.com/cgi-bin/webscr" method="post" target="_top">
+<input type="hidden" name="cmd" value="_s-xclick">
+<input type="hidden" name="hosted_button_id" value="FJ9KE8CAEDLKJ">
+<input type="image" src="https://www.paypalobjects.com/en_US/i/btn/btn_donateCC_LG.gif" 
+border="0" name="submit" alt="PayPal - The safer, easier way to pay online!">
+<img alt="" border="0" src="https://www.paypalobjects.com/en_US/i/scr/pixel.gif" width="1" 
+height="1">
+</form>
+
+### Start chatting
+
+```shell
+./llama-server -m models/gemma-2-2b-it-q4_k_m.gguf -c 2048 -ngl 33 --port 8888
+```
+
+Use the API endpoint by simply saying "Computer... What is the capital of France!" etc. Or navigate to the handy web interface at http://localhost:8888 and dictate into that. From there you can adjust settings like `temperature` to make it more creative, or more strict with its fact checking and self censorship.
+
+## Give it a voice
+
+**Mimic3.** If you install [mimic3](https://github.com/MycroftAI/mimic3) as a service, the computer will speak answers out loud. Follow the [instructions for setting up mimic3 as a Systemd Service](https://mycroft-ai.gitbook.io/docs/mycroft-technologies/mimic-tts/mimic-3#web-server). The `mimic3-server` is already lightening-fast on CPU. Do not bother with --cuda flag, which requires old `onnxruntime-gpu` that is not compatible with CUDA 12+ and won't compile with nvcc12... We got it working! And it just hogs all of VRAM and provides no noticeable speedup.
+
+**Female voice.** For a pleasant, female voice, use  `mimic3-download` to obtain `en_US/vctk_low` To accommodate this change, we edited the `params` line in `mimic3_client`, and commented the other line out, like so.
+
+```
+    # params = { 'text': text, "lengthScale": "0.6" }
+    params = { 'text': text, "voice": "en_US/vctk_low" }
+```
+
+## Optional ChatGPT from OpenAI
+
+Export the OPENAI_API_KEY and it will give preference to answers from ChatGPT. Edit `.bashrc`, or another startup file:
+
+```shell
+export OPENAI_API_KEY=<my API key>
+```
+
+We heard OpenAI also has enterprise endoints for ChatGPT that offer some privacy and security. But we have never been affiliated with OpenAI and make no claims about its proprietary domains.
+
+**AI Images.** Now with `sdapi.py`, images may be generated locally, or across the network. Requires [stable-diffusion-webui](https://github.com/AUTOMATIC1111/stable-diffusion-webui). Start `webui.sh` on the server with --api options. Also use --medvram or --lowvram if your video is as bad as ours. If using remotely, configure our `sdapi.py` client with the server's address.
+
+**Start stable-diffusion webui**
 
 ```shell
 webui.sh --api --medvram
@@ -112,7 +128,7 @@ webui.sh --api --medvram
 
 The computer responds to commands. You can also call him Peter. (Or Samantha, if using female voice).
 
-**Mute button.** There is no mute button. Say "pause dictation" to turn off text generation. It will keep listening to commands. Say "resume dictation", or "Computer, type this out" to have it start typing again. Say "stop listening" or "stop dictation" to quit the program entirely. You could configure a button to mute your mic, but that is no longer necessary and beyond the scope of this program.
+**Mute button.** There is no mute button. Say "pause dictation" to turn off text generation. It will keep listening to commands. Say "resume dictation", or "Computer, type this out" to have it start typing again. Say "stop listening" or "stop dictation" to quit the program entirely. You could configure a button to mute your mic, but that is no longer necessary.
 
 These actions are defined in whisper_dictation.py. See the source code for the full list. Feel free to edit them too!
 
@@ -133,16 +149,13 @@ Try saying:
 - Peter, compose a Facebook post about the sunny weather we're having.
 - Stop dictation. (quits program).
 
-** export your OPENAI_API_KEY to the environment if you want answers from ChatGPT. If your firm is worried about privacy and security, use `llama.cpp` as explained below. ChatGPT also has an enterprise version that they claim to be more private and secure. We are not affiliated with OpenAI, and therefor do not receive referral benefits.
-
-
 # Files in this branch
 
 `whisper_cpp_client.py`: A small and efficient Python client that connects to a running [Whisper.cpp](https://github.com/ggerganov/whisper.cpp) server on the local machine or across the network.
 
-`record.py`: A sound-activated recorder for hands-free recording from the microphone. You can run it separately. It creates a cropped audio soundbite named `audio.wav`. Supply optional command line arguments to change the file name, quality, formats, add filters, etc. See `./record.py -h` for help. Some formats require `gst-plugins-bad` or `gst-plugins-ugly`, depending on your distribution.
+`record.py`: A full-featured, sound-activated recorder. You can run it separately. It creates a file named `audio.wav`. Supply optional command line arguments to change the file name, quality, formats, add filters, etc. See `./record.py -h` for help. Some formats require `gst-plugins-bad` or `gst-plugins-ugly`, depending on your distribution.
 
-This update provides a powerful option that lets you insert plugins, mixers, filters, controllrs, and effects directly into the GStreamer pipeline. See the [G-streamer documentation](https://gstreamer.freedesktop.org/) for details. Many audio and video plugins are available. See `gst-inspect-1.0` for a list. The following records in a high quality, lossless format with echo effect and dynamic range compression.
+This update provides a powerful option that lets you insert various plugins, mixers, filters, controllers, and effects directly into the GStreamer pipeline. See the [G-streamer documentation](https://gstreamer.freedesktop.org/) for details. Many audio and video plugins are available. Run `gst-inspect-1.0` for a list. The following records in a high quality, lossless format with echo effect and dynamic range compression.
 
 `./record.py -gq 'audioecho delay=250000000 intensity=0.25 ! audiodynamic' echo.flac`
 
