@@ -4,12 +4,7 @@
 ##
 ## Hands-free voice audio recording to mp3, wav, possibly other types
 ##
-## Usage: record.py [name].[type] [optional encoder, e.g. wavpackenc]
-## ./record.py filename.wav
-## ./record.py filename.mp3
-##
-## Specify any 2nd argumnt to record high quality audio.
-## ./record.py filename.flac HQ
+## Help: ./record.py -h
 ##
 ## Copyright 2024 Henry Kroll <nospam@thenerdshow.com>
 ##
@@ -42,7 +37,7 @@ from gi.repository import Gst, GObject, GLib
 Gst.init(None)
 
 logging.basicConfig(
-	level=logging.DEBUG,
+	level=logging.INFO,
 	format="%(asctime)s [%(levelname)s] %(lineno)d %(message)s",
 	handlers=[
 #		logging.FileHandler('/tmp/rec.log'),
@@ -53,31 +48,22 @@ class delayRecord:
     def __init__(self):
         # set default options
         self.quiet_timer = self.sound_timer = time.time() # start timers
-        
+
         self.process_options()
         self.recording          = False
         file_name       = self.file_name
-        self.ext    = os.path.splitext(file_name)[1].lower()
-        
+        self.ext = ext = os.path.splitext(file_name)[1].lower()
         # Avoid overwriting files
         i = 1
         while os.path.exists(file_name):
-            file_name = f'{os.path.splitext(file_name)[0].split('(')[0]}({i}){self.ext}'
+            file_name = f'{os.path.splitext(file_name)[0].split('(')[0]}({i}){ext}'
             i += 1
         if (i > 1):
             logging.critical(f"File exists. Recording to '{file_name}'")
         else:
             logging.debug(f"Recording to '{file_name}'")
         self.file_name = file_name
-        self.create_pipes()
 
-        # Set up bus to monitor messages from the pipeline
-        self.bus = self.pipeline.get_bus()
-        self.bus.add_signal_watch()
-        # Connect to the 'level' signal
-        self.bus.connect("message", self.on_bus_message)
-        self.bus.connect('message::element', self.monitor_levels)
-        
     def create_pipes(self):
         # Create GStreamer elements
         self.pipeline = Gst.Pipeline.new("audio_pipeline")
@@ -129,7 +115,7 @@ class delayRecord:
             if seconds_of_sound / 60 > self.minutes:
                 logging.critical('Recording time exceeded. Quitting.')
                 pipeline.send_event(Gst.Event.new_eos())
-                
+
             # Start recording when there are sustained sound levels
             elif self.notice < seconds_of_sound and not self.recording:
                 logging.debug("Recording started")
@@ -144,18 +130,15 @@ class delayRecord:
 
     def stop_recording(self):
         logging.debug(f"\n\nRecording stopped.\n")
-        self.pause_request = True  # Signal to pause
-        self.pipeline.send_event(Gst.Event.new_flush_stop())
-        self.pipeline.set_state(Gst.State.PAUSED)
-        while self.pipeline.get_state(0)[1] != Gst.State.PAUSED:
-            Gst.Context.iterate()
-        self.pause_request = False  # Reset flag
+        self.pipeline.send_event(Gst.Event.new_eos())
+        self.pipeline.set_state(Gst.State.NULL)
+        self.loop.quit()
 
     def on_bus_message(self, bus, message):
         if message.type == Gst.MessageType.EOS:
             self.pipeline.set_state(Gst.State.NULL)
             logging.debug("End of stream")
-            sys.exit(0)
+            self.loop.quit()
         elif message.type == Gst.MessageType.ERROR:
             err, debug = message.parse_error()
             logging.debug(f"Error: {err}, {debug}")
@@ -163,13 +146,22 @@ class delayRecord:
             sys.exit(1)
 
     def run(self):
+        self.create_pipes()
+        # Set up bus to monitor messages from the pipeline
+        self.bus = self.pipeline.get_bus()
+        self.bus.add_signal_watch()
+        # Connect to the 'level' signal
+        self.bus.connect("message", self.on_bus_message)
+        self.bus.connect('message::element', self.monitor_levels)
+        
         # Start playing the pipeline
         self.pipeline.set_state(Gst.State.PLAYING)
         logging.debug("Listening for voice...")
 
         # Main loop
         try:
-            GLib.MainLoop().run()
+            self.loop = GLib.MainLoop()
+            self.loop.run()
         except Exception as e:
             logging.debug(f"Stopping...{e}")
 
