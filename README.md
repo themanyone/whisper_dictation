@@ -11,7 +11,7 @@ Fast! Offline, privacy-focused, hands-free voice typing, AI voice chat, voice co
 - Optional OpenAI `ChatGPT`, Google Gemini, or custom chat server integration,
 - Optionally speak answers out loud with `mimic3`.
 - Draw pictures with [stable-diffusion-webui](https://github.com/AUTOMATIC1111/stable-diffusion-webui).
-- Client and server provided.
+- Help [get us a better video card](https://www.paypal.com/donate/?hosted_button_id=A37BWMFG3XXFG) (PayPal donation link).
 
 **Freedoms and responsibilities** Free and open-source software comes with NO WARRANTIES. You have permission to copy and modify for individual needs in accordance with the included LICENSE. Get updates from https://github.com/themanyone/whisper_dictation.git
 
@@ -25,7 +25,7 @@ For example, say, "Computer, search the web for places to eat". A browser opens 
 
 ## New in this branch
 
-**Less dependencies.** We saved over 1Gb of downloads and hours of setup by eliminating pytorch, pycuda dependencies. Those older versions can be found in the `legacy` branch.
+**Fewer dependencies.** We saved over 1Gb of downloads and hours of setup by eliminating pytorch, pycuda dependencies. Those older versions can be found in the `legacy` branch.
 
 ## Preparation
 
@@ -57,7 +57,7 @@ Edit `whisper_cpp_client.py` client to change server locations from localhost to
 Test clients and servers.
 
 ```shell
-./whisper.cpp -l en -m ./models/ggml-tiny.en.bin samples/jfk.wav`
+./whisper.cpp -l en -m ./models/ggml-tiny.en.bin samples/jfk.wav
 ln -sf $(pwd)/main whisper_cpp
 ln -sf $(pwd)/server whisper_cpp_server
 ./whisper_cpp_server -l en -m models/ggml-tiny.en.bin --port 7777
@@ -77,15 +77,7 @@ GGML_CUDA=1 make -j # assuming CUDA is available. see docs
 
 Save hundreds on annual subscriptions by running your own AI servers for every task. Look at the [leaderboard](https://huggingface.co/spaces/open-llm-leaderboard/open_llm_leaderboard) to see which models perform best in the categories you want. As a rule of thumb, quantized 7B models are about the maximum our 4GiB VRAM can handle. Search for quantized models in .gguf format, or try [the ones on our page](https://huggingface.co/hellork).
 
-Help get us a better video card.
-<form action="https://www.paypal.com/cgi-bin/webscr" method="post" target="_top">
-<input type="hidden" name="cmd" value="_s-xclick">
-<input type="hidden" name="hosted_button_id" value="FJ9KE8CAEDLKJ">
-<input type="image" src="https://www.paypalobjects.com/en_US/i/btn/btn_donateCC_LG.gif" 
-border="0" name="submit" alt="PayPal - The safer, easier way to pay online!">
-<img alt="" border="0" src="https://www.paypalobjects.com/en_US/i/scr/pixel.gif" width="1" 
-height="1">
-</form>
+Help [get us a better video card](https://www.paypal.com/donate/?hosted_button_id=A37BWMFG3XXFG) (PayPal donation link).
 
 ### Start chatting
 
