@@ -17,19 +17,19 @@ Fast! Offline, privacy-focused, hands-free voice typing, AI voice chat, voice co
 
 **The ship's computer.** Inspired by the *Star Trek* television series. Talk to your computer. Have it answer back with clear, easy-to-understand speech. Network it throughout the ship. Use your voice to write Captain's Log entries when the internet is down, when satellites are busy, or in the far reaches of the galaxy, "where no man has gone before.
 
-**Translation.** This app is optimized for dictation. It can do some translation into English. But that's not its primary task. To use it as a full-time translator, start whisper.cpp with `--translate` flag and use ggml-medium.bin or larger language model in place of ggml-small.en.bin.
+**Translation.** This app is optimized for dictation. It can do some translation into English. But that's not its primary task. To use it as a full-time translator, start `whisper.cpp` with `--translate` and language flags. Use `ggml-medium.bin` or larger language model in place of `ggml-small.en.bin`.
 
 **Voice control.** The bot responds to commands.
 
-For example, say, "Computer, search the web for places to eat". A browser opens up with a list of local restaurants. Say, "Computer, say hello to our guest". After a brief pause, there is a reply, either from `ChatGPT`, the included chat server on the local machine, or another, networked chat server that you set up. A voice, `mimic3` says some variation of, "Hello. Pleased to meet you. Welcome to our shop. Let me know how I can be of assistance". It's unique each time. Say, "Computer, open terminal". A terminal window pops up. Say "Computer, draw a picture of a Klingon warship". An image of a warship appears with buttons to save, print, and navigate through previously-generated images.
+For example, say, "Computer, search the web for places to eat". A browser opens up with a list of local restaurants. Say, "Computer, say hello to our guest". After a brief pause, there is a reply, either from your local machine, `ChatGPT`, or a local area chat server that you set up. A voice, `mimic3` says some variation of, "Hello. Pleased to meet you. Welcome to our shop. Let me know how I can be of assistance". It's unique each time. Say, "Computer, open terminal". A terminal window pops up. Say "Computer, draw a picture of a Klingon warship". An image of a warship appears with buttons to save, print, and navigate through previously-generated images.
 
-## Whats new in this branch.
+## New in this branch
 
 **Less dependencies.** We saved over 1Gb of downloads and hours of setup by eliminating pytorch, pycuda dependencies. Those older versions can be found in the `legacy` branch.
 
 ## Preparation
 
-[GStreamer](https://gstreamer.freedesktop.org/) is necessary to record audio files for STT voice transcription. It should be available from various package managers.
+[GStreamer](https://gstreamer.freedesktop.org/) is necessary to record temporary audio clips for sending to your local `whisper.cpp` speech to text (STT) server. It should be available from various package managers.
 
 ```shell
 pip install -r requirements.txt
@@ -73,7 +73,7 @@ cd llama.cpp
 GGML_CUDA=1 make -j # assuming CUDA is available. see docs
 ```
 
-### Download a language model
+### Download language models
 
 Save hundreds on annual subscriptions by running your own AI servers for every task. Look at the [leaderboard](https://huggingface.co/spaces/open-llm-leaderboard/open_llm_leaderboard) to see which models perform best in the categories you want. As a rule of thumb, quantized 7B models are about the maximum our 4GiB VRAM can handle. Search for quantized models in .gguf format, or try [the ones on our page](https://huggingface.co/hellork).
 
@@ -114,7 +114,7 @@ Export the OPENAI_API_KEY and it will give preference to answers from ChatGPT. E
 export OPENAI_API_KEY=<my API key>
 ```
 
-We heard OpenAI also has enterprise endoints for ChatGPT that offer some privacy and security. But we have never been affiliated with OpenAI and make no claims about its proprietary domains.
+We heard OpenAI also has enterprise endoints for ChatGPT that offer some privacy and security. But we have never been contacted by OpenAI and make no claims about its proprietary domains.
 
 **AI Images.** Now with `sdapi.py`, images may be generated locally, or across the network. Requires [stable-diffusion-webui](https://github.com/AUTOMATIC1111/stable-diffusion-webui). Start `webui.sh` on the server with --api options. Also use --medvram or --lowvram if your video is as bad as ours. If using remotely, configure our `sdapi.py` client with the server's address.
 
