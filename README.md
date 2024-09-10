@@ -46,9 +46,9 @@ whisper_cpp_server -l en -m models/ggml-tiny.en.bin --port 7777
 ./whisper_cpp_client.py
 ```
 
-If VRAM is scarce, quantize `ggml-tiny.en.bin` according to whisper.cpp docs.
-
 ## Troubleshooting.
+
+If VRAM is scarce, quantize `ggml-tiny.en.bin` according to whisper.cpp docs. Or use `-ng` option to avoid using VRAM altogether. It will lose some performance. But it's not that noticeable with a fast CPU.
 
 If `whisper_cpp_server` refuses to start, reboot. Or try and reload the crashed NVIDIA uvm module `sudo modprobe -r nvidia_uvm && sudo modprobe nvidia_uvm`.
 
@@ -108,13 +108,15 @@ export OPENAI_API_KEY=<my API key>
 
 We heard OpenAI also has enterprise endoints for ChatGPT that offer some privacy and security. But we have never been contacted by OpenAI and make no claims about its proprietary domains.
 
-## Optional Google AI integration
+## Optional Google AI
 
 * Sign up for a [GOOGLE_API_KEY](https://aistudio.google.com)
 * `pip install -q -U google-generativeai`
 * `export GENAI_KEY=<YOUR API_KEY>`
 
-**AI Images.** Now with `sdapi.py`, images may be generated locally, or across the network. Requires [stable-diffusion-webui](https://github.com/AUTOMATIC1111/stable-diffusion-webui). Start `webui.sh` on the server with --api options. Also use --medvram or --lowvram if your video is as bad as ours. If using remotely, configure our `sdapi.py` client with the server's address.
+## AI Images
+
+Now with `sdapi.py`, images may be generated locally, or across the network. Requires [stable-diffusion-webui](https://github.com/AUTOMATIC1111/stable-diffusion-webui). Start `webui.sh` on the server with --api options. Also use --medvram or --lowvram if your video is as bad as ours. If using remotely, configure our `sdapi.py` client with the server's address.
 
 **Start stable-diffusion webui**
 
@@ -151,7 +153,7 @@ Try saying:
 
 `whisper_cpp_client.py`: A small and efficient Python client that connects to a running [Whisper.cpp](https://github.com/ggerganov/whisper.cpp) server on the local machine or across the network.
 
-`record.py`: A full-featured, sound-activated recorder. You can run it separately. It creates a file named `audio.wav`. Supply optional command line arguments to change the file name, quality, formats, add filters, etc. See `./record.py -h` for help. Some formats require `gst-plugins-bad` or `gst-plugins-ugly`, depending on your distribution.
+`record.py`: Almost hands-free, sound-activated recorder. You can run it separately. It creates a file named `audio.wav`. Supply optional command line arguments to change the file name, quality, formats, add filters, etc. See `./record.py -h` for help. Some formats require `gst-plugins-bad` or `gst-plugins-ugly`, depending on your distribution.
 
 This update provides a powerful option that lets you insert various plugins, mixers, filters, controllers, and effects directly into the GStreamer pipeline. See the [G-streamer documentation](https://gstreamer.freedesktop.org/) for details. Many audio and video plugins are available. Run `gst-inspect-1.0` for a list. The following records in a high quality, lossless format with echo effect and dynamic range compression.
 
@@ -184,7 +186,7 @@ Various test files, including:
 
 By following these steps, you will have swapped the behavior of the "break" or "stop script" Ctrl-C, and the copy, Ctrl-Shift-C hotkeys in the Linux terminal.
 
-Now we are ready to change `whisper_cpp_client.py`, `whisper_dictation.py` or `whisper_client.py` to use Ctrl-V paste instead of middle click. Somewhere around line 155, change the line that says `pyautogui.middleClick()` to `pyautogui.hotkey('ctrl', 'v')`.
+Now we can change `whisper_cpp_client.py`, `whisper_dictation.py` or `whisper_client.py` to use Ctrl-V paste instead of middle click. Somewhere around line 155, change the line that says `pyautogui.middleClick()` to `pyautogui.hotkey('ctrl', 'v')`.
 
 **I want it to type slowly.** We would love to have it type text slowly, but typing has become unbearably-slow on sites like Twitter and Facebook. The theory is they are using JavaScript to restrict input from bots. But it is annoying for fast typists too. If occasional slow typing doesn't bother you, change the code to use `pyautogui.typewrite(t, typing_interval)` for everything, and set a `typing_interval` to whatever speed you want.
 

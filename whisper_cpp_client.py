@@ -98,7 +98,7 @@ actions = {
        "webbrowser.open('https://you.com/search?q=' + re.sub(' ','%20',q))",
     r"^(peter|samantha|computer).?,? (send|compose|write)( an| a) email to ": "os.popen('xdg-open \"mailto://' + q.replace(' at ', '@') + '\"')",
     r"^(peter|samantha|computer).?,? (i need )?(let's )?(see |have |show )?(us |me )?(an? )?(image|picture|draw|create|imagine|paint)(ing| of)? ": "os.popen(f'./sdapi.py \"{q}\"')",
-    r"^(peter|samantha|computer)?.?,? ?(resume|zoom|continue|start|type) (typing|d.ctation|this)" : "exec(chatting = False,listening = True)",
+    r"^(peter|samantha|computer)?.?,? ?(resume|zoom|continue|start|type) (typing|d.ctation|this)" : "eval(chatting = False;listening = True)",
     r"^(peter|samantha|computer)?.?,? ?(on\s?screen|show the webcam|take a picture)" : "os.popen('fswebcam')",
     r"^(peter|samantha|computer).?,? ": "generate_text(q)"
     }
@@ -119,7 +119,7 @@ def process_actions(tl:str) -> bool:
         generate_text(tl); return True
     return False # no action
 
-# fix race conditions
+# fix race conditions 
 audio_queue = queue.Queue()
 listening = True
 chatting = False
@@ -156,9 +156,10 @@ def gettext(f:str) -> str:
             return ""
         return ""
 
+# paste text in window
 def pastetext(t:str):
     # filter (noise), (hiccups), *barking* and [system messages]
-    t = re.sub(r'(\s*[\*\[\(][^\]\)]*[\]\)\*])*', '', t)
+    t = re.sub(r'(\s*[\*\[\(][^\]\)]*[\]\)\*])*\s*$', '', t)+' '
     if not t or t == " you" or t == " Thanks for watching!":
         return # ignoring you
     pyperclip.copy(t) # weird that primary won't work the first time
@@ -264,7 +265,7 @@ def transcribe():
                 elif process_hotkeys(lower_case): continue
                 else:
                     now = time.time()
-                    start = now; pastetext(t + ' ')
+                    start = now; pastetext(t)
             # continue looping every 1/5 second
             else: time.sleep(0.2)
         except KeyboardInterrupt:
