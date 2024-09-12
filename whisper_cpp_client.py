@@ -33,6 +33,12 @@ import subprocess, signal
 import requests
 import logging
 from mimic3_client import say
+from on_screen import start_camera
+audio_queue = queue.Queue()
+middleClick = False
+listening = True
+chatting = False
+cam = None
 
 logging.basicConfig(
 	level=logging.INFO,
@@ -68,6 +74,7 @@ commands = {
     "terminal":     "start cmd",
     "browser":      "start iexplore",
     "web browser":  "start iexplore",
+    "webcam":       "on_screen.py",
     },
 
 "linux": {
@@ -75,7 +82,7 @@ commands = {
     "terminal":     "xterm -bg gray20 -fg gray80 -fa 'Liberation Sans Mono' -fs 12 -rightbar&",
     "browser":      "htmlview&",
     "web browser":   "htmlview&",
-    "webcam":       "fswebcam",
+    "webcam":       "./on_screen.py",
     },
 }
 hotkeys = {
@@ -92,6 +99,7 @@ actions = {
     r"^(click)( the)?( mouse).?": "pyautogui.click()",
     r"^middle click.?$": "pyautogui.middleClick()",
     r"^right click.?$": "pyautogui.rightClick()",
+    r"^directory listing.?$": "pastetext('ls\n')",
     r"^(peter|samantha|computer).?,? (run|open|start|launch)(up)?( a| the)? ": "os.system(commands[sys.platform][q])",
     r"^(peter|samantha|computer).?,? closed? window": "pyautogui.hotkey('alt', 'F4')",
     r"^(peter|samantha|computer).?,? search( the)?( you| web| google| bing| online)?(.com)? for ": 
@@ -99,7 +107,9 @@ actions = {
     r"^(peter|samantha|computer).?,? (send|compose|write)( an| a) email to ": "os.popen('xdg-open \"mailto://' + q.replace(' at ', '@') + '\"')",
     r"^(peter|samantha|computer).?,? (i need )?(let's )?(see |have |show )?(us |me )?(an? )?(image|picture|draw|create|imagine|paint)(ing| of)? ": "os.popen(f'./sdapi.py \"{q}\"')",
     r"^(peter|samantha|computer)?.?,? ?(resume|zoom|continue|start|type) (typing|d.ctation|this)" : "eval(chatting = False;listening = True)",
-    r"^(peter|samantha|computer)?.?,? ?(on\s?screen|show the webcam|take a picture)" : "os.popen('fswebcam')",
+    r"^(peter|samantha|computer)?.?,? ?(on|show|start|open) (the )?(webcam|camera|screen)" : "on_screen()",
+    r"^(peter|samantha|computer)?.?,? ?(off|stop|close) (the )?(webcam|camera|screen)" : "off_screen()",
+    r"^(peter|samantha|computer)?.?,? ?(take|snap) (a|the) (photo|picture)" : "take_picture()",
     r"^(peter|samantha|computer).?,? ": "generate_text(q)"
     }
 
@@ -119,10 +129,23 @@ def process_actions(tl:str) -> bool:
         generate_text(tl); return True
     return False # no action
 
-# fix race conditions 
-audio_queue = queue.Queue()
-listening = True
-chatting = False
+def on_screen():
+    global cam
+    if not cam: cam = start_camera()
+    cam.pipeline.set_state(cam.on)
+
+def take_picture():
+    global cam
+    is_on = cam
+    on_screen()
+    cam.take_picture()
+    if not is_on:
+        time.sleep(0.5)
+        off_screen()
+
+def off_screen():
+    global cam
+    if cam: cam = cam.stop_camera()
 
 # search text for hotkeys
 def process_hotkeys(txt: str) -> bool:
@@ -158,14 +181,10 @@ def gettext(f:str) -> str:
 
 # paste text in window
 def pastetext(t:str):
-    # filter (noise), (hiccups), *barking* and [system messages]
-    t = re.sub(r'(\s*[\*\[\(][^\]\)]*[\]\)\*])*\s*$', '', t)+' '
-    if t == ' ' or t == "you " or t == "Thanks for watching! ":
-        return # ignoring you
     pyperclip.copy(t) # weird that primary won't work the first time
-    if pyautogui.platform.system() == "Linux":
-        pyperclip.copy(t, primary=True) # now it works
-        pyautogui.middleClick()
+    if middleClick and pyautogui.platform.system() == "Linux":
+       pyperclip.copy(t, primary=True) # now it works
+       pyautogui.middleClick()
     else:
         pyautogui.hotkey('ctrl', 'v')
 
@@ -235,15 +254,19 @@ def transcribe():
         try:
             # transcribe audio from queue
             if f := audio_queue.get():
-                t = gettext(f).strip()
+                txt = gettext(f).strip('\n')
                 # delete temporary audio file
                 try: os.remove(f)
                 except Exception: pass
-                if not t: break
-                print(t)
+                if not txt: continue
+                print(txt) # print the text, in case we filter something important
+                # filter (noise), (hiccups), *barking* and [system messages]
+                txt = re.sub(r'(^\s)|(\s*[\*\[\(][^\]\)]*[\]\)\*])*\s*$', '', txt)+' '
+                if txt == ' ' or txt == "you " or txt == "Thanks for watching! ":
+                    continue # ignoring you
 
                 # get lower-case spoken command string
-                lower_case = t.lower()
+                lower_case = txt.lower().strip()
                 if match := re.search(r"[^\w\s]$", lower_case):
                     lower_case = lower_case[:match.start()] # remove punctuation
 
@@ -265,7 +288,7 @@ def transcribe():
                 elif process_hotkeys(lower_case): continue
                 else:
                     now = time.time()
-                    start = now; pastetext(t)
+                    start = now; pastetext(txt)
             # continue looping every 1/5 second
             else: time.sleep(0.2)
         except KeyboardInterrupt:
@@ -302,6 +325,8 @@ def quit():
 if __name__ == '__main__':
     record_process = None
     running = True
+    if len(sys.argv) > 1 and "--mc" in sys.argv:
+        middleClick = True
     record_thread = threading.Thread(target=record_to_queue)
     record_thread.start()
     transcribe()

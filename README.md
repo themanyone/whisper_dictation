@@ -43,7 +43,7 @@ ln -s server ~/local/bin/whisper_cpp_server
 
 ```shell
 whisper_cpp_server -l en -m models/ggml-tiny.en.bin --port 7777
-./whisper_cpp_client.py
+./whisper_cpp_client.py --mc # use middle-click paste
 ```
 
 ## Troubleshooting.
@@ -52,7 +52,7 @@ If VRAM is scarce, quantize `ggml-tiny.en.bin` according to whisper.cpp docs. Or
 
 If `whisper_cpp_server` refuses to start, reboot. Or try and reload the crashed NVIDIA uvm module `sudo modprobe -r nvidia_uvm && sudo modprobe nvidia_uvm`.
 
-Edit `whisper_cpp_client.py` client to change server locations from localhost to wherever they reside on the network.
+Edit `whisper_cpp_client.py` client to change server locations from localhost to wherever they reside on the network. You can also change the port numbers. Just make sure servers and clients are in agreement on which port to use.
 
 Test clients and servers.
 
@@ -133,6 +133,9 @@ The computer responds to commands. You can also call him Peter. (Or Samantha, if
 These actions are defined in whisper_dictation.py. See the source code for the full list. Feel free to edit them too!
 
 Try saying:
+- Computer, on screen. (or "start webcam"; opens a webcam window).
+- Computer, take a picture. (saves to /tmp/on_screen.jpg)
+- Computer, off screen. (or "stop webcam")
 - Computer, open terminal.
 - Computer, go to [thenerdshow.com](https://thenerdshow.com/). (or any website).
 - Computer, open a web browser. (opens the default homepage).
@@ -159,6 +162,8 @@ This update provides a powerful option that lets you insert various plugins, mix
 
 `./record.py -gq 'audioecho delay=250000000 intensity=0.25 ! audiodynamic' echo.flac`
 
+`on_screen.py` A simple python library to show and take pictures from the webcam.
+
 `sdapi.py` The client we made to connect to a running instance of [stable-diffusion-webui](https://github.com/AUTOMATIC1111/stable-diffusion-webui). This is what gets called when you say, "Computer...Draw a picture of a horse."
 
 Various test files, including:
@@ -171,7 +176,7 @@ Various test files, including:
 
 **Stable-Diffusion.** Stable-Diffusion normally requires upwards of 16 GiB of VRAM. But we were able to get it running with a mere 2 GiB using the `--medvram` or `--lowvram` option with [Stable Diffusion Web UI](https://techtactician.com/stable-diffusion-low-vram-memory-errors-fix/). 
 
-**Text goes to wrong place.** We now use `pyperclip` and `pyautogui` to paste text, instead of typing responses into the current window. We use middle-click paste on Linux, so that it also works in terminals. If you miss and it doesn't put text where you want, you can always manually middle-click it somewhere else.
+**Text goes to wrong place.** We now use `pyperclip` and `pyautogui` to paste text, instead of typing responses into the current window. The `--mc` option uses middle-click paste on Linux, so that it also works in terminals. If you miss and it doesn't put text where you want, you can always manually middle-click it somewhere else.
 
 **Fixing Linux paste.** "No. I don't want to use middle-click on Linux!" The alternative to faking middle click on Linux is to change the behavior of the Linux terminal. Are you tired of having to remember to use Ctrl-Shift-C and Ctrl-Shift-V in the terminal, instead of Ctrl-C and Ctrl-V? The beauty of Linux is being able to customize. So let's do it!
 
@@ -186,7 +191,7 @@ Various test files, including:
 
 By following these steps, you will have swapped the behavior of the "break" or "stop script" Ctrl-C, and the copy, Ctrl-Shift-C hotkeys in the Linux terminal.
 
-Now we can change `whisper_cpp_client.py`, `whisper_dictation.py` or `whisper_client.py` to use Ctrl-V paste instead of middle click. Somewhere around line 155, change the line that says `pyautogui.middleClick()` to `pyautogui.hotkey('ctrl', 'v')`.
+Now we can ditch the `--mc` option and `whisper_cpp_client.py` will use Ctrl-V paste instead of middle click on linux. The switch has no effect on other operating systems.
 
 **I want it to type slowly.** We would love to have it type text slowly, but typing has become unbearably-slow on sites like Twitter and Facebook. The theory is they are using JavaScript to restrict input from bots. But it is annoying for fast typists too. If occasional slow typing doesn't bother you, change the code to use `pyautogui.typewrite(t, typing_interval)` for everything, and set a `typing_interval` to whatever speed you want.
 
