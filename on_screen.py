@@ -37,12 +37,11 @@ class start_camera:
         return None
 
     def wait_for_file_save(self):
-        self.picture_saved = False  # Reset flag
-        while not self.picture_saved:
+        while True:
             # Check the state of the filesink
             state_change_return, state, pending_state = self.filesink.get_state(0)
             if state_change_return == Gst.StateChangeReturn.SUCCESS:
-                self.picture_saved = True 
+                break
                 print("Picture saved!")
             time.sleep(0.1) # Short delay
 

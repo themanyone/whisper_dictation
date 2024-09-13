@@ -19,7 +19,6 @@
 ## MA 02110-1301, USA.
 ##
 import pyautogui
-import pyperclip
 import os
 import time
 import queue
@@ -35,7 +34,6 @@ import logging
 from mimic3_client import say
 from on_screen import start_camera
 audio_queue = queue.Queue()
-middleClick = False
 listening = True
 chatting = False
 cam = None
@@ -99,14 +97,14 @@ actions = {
     r"^(click)( the)?( mouse).?": "pyautogui.click()",
     r"^middle click.?$": "pyautogui.middleClick()",
     r"^right click.?$": "pyautogui.rightClick()",
-    r"^directory listing.?$": "pastetext('ls\n')",
+    r"^directory listing.?$": "pyautogui.write('ls\n')",
     r"^(peter|samantha|computer).?,? (run|open|start|launch)(up)?( a| the)? ": "os.system(commands[sys.platform][q])",
     r"^(peter|samantha|computer).?,? closed? window": "pyautogui.hotkey('alt', 'F4')",
     r"^(peter|samantha|computer).?,? search( the)?( you| web| google| bing| online)?(.com)? for ": 
        "webbrowser.open('https://you.com/search?q=' + re.sub(' ','%20',q))",
     r"^(peter|samantha|computer).?,? (send|compose|write)( an| a) email to ": "os.popen('xdg-open \"mailto://' + q.replace(' at ', '@') + '\"')",
     r"^(peter|samantha|computer).?,? (i need )?(let's )?(see |have |show )?(us |me )?(an? )?(image|picture|draw|create|imagine|paint)(ing| of)? ": "os.popen(f'./sdapi.py \"{q}\"')",
-    r"^(peter|samantha|computer)?.?,? ?(resume|zoom|continue|start|type) (typing|d.ctation|this)" : "eval(chatting = False;listening = True)",
+    r"^(peter|samantha|computer)?.?,? ?(resume|zoom|continue|start|type) (typing|d.ctation|this)" : "resume_dictation()",
     r"^(peter|samantha|computer)?.?,? ?(on|show|start|open) (the )?(webcam|camera|screen)" : "on_screen()",
     r"^(peter|samantha|computer)?.?,? ?(off|stop|close) (the )?(webcam|camera|screen)" : "off_screen()",
     r"^(peter|samantha|computer)?.?,? ?(take|snap) (a|the) (photo|picture)" : "take_picture()",
@@ -179,15 +177,6 @@ def gettext(f:str) -> str:
             return ""
         return ""
 
-# paste text in window
-def pastetext(t:str):
-    pyperclip.copy(t) # weird that primary won't work the first time
-    if middleClick and pyautogui.platform.system() == "Linux":
-       pyperclip.copy(t, primary=True) # now it works
-       pyautogui.middleClick()
-    else:
-        pyautogui.hotkey('ctrl', 'v')
-
 print("Start speaking. Text should appear in the window you are working in.")
 print("Say \"Stop listening.\" or press CTRL-C to stop.")
 say("Computer ready.")
@@ -239,7 +228,7 @@ def generate_text(prompt: str):
     if completion:
         if completion == "< nooutput >": completion = "No comment."
         print(completion)
-        pastetext(completion)
+        pyautogui.write(completion)
         say(completion)
         chatting = True
         # add to conversation
@@ -247,6 +236,10 @@ def generate_text(prompt: str):
         if len(messages) > 9:
             messages.remove(messages[1])
             messages.remove(messages[1])
+
+def resume_dictation():
+    chatting = False
+    listening = True
 
 def transcribe():
     global listening
@@ -288,7 +281,7 @@ def transcribe():
                 elif process_hotkeys(lower_case): continue
                 else:
                     now = time.time()
-                    start = now; pastetext(txt)
+                    start = now; pyautogui.write(txt)
             # continue looping every 1/5 second
             else: time.sleep(0.2)
         except KeyboardInterrupt:
@@ -325,8 +318,6 @@ def quit():
 if __name__ == '__main__':
     record_process = None
     running = True
-    if len(sys.argv) > 1 and "--mc" in sys.argv:
-        middleClick = True
     record_thread = threading.Thread(target=record_to_queue)
     record_thread.start()
     transcribe()
