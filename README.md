@@ -170,7 +170,7 @@ Various test files, including:
 
 `mimic3_client.py`: a client to query and test `mimic3-server` voice output servers.
 
-`test_cuda.py`: torch, pytorch, cuda, and onnxruntime are no longer required. But you can still test them here!
+`test_cuda.py`: torch, pytorch, cuda, and onnxruntime are no longer required for dictation. But you can still test them here, since `mimic3` uses onnxruntime for text to speech.
 
 ### Improvements
 
