@@ -136,6 +136,7 @@ def take_picture():
     global cam
     is_on = cam
     on_screen()
+    time.sleep(0.5)
     cam.take_picture()
     if not is_on:
         time.sleep(0.5)
@@ -247,12 +248,12 @@ def transcribe():
         try:
             # transcribe audio from queue
             if f := audio_queue.get():
-                txt = gettext(f).strip('\n')
+                txt = gettext(f)
                 # delete temporary audio file
                 try: os.remove(f)
                 except Exception: pass
                 if not txt: continue
-                print(txt) # print the text, in case we filter something important
+                print(txt.strip('\n')) # print the text, in case we filter something important
                 # filter (noise), (hiccups), *barking* and [system messages]
                 txt = re.sub(r'(^\s)|(\s*[\*\[\(][^\]\)]*[\]\)\*])*\s*$', '', txt)+' '
                 if txt == ' ' or txt == "you " or txt == "Thanks for watching! ":
