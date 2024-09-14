@@ -33,6 +33,7 @@ import requests
 import logging
 from mimic3_client import say
 from on_screen import start_camera
+from record import delayRecord
 audio_queue = queue.Queue()
 listening = True
 chatting = False
@@ -59,8 +60,9 @@ else:
     logging.debug("Export OPENAI_API_KEY if you want answers from ChatGPT.\n")
 gem_key = os.getenv("GENAI_TOKEN")
 if (gem_key):
+    logging.debug("How'd we get here?")
     import google.generativeai as genai
-    genai.configure(api_key=gem_key)
+    genai.configure(gem_key)
     model = genai.GenerativeModel("gemini-1.5-flash")
 else:
     logging.debug("Export GENAI_TOKEN if you want answers from Gemini.\n")
@@ -105,6 +107,7 @@ actions = {
     r"^(peter|samantha|computer).?,? (send|compose|write)( an| a) email to ": "os.popen('xdg-open \"mailto://' + q.replace(' at ', '@') + '\"')",
     r"^(peter|samantha|computer).?,? (i need )?(let's )?(see |have |show )?(us |me )?(an? )?(image|picture|draw|create|imagine|paint)(ing| of)? ": "os.popen(f'./sdapi.py \"{q}\"')",
     r"^(peter|samantha|computer)?.?,? ?(resume|zoom|continue|start|type) (typing|d.ctation|this)" : "resume_dictation()",
+    r"^(peter|samantha|computer)?.?,? ?(record)( a| an)?( audio| sound| voice| file| clip)+" : "record_mp3()",
     r"^(peter|samantha|computer)?.?,? ?(on|show|start|open) (the )?(webcam|camera|screen)" : "on_screen()",
     r"^(peter|samantha|computer)?.?,? ?(off|stop|close) (the )?(webcam|camera|screen)" : "off_screen()",
     r"^(peter|samantha|computer)?.?,? ?(take|snap) (a|the) (photo|picture)" : "take_picture()",
@@ -131,15 +134,16 @@ def on_screen():
     global cam
     if not cam: cam = start_camera()
     cam.pipeline.set_state(cam.on)
+    return cam
 
 def take_picture():
     global cam
-    is_on = cam
-    on_screen()
+    on = cam
+    cam = on_screen()
     time.sleep(0.5)
     cam.take_picture()
-    if not is_on:
-        time.sleep(0.5)
+    if not on: # don't leave camera on, unless already on
+        time.sleep(1.0)
         off_screen()
 
 def off_screen():
@@ -185,8 +189,9 @@ say("Computer ready.")
 messages = [{ "role": "system", "content": "In this conversation between `user:` and `assistant:`, play the role of assistant. Reply as a helpful assistant." },]
 
 def generate_text(prompt: str):
+    conversation_length = 9 # try increasing if AI model has a large ctx window
     logging.debug("Asking ChatGPT") 
-    global chatting, messages
+    global chatting, messages, gpt_key, gem_key
     messages.append({"role": "user", "content": prompt})
     completion = ""
     # Try chatGPT
@@ -202,8 +207,8 @@ def generate_text(prompt: str):
                 logging.debug(e)
     
     # Fallback to Google Gemini
-    if gem_key and not completion:
-        logging.debug("Asking Gemini") 
+    elif gem_key and not completion:
+        logging.debug("Asking Gemini")
         chat = model.start_chat(
             history=[
             {"role": "user" if x["role"] == "user" else "model",
@@ -214,18 +219,21 @@ def generate_text(prompt: str):
 
     # Fallback to localhost
     if not completion:
-        logging.debug(f"Querying {fallback_chat_url}") 
+        logging.debug(f"Querying {fallback_chat_url}")
         # ref. llama.cpp/examples/server/README.md
-        client = openai.OpenAI(
+        try:
+            client = openai.OpenAI(
             base_url=fallback_chat_url,
             api_key = "sk-no-key-required")
-        
-        completion = client.chat.completions.create(
-            model="gpt-3.5-turbo",
-            messages=messages
-        )
+            completion = client.chat.completions.create(
+                model="gpt-3.5-turbo",
+                messages=messages
+            )
+        except Exception as e:
+            logging.debug(f"Error: {e}")
+            return "Sorry. I'm having some trouble accessing that."
         completion = completion.choices[0].message.content
- 
+
     if completion:
         if completion == "< nooutput >": completion = "No comment."
         print(completion)
@@ -234,7 +242,7 @@ def generate_text(prompt: str):
         chatting = True
         # add to conversation
         messages.append({"role": "assistant", "content": completion})
-        if len(messages) > 9:
+        if len(messages) > conversation_length:
             messages.remove(messages[1])
             messages.remove(messages[1])
 
@@ -271,10 +279,10 @@ def transcribe():
                     webbrowser.open('https://' + q.strip())
                     continue
                 # Stop dictation.
-                elif re.search(r"^.?stop.(d.ctation|listening).?$", lower_case):
+                elif re.search(r"^stop.? (d.ctation|listening).?$", lower_case):
                     say("Shutting down.")
                     break
-                elif re.search(r"^.?(pause.d.ctation|positi.?i?cation).?$", lower_case):
+                elif re.search(r"^paused? (d.ctation|positi.?i?cation).?$", lower_case):
                     listening = False
                     say("okay")
                 elif process_actions(lower_case): continue
@@ -289,8 +297,18 @@ def transcribe():
             say("Goodbye.")
             break
 
+def record_mp3():
+    global listening
+    listening = False
+    say("Recording audio clip...")
+    time.sleep(1)
+    rec = delayRecord("audio.mp3")
+    rec.start()
+    say(f"Recording saved to {rec.file_name}")
+    time.sleep(1)
+    listening = True
+
 def record_to_queue():
-    from record import delayRecord
     global record_process
     global running
     while running:

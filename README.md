@@ -1,6 +1,6 @@
 # Whisper Dictation
 
-Fast! Offline, privacy-focused, hands-free voice typing, AI voice chat, voice control, in **under 1 Gb of VRAM** when optimized for dictation alone. "The works" all AI features now running concurrently on a laptop with under 4 GiB of VRAM!
+Fast! Offline, privacy-focused, hands-free voice typing, AI voice chat, recorder, webcam, voice control, in **under 1 Gb of VRAM** when optimized for dictation alone. "The works" all AI features now running concurrently on a laptop with under 4 GiB of VRAM!
 
 <img src="img/ss.png" alt="example pic" title="App does dictation anywhere, even social media." width="300" align="right">
 
@@ -21,7 +21,7 @@ Fast! Offline, privacy-focused, hands-free voice typing, AI voice chat, voice co
 
 **Voice control.** The bot responds to commands.
 
-For example, say, "Computer, search the web for places to eat". A browser opens up with a list of local restaurants. Say, "Computer, say hello to our guest". After a brief pause, there is a reply, either from your local machine, `ChatGPT`, or a local area chat server that you set up. A voice, `mimic3` says some variation of, "Hello. Pleased to meet you. Welcome to our shop. Let me know how I can be of assistance". It's unique each time. Say, "Computer, open terminal". A terminal window pops up. Say "Computer, draw a picture of a Klingon warship". An image of a warship appears with buttons to save, print, and navigate through previously-generated images.
+Say, "Computer, on screen." A window opens up showing the webcam. Say, "Computer, search the web for places to eat". A browser opens up with a list of local restaurants. Say, "Computer, say hello to our guest". After a brief pause, there is a reply, either from your local machine, `ChatGPT`, or a local area chat server that you set up. A voice, `mimic3` says some variation of, "Hello. Pleased to meet you. Welcome to our shop. Let me know how I can be of assistance". It's unique each time. Say, "Computer, open terminal". A terminal window pops up. Say "Computer, draw a picture of a Klingon warship". An image of a warship appears with buttons to save, print, and navigate through previously-generated images.
 
 ## New in this branch
 
@@ -36,7 +36,7 @@ pip install -r requirements.txt
 git clone https://github.com/ggerganov/whisper.cpp
 cd whisper.cpp
 GGML_CUDA=1 make -j # assuming CUDA is available. see docs
-ln -s server ~/local/bin/whisper_cpp_server
+ln -s server ~/.local/bin/whisper_cpp_server
 ```
 
 ## Quick start
@@ -50,7 +50,7 @@ whisper_cpp_server -l en -m models/ggml-tiny.en.bin --port 7777
 
 If VRAM is scarce, quantize `ggml-tiny.en.bin` according to whisper.cpp docs. Or use `-ng` option to avoid using VRAM altogether. It will lose some performance. But it's not that noticeable with a fast CPU.
 
-If `whisper_cpp_server` refuses to start, reboot. Or try and reload the crashed NVIDIA uvm module `sudo modprobe -r nvidia_uvm && sudo modprobe nvidia_uvm`.
+If `whisper_cpp_server` is slow or refuses to start, reboot. Or try and reload the crashed NVIDIA uvm module `sudo modprobe -r nvidia_uvm && sudo modprobe nvidia_uvm`.
 
 Edit `whisper_cpp_client.py` client to change server locations from localhost to wherever they reside on the network. You can also change the port numbers. Just make sure servers and clients are in agreement on which port to use.
 
@@ -108,7 +108,7 @@ export OPENAI_API_KEY=<my API key>
 
 We heard OpenAI also has enterprise endoints for ChatGPT that offer some privacy and security. But we have never been contacted by OpenAI and make no claims about its proprietary domains.
 
-## Optional Google AI
+## Optional Google Gemini
 
 * Sign up for a [GOOGLE_API_KEY](https://aistudio.google.com)
 * `pip install -q -U google-generativeai`

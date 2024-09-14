@@ -37,7 +37,7 @@ from gi.repository import Gst, GObject, GLib
 Gst.init(None)
 
 logging.basicConfig(
-	level=logging.DEBUG,
+	level=logging.INFO,
 	format="%(asctime)s [%(levelname)s] %(lineno)d %(message)s",
 	handlers=[
 #		logging.FileHandler('/tmp/rec.log'),
