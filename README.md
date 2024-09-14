@@ -13,7 +13,7 @@ Fast! Offline, privacy-focused, hands-free voice typing, AI voice chat, recorder
 - Draw pictures with [stable-diffusion-webui](https://github.com/AUTOMATIC1111/stable-diffusion-webui).
 - Help [get us a better video card](https://www.paypal.com/donate/?hosted_button_id=A37BWMFG3XXFG) (PayPal donation link).
 
-**Freedoms and responsibilities** Free and open-source software comes with NO WARRANTIES. You have permission to copy and modify for individual needs in accordance with the included LICENSE. To sa https://github.com/themanyone/whisper_dictation.git
+**Freedoms and responsibilities** Free and open-source software comes with NO WARRANTIES. You have permission to copy and modify for individual needs in accordance with the included LICENSE.
 
 **The ship's computer.** Inspired by the *Star Trek* television series. Talk to your computer. Have it answer back with clear, easy-to-understand speech. Network it throughout the ship. Use your voice to write Captain's Log entries when the internet is down, when satellites are busy, or in the far reaches of the galaxy, "where no man has gone before.
 
@@ -25,14 +25,16 @@ Say, "Computer, on screen." A window opens up showing the webcam. Say "Computer,
 
 ## New in this branch
 
-**Fewer dependencies.** We saved over 1Gb of downloads and hours of setup by eliminating pytorch, pycuda dependencies. Those older versions can be found in the `legacy` branch.
+**Fewer dependencies.** We saved over 1Gb of downloads and hours of setup by eliminating pytorch, pycuda dependencies. Those older versions can be found in the `legacy` branch. Get just the `main` branch to save time.
+
+`git clone -b main --single-branch https://github.com/themanyone/whisper_dictation.git`
 
 ## Preparation
 
 [GStreamer](https://gstreamer.freedesktop.org/) is necessary to record temporary audio clips for sending to your local `whisper.cpp` speech to text (STT) server. It should be available from various package managers.
 
 ```shell
-pip install -r requirements.txt
+pip install -r whisper_dictation/requirements.txt
 git clone https://github.com/ggerganov/whisper.cpp
 cd whisper.cpp
 GGML_CUDA=1 make -j # assuming CUDA is available. see docs
