@@ -8,7 +8,7 @@ class start_camera:
         Gst.init(None)
         self.pipeline = Gst.parse_launch(
         'v4l2src ! tee name=t ! videoconvert ! autovideosink t. ! valve name=v ! '+
-        'videoconvert ! jpegenc ! filesink async=false location=/tmp/on_screen.jpg name=f')
+        'videoconvert ! jpegenc ! filesink async=false location=on_screen.jpg name=f')
         self.valve = self.pipeline.get_by_name('v')
         self.filesink = self.pipeline.get_by_name('f')
         self.valve.set_property("drop", True)
