@@ -28,7 +28,6 @@ import openai
 import webbrowser
 import tempfile
 import threading
-import subprocess, signal
 import requests
 import logging
 import tracer
@@ -38,13 +37,15 @@ from record import delayRecord
 audio_queue = queue.Queue()
 listening = True
 chatting = False
+record_process = None
+running = True
 cam = None
 
 logging.basicConfig(
 	level=logging.INFO,
 	format="[%(levelname)s] %(lineno)d %(message)s",
 	handlers=[
-#		logging.FileHandler('/tmp/rec.log'),
+#		logging.FileHandler('/tmp/whisper_cpp_client.log'),
 		logging.StreamHandler()
 	]
 )
@@ -335,8 +336,6 @@ def quit():
     logging.debug("\nFreeing system resources.\n")
 
 if __name__ == '__main__':
-    record_process = None
-    running = True
     record_thread = threading.Thread(target=record_to_queue)
     record_thread.start()
     transcribe()
