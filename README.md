@@ -11,7 +11,7 @@ Fast! Offline, privacy-focused, hands-free voice typing, AI voice chat, recorder
 - Optional OpenAI `ChatGPT`, Google Gemini, or custom chat server integration,
 - Optionally speak answers out loud with `mimic3`.
 - Draw pictures with [stable-diffusion-webui](https://github.com/AUTOMATIC1111/stable-diffusion-webui).
-- Help [get us a better video card](https://www.paypal.com/donate/?hosted_button_id=A37BWMFG3XXFG) (PayPal donation link).
+- Help! [Get us a better video card](https://www.paypal.com/donate/?hosted_button_id=A37BWMFG3XXFG) (PayPal donation link).
 
 **Freedoms and responsibilities** Free and open-source software comes with NO WARRANTIES. You have permission to copy and modify for individual needs in accordance with the included LICENSE.
 
@@ -38,7 +38,7 @@ pip install -r whisper_dictation/requirements.txt
 git clone https://github.com/ggerganov/whisper.cpp
 cd whisper.cpp
 GGML_CUDA=1 make -j # assuming CUDA is available. see docs
-ln -s server ~/.local/bin/whisper_cpp_server
+ln -s server ~/.local/bin/whisper_cpp_server # just put it somewhere in $PATH
 ```
 
 ## Quick start
@@ -79,7 +79,7 @@ GGML_CUDA=1 make -j # assuming CUDA is available. see docs
 
 Save hundreds on annual subscriptions by running your own AI servers for every task. Look at the [leaderboard](https://huggingface.co/spaces/open-llm-leaderboard/open_llm_leaderboard) to see which models perform best in the categories you want. As a rule of thumb, quantized 7B models are about the maximum our 4GiB VRAM can handle. Search for quantized models in .gguf format, or try [the ones on our page](https://huggingface.co/hellork).
 
-Help [get us a better video card](https://www.paypal.com/donate/?hosted_button_id=A37BWMFG3XXFG) (PayPal donation link).
+Help! [Get us a better video card](https://www.paypal.com/donate/?hosted_button_id=A37BWMFG3XXFG) (PayPal donation link).
 
 ### Start chatting
 
@@ -93,12 +93,14 @@ Use the API endpoint by simply saying "Computer... What is the capital of France
 
 **Mimic3.** If you install [mimic3](https://github.com/MycroftAI/mimic3) as a service, the computer will speak answers out loud. Follow the [instructions for setting up mimic3 as a Systemd Service](https://mycroft-ai.gitbook.io/docs/mycroft-technologies/mimic-tts/mimic-3#web-server). The `mimic3-server` is already lightening-fast on CPU. Do not bother with --cuda flag, which requires old `onnxruntime-gpu` that is not compatible with CUDA 12+ and won't compile with nvcc12... We got it working! And it just hogs all of VRAM and provides no noticeable speedup.
 
-**Female voice.** For a pleasant, female voice, use  `mimic3-download` to obtain `en_US/vctk_low` To accommodate this change, we edited the `params` line in `mimic3_client`, and commented the other line out, like so.
+**Female voice.** For a pleasant, female voice, use  `mimic3-download` to obtain `en_US/vctk_low` To accommodate this change, we already edited the `params` line in our `mimic3_client.py`, and commented the other line out, like so.
 
 ```
     # params = { 'text': text, "lengthScale": "0.6" }
     params = { 'text': text, "voice": "en_US/vctk_low" }
 ```
+
+So just change it back if you want the default male voice, or adjust speech characteristics to taste.
 
 ## Optional ChatGPT from OpenAI
 
