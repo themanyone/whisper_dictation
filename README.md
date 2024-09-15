@@ -138,6 +138,7 @@ Try saying:
 - Computer, on screen. (or "start webcam"; opens a webcam window).
 - Computer, take a picture. (saves to /tmp/on_screen.jpg)
 - Computer, off screen. (or "stop webcam")
+- Computer, record audio (records audio.mp3)
 - Computer, open terminal.
 - Computer, go to [thenerdshow.com](https://thenerdshow.com/). (or any website).
 - Computer, open a web browser. (opens the default homepage).

@@ -31,7 +31,8 @@ import threading
 import subprocess, signal
 import requests
 import logging
-from mimic3_client import say
+import tracer
+from mimic3_client import say, shutup
 from on_screen import start_camera
 from record import delayRecord
 audio_queue = queue.Queue()
@@ -60,9 +61,8 @@ else:
     logging.debug("Export OPENAI_API_KEY if you want answers from ChatGPT.\n")
 gem_key = os.getenv("GENAI_TOKEN")
 if (gem_key):
-    logging.debug("How'd we get here?")
     import google.generativeai as genai
-    genai.configure(gem_key)
+    genai.configure(api_key=gem_key)
     model = genai.GenerativeModel("gemini-1.5-flash")
 else:
     logging.debug("Export GENAI_TOKEN if you want answers from Gemini.\n")
@@ -266,7 +266,7 @@ def transcribe():
                 txt = re.sub(r'(^\s)|(\s*[\*\[\(][^\]\)]*[\]\)\*])*\s*$', '', txt)+' '
                 if txt == ' ' or txt == "you " or txt == "Thanks for watching! ":
                     continue # ignoring you
-
+                shutup() # stop bot from talking
                 # get lower-case spoken command string
                 lower_case = txt.lower().strip()
                 if match := re.search(r"[^\w\s]$", lower_case):
