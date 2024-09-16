@@ -29,6 +29,7 @@ import tempfile
 import threading
 import requests
 import logging
+import tracer
 from mimic3_client import say, shutup
 from on_screen import start_camera
 from record import delayRecord

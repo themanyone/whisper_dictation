@@ -65,9 +65,11 @@ ln -sf $(pwd)/server whisper_cpp_server
 ./whisper_cpp_server -l en -m models/ggml-tiny.en.bin --port 7777
 ```
 
-## Local chat server
+## Run your own AI server
 
-Supposing any chat server will do. Many use `llama.cpp` behind the scenes, so we also use that.
+Hosting large language models provides some limited access to information, even if the internet is down. But don't trust the answers. Keep all logs and communications behind a good firewall for privacy. And network security is another topic...
+
+Supposing any chat server will do. Many use `llama.cpp` behind the scenes. Since it is not susceptible to "pickle" code injection, we don't have to recommend special `safetensors` models. So we'll use that. Understand that this is for a local home server. Running a public server comes with a catalog of other concerns so those folks might prefer to host these in a container, and/or on somebody else's cloud.
 
 ```shell
 git clone https://github.com/ggerganov/llama.cpp
@@ -77,9 +79,9 @@ GGML_CUDA=1 make -j # assuming CUDA is available. see docs
 
 ### Download language models
 
-Save hundreds on annual subscriptions by running your own AI servers for every task. Look at the [leaderboard](https://huggingface.co/spaces/open-llm-leaderboard/open_llm_leaderboard) to see which models perform best in the categories you want. As a rule of thumb, quantized 7B models are about the maximum our 4GiB VRAM can handle. Search for quantized models in .gguf format, or try [the ones on our page](https://huggingface.co/hellork).
+Save hundreds on annual subscriptions by running your own AI servers for every task. Look at the [leaderboard](https://huggingface.co/spaces/open-llm-leaderboard/open_llm_leaderboard) to see which models perform best in the categories you want. As a rule of thumb, quantized 7B models are about the maximum our 4GiB VRAM can handle. Search for quantized models in .gguf format, or try [the ones on our page](https://huggingface.co/hellork). AI safety is not our concern.
 
-Help! [Get us a better video card](https://www.paypal.com/donate/?hosted_button_id=A37BWMFG3XXFG) (PayPal donation link).
+Help! [Get this project off the ground with some better hardware](https://www.paypal.com/donate/?hosted_button_id=A37BWMFG3XXFG) (PayPal donation link).
 
 ### Start chatting
 
@@ -87,11 +89,13 @@ Help! [Get us a better video card](https://www.paypal.com/donate/?hosted_button_
 ./llama-server -m models/gemma-2-2b-it-q4_k_m.gguf -c 2048 -ngl 33 --port 8888
 ```
 
-Use the API endpoint by simply saying "Computer... What is the capital of France!" etc. Or navigate to the handy web interface at http://localhost:8888 and dictate into that. From there you can adjust settings like `temperature` to make it more creative, or more strict with its fact checking and self censorship.
+Use the above API endpoint by simply saying "Computer... What is the capital of France!" etc. Or navigate to its handy web interface at http://localhost:8888 and dictate into that. From there you can adjust settings like `temperature` to make it more creative, or more strict with its fact checking and self censorship.
 
 ## Give it a voice
 
-**Mimic3.** If you install [mimic3](https://github.com/MycroftAI/mimic3) as a service, the computer will speak answers out loud. Follow the [instructions for setting up mimic3 as a Systemd Service](https://mycroft-ai.gitbook.io/docs/mycroft-technologies/mimic-tts/mimic-3#web-server). The `mimic3-server` is already lightening-fast on CPU. Do not bother with --cuda flag, which requires old `onnxruntime-gpu` that is not compatible with CUDA 12+ and won't compile with nvcc12... We got it working! And it just hogs all of VRAM and provides no noticeable speedup.
+**Mimic3.** If you follow the instructions to configure [mimic3](https://github.com/MycroftAI/mimic3) as a service on any `linux` computer or `Raspberry Pi` on the network, Speech Dispatcher will speak answers out loud. It has an open port that other network users can use to enable speech on their devices. But they can also make it speak remotely. So it is essentially a Star Trek communicator that works over wifi! Follow the [instructions for setting up mimic3 as a Systemd Service](https://mycroft-ai.gitbook.io/docs/mycroft-technologies/mimic-tts/mimic-3#web-server). 
+
+*Developer notes.* The `mimic3-server` is already lightening-fast on CPU. Do not bother compiling it with --cuda flag, which requires old `onnxruntime-gpu` that is not compatible with CUDA 12+ and won't compile with nvcc12... We got it working! And it just hogs all of VRAM and provides no noticeable speedup.
 
 **Female voice.** For a pleasant, female voice, use  `mimic3-download` to obtain `en_US/vctk_low` To accommodate this change, we already edited the `params` line in our `mimic3_client.py`, and commented the other line out, like so.
 
