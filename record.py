@@ -113,7 +113,7 @@ class delayRecord:
             # Stop recording if recording time exceeded
             if seconds_of_sound / 60 > self.minutes:
                 logging.critical('Recording time exceeded. Quitting.')
-                pipeline.send_event(Gst.Event.new_eos())
+                self.pipeline.send_event(Gst.Event.new_eos())
 
             # Start recording when there are sustained sound levels
             elif self.ignore < seconds_of_sound and not self.recording:
