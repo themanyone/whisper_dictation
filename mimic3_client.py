@@ -79,10 +79,7 @@ def shutup():
     global pipeline, loop
     if pipeline is not None:
         pipeline.send_event(Gst.Event.new_eos())
-        # to prevent error, wait for EOS and NULL pipeline
-        if loop is None: loop = GLib.MainLoop()
-        # *now* we start the loop, just before shutdown
-        loop.run()
+        time.sleep(0.2)
 
 # Example usage
 if __name__ == "__main__":
