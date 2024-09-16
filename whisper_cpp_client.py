@@ -323,6 +323,7 @@ def quit():
     global listening
     listening = False
     running = False
+    shutup()
     if record_process:
         record_process.stop_recording()
     record_thread.join()

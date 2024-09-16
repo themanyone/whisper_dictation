@@ -126,6 +126,7 @@ class delayRecord:
                 self.pipeline.send_event(Gst.Event.new_eos())
             elif not self.recording:
                 self.sound_timer = reset # wait for sounds
+                # never stops listening, since nothing is being saved
 
     # If loaded as a module, the parent process can call this
     def stop_recording(self):

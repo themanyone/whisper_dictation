@@ -26,8 +26,9 @@ import logging
 import time
 # Initialize GStreamer
 gi.require_version('Gst', '1.0')
-from gi.repository import Gst
+from gi.repository import Gst, GLib
 pipeline = None
+loop = None
 Gst.init(None)
 talk_process = None
 logging.basicConfig(
@@ -39,7 +40,7 @@ logging.basicConfig(
 	]
 )
 def say(text, base_url="http://localhost:59125/api/tts"):
-    global pipeline
+    global pipeline, loop
     # Define the parameters for the TTS request
     params = {'text': text, "voice": "en_US/vctk_low"}
     query_string = "&".join(f"{k}={urllib.parse.quote_plus(v)}" for k, v in params.items())
@@ -55,6 +56,7 @@ def say(text, base_url="http://localhost:59125/api/tts"):
 
     # Bus callback to handle EOS and ERROR
     def on_message(bus, message):
+        global pipeline, loop
         mtype = message.type
         if mtype == Gst.MessageType.EOS:
             logging.debug("End-Of-Stream reached.")
@@ -64,7 +66,7 @@ def say(text, base_url="http://localhost:59125/api/tts"):
             logging.debug(f"Error received from element {message.src.get_name()}: {err.message}", file=sys.stderr)
             if debug:
                 logging.debug(f"Debugging information: {debug}", file=sys.stderr)
-            loop.quit()
+        loop.quit()
 
     # Add a bus watch to the pipeline
     bus = pipeline.get_bus()
@@ -75,9 +77,13 @@ def say(text, base_url="http://localhost:59125/api/tts"):
     pipeline.set_state(Gst.State.PLAYING)
 
 def shutup():
-    global pipeline
+    global pipeline, loop
     if pipeline is not None:
-        pipeline.send_event(Gst.Event.new_eos()) 
+        pipeline.send_event(Gst.Event.new_eos())
+        # to prevent error, wait for EOS and NULL pipeline
+        if loop is None: loop = GLib.MainLoop()
+        # *now* we start the loop, just before shutdown
+        loop.run()
 
 # Example usage
 if __name__ == "__main__":
