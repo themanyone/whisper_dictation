@@ -43,6 +43,8 @@ ln -s server ~/.local/bin/whisper_cpp_server # just put it somewhere in $PATH
 
 ## Quick start
 
+Turn volume down so it doesn't interact with itself.
+
 ```shell
 whisper_cpp_server -l en -m models/ggml-tiny.en.bin --port 7777
 ./whisper_cpp_client.py

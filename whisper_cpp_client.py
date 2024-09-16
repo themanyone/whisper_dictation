@@ -184,7 +184,7 @@ def gettext(f:str) -> str:
 
 print("Start speaking. Text should appear in the window you are working in.")
 print("Say \"Stop listening.\" or press CTRL-C to stop.")
-say("Computer ready.")
+say("Systems online.")
 
 messages = [{ "role": "system", "content": "In this conversation between `user:` and `assistant:`, play the role of assistant. Reply as a helpful assistant." },]
 
