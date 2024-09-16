@@ -22,7 +22,6 @@ import pyautogui
 import os
 import time
 import queue
-import sys
 import re
 import openai
 import webbrowser
@@ -30,7 +29,6 @@ import tempfile
 import threading
 import requests
 import logging
-import tracer
 from mimic3_client import say, shutup
 from on_screen import start_camera
 from record import delayRecord
@@ -248,6 +246,7 @@ def generate_text(prompt: str):
             messages.remove(messages[1])
 
 def resume_dictation():
+    global chatting, listening
     chatting = False
     listening = True
 
@@ -290,8 +289,7 @@ def transcribe():
                 if not listening: continue
                 elif process_hotkeys(lower_case): continue
                 else:
-                    now = time.time()
-                    start = now; pyautogui.write(txt)
+                    pyautogui.write(txt)
             # continue looping every 1/5 second
             else: time.sleep(0.2)
         except KeyboardInterrupt:

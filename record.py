@@ -31,7 +31,7 @@ import time
 import math
 import logging
 gi.require_version("Gst", "1.0")
-from gi.repository import Gst, GObject, GLib
+from gi.repository import Gst, GLib
 
 # Initialize GStreamer
 Gst.init(None)
@@ -130,7 +130,7 @@ class delayRecord:
 
     # If loaded as a module, the parent process can call this
     def stop_recording(self):
-        logging.debug(f"\n\nRecording stopped.\n")
+        logging.debug("\n\nRecording stopped.\n")
         self.pipeline.set_state(Gst.State.NULL)
         self.loop.quit()
 
@@ -140,7 +140,7 @@ class delayRecord:
         elif message.type == Gst.MessageType.ERROR:
             err, debug = message.parse_error()
             logging.debug(f"Error: {err}, {debug}")
-            elf.stop_recording()
+            self.stop_recording()
 
     def start(self):
         # Set up bus to monitor messages from the pipeline
@@ -213,7 +213,7 @@ class delayRecord:
         options = {
             "h": "print_help(options) # Print this help message",
             "q": "quality    = True # use device bitrate",
-            "g": f"gstreamer  = next_str or ''           # gstreamer-1.0 filters, etc.",
+            "g": "gstreamer  = next_str or ''           # gstreamer-1.0 filters, etc.",
             "m": f"minutes    = next_float or {self.minutes}         # force stop after (minutes)",
             "i": f"ignore     = next_float or {self.ignore}        # ignore clicks < (seconds)",
             "p": f"preroll    = next_float or {self.preroll}        # preroll delay (seconds)",

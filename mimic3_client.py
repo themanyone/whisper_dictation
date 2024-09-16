@@ -21,7 +21,6 @@
 import gi
 import sys
 import urllib.parse
-import threading
 import logging
 import time
 # Initialize GStreamer
@@ -66,7 +65,7 @@ def say(text, base_url="http://localhost:59125/api/tts"):
             logging.debug(f"Error received from element {message.src.get_name()}: {err.message}", file=sys.stderr)
             if debug:
                 logging.debug(f"Debugging information: {debug}", file=sys.stderr)
-        loop.quit()
+        if loop is not None: loop.quit()
 
     # Add a bus watch to the pipeline
     bus = pipeline.get_bus()

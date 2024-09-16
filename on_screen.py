@@ -21,7 +21,7 @@
 import gi
 import time
 gi.require_version('Gst', '1.0')
-from gi.repository import Gst, GObject, GLib
+from gi.repository import Gst
 class start_camera:
     def __init__(self, callback=None):
         Gst.init(None)
