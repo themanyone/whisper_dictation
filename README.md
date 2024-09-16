@@ -25,7 +25,7 @@ Say, "Computer, on screen." A window opens up showing the webcam. Say "Computer,
 
 ## New in this branch
 
-**Fewer dependencies.** We saved over 1Gb of downloads and hours of setup by eliminating pytorch, pycuda dependencies. Those older versions can be found in the `legacy` branch. Get just the `main` branch to save time.
+**Fewer dependencies.** We saved over 1Gb of downloads and hours of setup by eliminating torch, cuda, cudnn, ffmpeg dependencies. Those older versions can be found in the `legacy` branch. Get just the `main` branch to save time.
 
 `git clone -b main --single-branch https://github.com/themanyone/whisper_dictation.git`
 

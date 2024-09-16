@@ -25,7 +25,7 @@ import logging
 import time
 # Initialize GStreamer
 gi.require_version('Gst', '1.0')
-from gi.repository import Gst, GLib
+from gi.repository import Gst
 pipeline = None
 loop = None
 Gst.init(None)
@@ -79,7 +79,7 @@ def shutup():
     global pipeline, loop
     if pipeline is not None:
         pipeline.send_event(Gst.Event.new_eos())
-        time.sleep(0.2)
+        time.sleep(0.4)
 
 # Example usage
 if __name__ == "__main__":

@@ -263,7 +263,7 @@ def transcribe():
                 if not txt: continue
                 print(txt.strip('\n')) # print the text, in case we filter something important
                 # filter (noise), (hiccups), *barking* and [system messages]
-                txt = re.sub(r'(^\s)|(\s*[\*\[\(][^\]\)]*[\]\)\*])*\s*$', '', txt)+' '
+                txt = re.sub(r'(^\s)|(\s*[\*\[\(][^\]\)]*[\]\)\*])*\s*$', '', txt)
                 if txt == ' ' or txt == "you " or txt == "Thanks for watching! ":
                     continue # ignoring you
                 shutup() # stop bot from talking
@@ -271,7 +271,7 @@ def transcribe():
                 lower_case = txt.lower().strip()
                 if match := re.search(r"[^\w\s]$", lower_case):
                     lower_case = lower_case[:match.start()] # remove punctuation
-
+                    txt += ' ' # add space
                 # see list of actions and hotkeys at top of file :)
                 # Go to Website.
                 if s:=re.search(r"^(peter|computer).? (go|open|browse|visit|navigate)( up| to| the| website)* [a-zA-Z0-9-]{1,63}(\.[a-zA-Z0-9-]{1,63})+$", lower_case):
@@ -321,7 +321,6 @@ def quit():
     global listening
     listening = False
     running = False
-    shutup()
     if record_process:
         record_process.stop_recording()
     record_thread.join()
@@ -333,6 +332,8 @@ def quit():
                 os.remove(f)
     except Exception: pass
     logging.debug("\nFreeing system resources.\n")
+    time.sleep(1)
+    shutup()
 
 if __name__ == '__main__':
     record_thread = threading.Thread(target=record_to_queue)
