@@ -267,9 +267,10 @@ def transcribe():
                 txt = re.sub(r'(^\s)|(\s*[\*\[\(][^\]\)]*[\]\)\*])*\s*$', '', txt)
                 if txt == ' ' or txt == "you " or txt == "Thanks for watching! ":
                     continue # ignoring you
-                shutup() # stop bot from talking
                 # get lower-case spoken command string
                 lower_case = txt.lower().strip()
+                if not lower_case: continue
+                shutup() # stop bot from talking
                 if match := re.search(r"[^\w\s]$", lower_case):
                     lower_case = lower_case[:match.start()] # remove punctuation
                     txt += ' ' # add space

@@ -79,7 +79,13 @@ GGML_CUDA=1 make -j # assuming CUDA is available. see docs
 
 ### Download language models
 
-Save hundreds on annual subscriptions by running your own AI servers for every task. Look at the [leaderboard](https://huggingface.co/spaces/open-llm-leaderboard/open_llm_leaderboard) to see which models perform best in the categories you want. As a rule of thumb, quantized 7B models are about the maximum our 4GiB VRAM can handle. Search for quantized models in .gguf format, or try [the ones on our page](https://huggingface.co/hellork). AI safety is not our concern.
+**Finding free models.** Save hundreds on annual subscriptions by running your own AI servers for every task. Look at the [leaderboard](https://huggingface.co/spaces/open-llm-leaderboard/open_llm_leaderboard) to see which models perform best in the categories you want. As a rule of thumb, quantized 7B models are about the maximum our 4GiB VRAM can handle. Search for quantized models in .gguf format, or try [the ones on our page](https://huggingface.co/hellork).
+
+**AI Safety.** Monitor kids' usage. Be aware that these models, made by the community, are under active development. They are *not guaranteed safe* for all ages.
+
+**High VRAM usage.** Use a tool like [nvtop](https://github.com/Syllo/nvtop) (availabl from package managers) to keep an eye on available VRAM.
+
+*Context window.* The context window is the size of input plus output. Running large models with a large context window (`-ctx` 8192), while sending graphics layers to the GPU (`-ngl` 33) for speed, uses lots of VRAM. They might even crash. With small models, it is okay to run the `llama-server` with `-ngl 33` for high speed/high memory usage. With large (> 3GiB) models, use lower values, such as `-ngl 17` and `-ctx 512`, or avoid `-ngl` altogether.
 
 Help! [Get this project off the ground with some better hardware](https://www.paypal.com/donate/?hosted_button_id=A37BWMFG3XXFG) (PayPal donation link).
 
@@ -95,7 +101,7 @@ Use the above API endpoint by simply saying "Computer... What is the capital of 
 
 If AI is speaking, turn volume down or relocate the mic so it doesn't interact with itself.
 
-**Mimic3.** If you follow the instructions to configure [mimic3](https://github.com/MycroftAI/mimic3) as a service on any `linux` computer or `Raspberry Pi` on the network, Speech Dispatcher will speak answers out loud. It has an open port that other network users can use to enable speech on their devices. But they can also make it speak remotely. So it is essentially a Star Trek communicator that works over wifi! Follow the [instructions for setting up mimic3 as a Systemd Service](https://mycroft-ai.gitbook.io/docs/mycroft-technologies/mimic-tts/mimic-3#web-server). 
+**Mimic3.** If you follow the instructions to configure [mimic3](https://github.com/MycroftAI/mimic3) as a service on any `linux` computer or `Raspberry Pi` on the network, Speech Dispatcher will speak answers out loud. It has an open port that other network users can use to enable speech on their devices. But they can also make it speak remotely. So it is essentially a Star Trek communicator that works over wifi. Follow the [instructions for setting up mimic3 as a Systemd Service](https://mycroft-ai.gitbook.io/docs/mycroft-technologies/mimic-tts/mimic-3#web-server). 
 
 *Developer notes.* The `mimic3-server` is already lightening-fast on CPU. Do not bother compiling it with --cuda flag, which requires old `onnxruntime-gpu` that is not compatible with CUDA 12+ and won't compile with nvcc12... We got it working! And it just hogs all of VRAM and provides no noticeable speedup.
 
@@ -106,7 +112,7 @@ If AI is speaking, turn volume down or relocate the mic so it doesn't interact w
     params = { 'text': text, "voice": "en_US/vctk_low" }
 ```
 
-So just change it back if you want the default male voice, or adjust speech characteristics to taste.
+So just change it back if you want the default male voice, other languages, or to adjust speech characteristics to taste.
 
 ## Optional ChatGPT from OpenAI
 

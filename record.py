@@ -61,9 +61,9 @@ def unique_file_name(file_name):
         file_name = f"{base_name}({i}){ext}"
         i += 1
     if i > 1:
-        logging.critical(f"File exists. Recording to '{path}'")
+        logging.critical(f"File exists. Recording to '{file_name}'")
     else:
-        logging.debug(f"Recording to '{path}'")
+        logging.debug(f"Recording to '{file_name}'")
     return file_name
 
 class delayRecord:
@@ -75,7 +75,7 @@ class delayRecord:
         if not file_name: file_name = from_options
         ext = os.path.splitext(file_name)[1].lower()
         # Avoid overwriting files
-        file_name = unique_file_name(file_name)
+        file_name = self.file_name = unique_file_name(file_name)
         
         # Create GStreamer elements
         self.pipeline = Gst.Pipeline.new("audio_pipeline")
