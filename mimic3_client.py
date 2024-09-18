@@ -45,7 +45,7 @@ def say(text, base_url="http://localhost:59125/api/tts"):
     query_string = "&".join(f"{k}={urllib.parse.quote_plus(v)}" for k, v in params.items())
     # Define the GStreamer pipeline
     pipeline_description = (
-        f" souphttpsrc location={base_url}?{query_string} "
+        f" souphttpsrc name=soup location={base_url}?{query_string} "
         "! wavparse "
         "! audioconvert "
         "! audioresample "
@@ -79,7 +79,11 @@ def shutup():
     global pipeline, loop
     if pipeline is not None:
         pipeline.send_event(Gst.Event.new_eos())
-        time.sleep(0.4)
+        time.sleep(0.2)
+        # there isn't enough time to wait around for this to finish
+        # so we'll just explicity set it to NULL
+        pipeline.set_state(Gst.State.NULL)
+        time.sleep(0.2)
 
 # Example usage
 if __name__ == "__main__":

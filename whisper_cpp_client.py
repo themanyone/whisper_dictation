@@ -106,7 +106,7 @@ actions = {
        "webbrowser.open('https://you.com/search?q=' + re.sub(' ','%20',q))",
     r"^(peter|samantha|computer).?,? (send|compose|write)( an| a) email to ": "os.popen('xdg-open \"mailto://' + q.replace(' at ', '@') + '\"')",
     r"^(peter|samantha|computer).?,? (i need )?(let's )?(see |have |show )?(us |me )?(an? )?(image|picture|draw|create|imagine|paint)(ing| of)? ": "os.popen(f'./sdapi.py \"{q}\"')",
-    r"^(peter|samantha|computer)?.?,? ?(resume|zoom|continue|start|type) (typing|d.ctation|this)" : "resume_dictation()",
+    r"^(peter|samantha|computer)?.?,? ?(resume|zoom|continue|start|type|thank) (typing|d.ctation|this|you)" : "resume_dictation()",
     r"^(peter|samantha|computer)?.?,? ?(record)( a| an)?( audio| sound| voice| file| clip)+" : "record_mp3()",
     r"^(peter|samantha|computer)?.?,? ?(on|show|start|open) (the )?(webcam|camera|screen)" : "on_screen()",
     r"^(peter|samantha|computer)?.?,? ?(off|stop|close) (the )?(webcam|camera|screen)" : "off_screen()",
