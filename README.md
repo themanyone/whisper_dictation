@@ -15,7 +15,7 @@ Fast! Offline, privacy-focused, hands-free voice typing, AI voice chat, recorder
 
 **Freedoms and responsibilities** Free and open-source software comes with NO WARRANTIES. You have permission to copy and modify for individual needs in accordance with the included LICENSE.
 
-**The ship's computer.** Inspired by the *Star Trek* television series. Talk to your computer. Have it answer back with clear, easy-to-understand speech. Network it throughout the ship. Use your voice to write Captain's Log entries when the internet is down, when satellites are busy, or in the far reaches of the galaxy, "where no man has gone before.
+**The ship's computer.** Inspired by the *Star Trek* television series. Talk to your computer. Have it answer back with clear, easy-to-understand speech. Network it throughout the ship. Use your voice to write Captain's Log entries when the internet is down, when satellites are busy, or in the far reaches of the galaxy, "where no man has gone before."
 
 **Translation.** This app is optimized for dictation. It can do some translation into English. But that's not its primary task. To use it as a full-time translator, start `whisper.cpp` with `--translate` and language flags. Use `ggml-medium.bin` or larger language model in place of `ggml-tiny.en.bin`.
 
@@ -42,8 +42,6 @@ ln -s server ~/.local/bin/whisper_cpp_server # just put it somewhere in $PATH
 ```
 
 ## Quick start
-
-Turn volume down so it doesn't interact with itself.
 
 ```shell
 whisper_cpp_server -l en -m models/ggml-tiny.en.bin --port 7777
@@ -94,6 +92,8 @@ Help! [Get this project off the ground with some better hardware](https://www.pa
 Use the above API endpoint by simply saying "Computer... What is the capital of France!" etc. Or navigate to its handy web interface at http://localhost:8888 and dictate into that. From there you can adjust settings like `temperature` to make it more creative, or more strict with its fact checking and self censorship.
 
 ## Give it a voice
+
+If AI is speaking, turn volume down or relocate the mic so it doesn't interact with itself.
 
 **Mimic3.** If you follow the instructions to configure [mimic3](https://github.com/MycroftAI/mimic3) as a service on any `linux` computer or `Raspberry Pi` on the network, Speech Dispatcher will speak answers out loud. It has an open port that other network users can use to enable speech on their devices. But they can also make it speak remotely. So it is essentially a Star Trek communicator that works over wifi! Follow the [instructions for setting up mimic3 as a Systemd Service](https://mycroft-ai.gitbook.io/docs/mycroft-technologies/mimic-tts/mimic-3#web-server). 
 

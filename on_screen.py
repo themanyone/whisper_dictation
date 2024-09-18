@@ -19,15 +19,19 @@
 ## MA 02110-1301, USA.
 ##
 import gi
+import os
 import time
+from record import unique_file_name
 gi.require_version('Gst', '1.0')
 from gi.repository import Gst
 class start_camera:
     def __init__(self, callback=None):
         Gst.init(None)
+        if not os.exists("webcam"): os.mkdir("webcam")
+        file_name = unique_file_name("webcam/image.jpg")
         self.pipeline = Gst.parse_launch(
-        'v4l2src ! tee name=t ! videoconvert ! autovideosink t. ! valve name=v ! '+
-        'videoconvert ! jpegenc ! filesink async=false location=on_screen.jpg name=f')
+        'autovideosrc ! tee name=t ! videoconvert ! autovideosink t. ! valve name=v ! '+
+        f'videoconvert ! jpegenc ! filesink async=false location={file_name} name=f')
         self.valve = self.pipeline.get_by_name('v')
         self.filesink = self.pipeline.get_by_name('f')
         self.valve.set_property("drop", True)

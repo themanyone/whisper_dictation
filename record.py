@@ -44,6 +44,28 @@ logging.basicConfig(
 		logging.StreamHandler()
 	]
 )
+def unique_file_name(file_name):
+    """
+    Generates a unique file name by appending numbers if the file already exists.
+
+    Args:
+    file_name: The desired file name.
+
+    Returns:
+    A unique file name that doesn't exist.
+    """
+    ext = os.path.splitext(file_name)[1].lower()
+    base_name = os.path.splitext(file_name)[0]
+    i = 1
+    while os.path.exists(file_name):
+        file_name = f"{base_name}({i}){ext}"
+        i += 1
+    if i > 1:
+        logging.critical(f"File exists. Recording to '{path}'")
+    else:
+        logging.debug(f"Recording to '{path}'")
+    return file_name
+
 class delayRecord:
     def __init__(self, file_name = ""):
         # set default options
@@ -52,17 +74,8 @@ class delayRecord:
         from_options = self.process_options()
         if not file_name: file_name = from_options
         ext = os.path.splitext(file_name)[1].lower()
-        
         # Avoid overwriting files
-        i = 1
-        while os.path.exists(file_name):
-            file_name = f'{os.path.splitext(file_name)[0].split('(')[0]}({i}){ext}'
-            i += 1
-        if (i > 1):
-            logging.critical(f"File exists. Recording to '{file_name}'")
-        else:
-            logging.debug(f"Recording to '{file_name}'")
-        self.file_name = file_name
+        file_name = unique_file_name(file_name)
         
         # Create GStreamer elements
         self.pipeline = Gst.Pipeline.new("audio_pipeline")
