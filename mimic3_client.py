@@ -26,7 +26,7 @@ import time
 # Initialize GStreamer
 gi.require_version('Gst', '1.0')
 from gi.repository import Gst
-pipeline = loop = soup = None
+pipeline = None
 Gst.init(None)
 talk_process = None
 logging.basicConfig(
@@ -38,7 +38,7 @@ logging.basicConfig(
 	]
 )
 def say(text, base_url="http://localhost:59125/api/tts"):
-    global pipeline, loop, soup
+    global pipeline
     # Define the parameters for the TTS request
     params = {'text': text, "voice": "en_US/vctk_low"}
     query_string = "&".join(f"{k}={urllib.parse.quote_plus(v)}" for k, v in params.items())
@@ -51,11 +51,10 @@ def say(text, base_url="http://localhost:59125/api/tts"):
         "! autoaudiosink"
     )
     pipeline = Gst.parse_launch(pipeline_description)
-    soup = pipeline.get_by_name("soup")
 
     # Bus callback to handle EOS and ERROR
     def on_message(bus, message):
-        global pipeline, loop
+        global pipeline
         mtype = message.type
         if mtype == Gst.MessageType.EOS:
             logging.debug("End-Of-Stream reached.")
@@ -65,7 +64,7 @@ def say(text, base_url="http://localhost:59125/api/tts"):
             logging.debug(f"Error received from element {message.src.get_name()}: {err.message}", file=sys.stderr)
             if debug:
                 logging.debug(f"Debugging information: {debug}", file=sys.stderr)
-        if loop is not None: loop.quit()
+        return True
 
     # Add a bus watch to the pipeline
     bus = pipeline.get_bus()
@@ -76,12 +75,14 @@ def say(text, base_url="http://localhost:59125/api/tts"):
     pipeline.set_state(Gst.State.PLAYING)
 
 def shutup():
-    global pipeline, loop, soup
+    global pipeline
+    for element in pipeline.children:
+        if isinstance(element, Gst.Element):
+            element.set_state(Gst.State.NULL)
     if pipeline is not None:
-        pipeline.set_state(Gst.State.NULL)
-        pipeline.get_state(Gst.CLOCK_TIME_NONE)
-        time.sleep(0.6)
         pipeline.send_event(Gst.Event.new_eos())
+        time.sleep(0.6)
+        pipeline.set_state(Gst.State.NULL)
 
 # Example usage
 if __name__ == "__main__":
