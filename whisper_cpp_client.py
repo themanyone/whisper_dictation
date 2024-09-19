@@ -333,6 +333,12 @@ def record_to_queue():
         record_process.start()
         audio_queue.put(record_process.file_name)
 
+def discard_input():
+    print("\nShutdown complete. Press ENTER to return to terminal.")
+    pyautogui.write("\n")
+    while input(""):
+        time.sleep(0.1)
+
 def quit():
     logging.debug("\nStopping...")
     global running
@@ -350,11 +356,8 @@ def quit():
                 os.remove(f)
     except Exception: pass
     logging.debug("\nFreeing system resources.\n")
-    time.sleep(1)
+    discard_input()
     shutup()
-    pyautogui.write("\nShutdown success\n")
-    while input() != "Shutdown success":
-        pass
 
 if __name__ == '__main__':
     record_thread = threading.Thread(target=record_to_queue)
