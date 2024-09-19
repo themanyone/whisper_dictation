@@ -19,7 +19,7 @@
 ## MA 02110-1301, USA.
 ##
 import pyautogui
-import os
+import os, sys
 import time
 import queue
 import re
@@ -106,7 +106,7 @@ actions = {
        "webbrowser.open('https://you.com/search?q=' + re.sub(' ','%20',q))",
     r"^(peter|samantha|computer).?,? (send|compose|write)( an| a) email to ": "os.popen('xdg-open \"mailto://' + q.replace(' at ', '@') + '\"')",
     r"^(peter|samantha|computer).?,? (i need )?(let's )?(see |have |show )?(us |me )?(an? )?(image|picture|draw|create|imagine|paint)(ing| of)? ": "os.popen(f'./sdapi.py \"{q}\"')",
-    r"^(peter|samantha|computer)?.?,? ?(resume|zoom|continue|start|type|thank) (typing|d.ctation|this|you)" : "resume_dictation()",
+    r"^(peter|samantha|computer)?.?,? ?(resume|zoom|continue|start|type|thank|got|whoa|that's) (typing|d.ctation|this|you|there|enough|it)" : "resume_dictation()",
     r"^(peter|samantha|computer)?.?,? ?(record)( a| an)?( audio| sound| voice| file| clip)+" : "record_mp3()",
     r"^(peter|samantha|computer)?.?,? ?(on|show|start|open) (the )?(webcam|camera|screen)" : "on_screen()",
     r"^(peter|samantha|computer)?.?,? ?(off|stop|close) (the )?(webcam|camera|screen)" : "off_screen()",
@@ -235,8 +235,24 @@ def generate_text(prompt: str):
         completion = completion.choices[0].message.content
 
     if completion:
-        if completion == "< nooutput >": completion = "No comment."
         print(completion)
+        # handle queries for more information
+        if "more information?" in completion or \
+            "It sounds like" in completion or \
+            "It seems like" in completion or \
+            "you tell me" in completion or \
+            "Could you please" in completion or \
+            "a large language model" in completion or \
+            completion == "< nooutput >":
+            say("Sorry, I didn't catch that. Can you give me more information, please?")
+            chatting = False # allow dictation into the prompt box
+            response = pyautogui.prompt("More information, please.",
+            "Please clarify.", prompt)
+            # on user cancel, stop AI chat & resume dictation
+            if not response: return None
+            # otherwise, process the new query
+            chatting = True
+            return generate_text(response)
         pyautogui.write(completion)
         say(completion)
         chatting = True
@@ -336,6 +352,9 @@ def quit():
     logging.debug("\nFreeing system resources.\n")
     time.sleep(1)
     shutup()
+    pyautogui.write("\nShutdown success\n")
+    while input() != "Shutdown success":
+        pass
 
 if __name__ == '__main__':
     record_thread = threading.Thread(target=record_to_queue)

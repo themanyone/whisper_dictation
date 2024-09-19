@@ -26,8 +26,7 @@ import time
 # Initialize GStreamer
 gi.require_version('Gst', '1.0')
 from gi.repository import Gst
-pipeline = None
-loop = None
+pipeline = loop = soup = None
 Gst.init(None)
 talk_process = None
 logging.basicConfig(
@@ -39,7 +38,7 @@ logging.basicConfig(
 	]
 )
 def say(text, base_url="http://localhost:59125/api/tts"):
-    global pipeline, loop
+    global pipeline, loop, soup
     # Define the parameters for the TTS request
     params = {'text': text, "voice": "en_US/vctk_low"}
     query_string = "&".join(f"{k}={urllib.parse.quote_plus(v)}" for k, v in params.items())
@@ -52,6 +51,7 @@ def say(text, base_url="http://localhost:59125/api/tts"):
         "! autoaudiosink"
     )
     pipeline = Gst.parse_launch(pipeline_description)
+    soup = pipeline.get_by_name("soup")
 
     # Bus callback to handle EOS and ERROR
     def on_message(bus, message):
@@ -76,14 +76,12 @@ def say(text, base_url="http://localhost:59125/api/tts"):
     pipeline.set_state(Gst.State.PLAYING)
 
 def shutup():
-    global pipeline, loop
+    global pipeline, loop, soup
     if pipeline is not None:
-        pipeline.send_event(Gst.Event.new_eos())
-        time.sleep(0.2)
-        # there isn't enough time to wait around for this to finish
-        # so we'll just explicity set it to NULL
         pipeline.set_state(Gst.State.NULL)
-        time.sleep(0.2)
+        pipeline.get_state(Gst.CLOCK_TIME_NONE)
+        time.sleep(0.6)
+        pipeline.send_event(Gst.Event.new_eos())
 
 # Example usage
 if __name__ == "__main__":
