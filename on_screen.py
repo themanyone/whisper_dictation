@@ -27,7 +27,7 @@ from gi.repository import Gst
 class start_camera:
     def __init__(self, callback=None):
         Gst.init(None)
-        if not os.exists("webcam"): os.mkdir("webcam")
+        if not os.path.exists("webcam"): os.mkdir("webcam")
         file_name = unique_file_name("webcam/image.jpg")
         self.pipeline = Gst.parse_launch(
         'autovideosrc ! tee name=t ! videoconvert ! autovideosink t. ! valve name=v ! '+
@@ -66,7 +66,7 @@ class start_camera:
             if state_change_return == Gst.StateChangeReturn.SUCCESS:
                 break
                 print("Picture saved!")
-            time.sleep(0.1) # Short delay
+            time.sleep(0.4) # Short delay
 
 if __name__ == '__main__':
     app = start_camera()
