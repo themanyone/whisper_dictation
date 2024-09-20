@@ -51,6 +51,8 @@ class start_camera:
         shutter = Gst.parse_launch("filesrc location=camera-shutter.oga ! "+
         "oggdemux ! vorbisdec ! audioconvert ! autoaudiosink")
         shutter.set_state(self.on)
+        time.sleep(0.5) # Adjust this value if needed
+        self.valve.send_event(Gst.Event.new_eos())
         self.wait_for_file_save()
         self.valve.set_property("drop", True)
 
@@ -60,13 +62,14 @@ class start_camera:
         return None
 
     def wait_for_file_save(self):
-        while True:
-            # Check the state of the filesink
-            state_change_return, state, pending_state = self.filesink.get_state(0)
-            if state_change_return == Gst.StateChangeReturn.SUCCESS:
-                break
+        bus = self.pipeline.get_bus()
+        msg = bus.timed_pop_filtered(Gst.CLOCK_TIME_NONE, Gst.MessageType.EOS | Gst.MessageType.ERROR)
+        if msg:
+            if msg.type == Gst.MessageType.ERROR:
+                err, debug = msg.parse_error()
+                print(f"Error: {err}, {debug}")
+            else:
                 print("Picture saved!")
-            time.sleep(0.4) # Short delay
 
 if __name__ == '__main__':
     app = start_camera()
