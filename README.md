@@ -7,7 +7,7 @@ Private voice keyboard, AI chat, images, webcam, recordings, voice control in >=
 - Hands-free recording with `record.py`
 - Speech to text conversion by `whisper.cpp`[Whisper.cpp](https://github.com/ggerganov/whisper.cpp)
 - Translate various languages
-- Functional, voice-controlled webcam
+- Voice-controlled webcam, audio recorder
 - Launch & control apps, with `pyautogui`
 - Optional OpenAI `ChatGPT`, Google Gemini, more
 - Optionally speak answers out loud with `mimic3`
