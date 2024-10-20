@@ -1,14 +1,14 @@
 # Whisper Dictation
 
-Fast! Offline, privacy-focused, hands-free voice typing, AI voice chat, recorder, webcam, voice control, in **under 1 Gb of VRAM** when optimized for dictation alone. "The works" all AI features now running concurrently on a laptop with under 4 GiB of VRAM!
+Private voice keyboard, AI chat, images, webcam, recordings, voice control in >= 4 GiB of VRAM. "The works" all AI features now running concurrently on an old laptop from 2013.
 
-<img src="img/ss.png" alt="example pic" title="App does dictation anywhere, even social media." width="300" align="right">
+<img src="img/ss.png" alt="example pic" title="Dictation anywhere, even social media." width="300" align="right">
 
 - Hands-free recording with `record.py`,
 - Speech to text conversion by `whisper.cpp`[Whisper.cpp](https://github.com/ggerganov/whisper.cpp),
 - Translate various languages,
 - Launch & control apps, with `pyautogui`,
-- Optional OpenAI `ChatGPT`, Google Gemini, or custom chat server integration,
+- Optional OpenAI `ChatGPT`, Google Gemini, or custom chat servers,
 - Optionally speak answers out loud with `mimic3`.
 - Draw pictures with [stable-diffusion-webui](https://github.com/AUTOMATIC1111/stable-diffusion-webui).
 - Help! [Get us a better video card](https://www.paypal.com/donate/?hosted_button_id=A37BWMFG3XXFG) (PayPal donation link).
@@ -48,6 +48,8 @@ whisper_cpp_server -l en -m models/ggml-tiny.en.bin --port 7777
 ./whisper_cpp_client.py
 ```
 
+A sound level meter appears. Adjust ambient (quiet) volume to about 33% (-33dB).
+
 ## Troubleshooting.
 
 If VRAM is scarce, quantize `ggml-tiny.en.bin` according to whisper.cpp docs. Or use `-ng` option to avoid using VRAM altogether. It will lose some performance. But it's not that noticeable with a fast CPU.
@@ -65,7 +67,7 @@ ln -sf $(pwd)/server whisper_cpp_server
 ./whisper_cpp_server -l en -m models/ggml-tiny.en.bin --port 7777
 ```
 
-## Run your own AI server
+## Running an AI server
 
 Hosting large language models provides some limited access to information, even if the internet is down. But don't trust the answers. Keep all logs and communications behind a good firewall for privacy. And network security is another topic...
 
@@ -81,7 +83,7 @@ GGML_CUDA=1 make -j # assuming CUDA is available. see docs
 
 **Finding free models.** Save hundreds on annual subscriptions by running your own AI servers for every task. Look at the [leaderboard](https://huggingface.co/spaces/open-llm-leaderboard/open_llm_leaderboard) to see which models perform best in the categories you want. As a rule of thumb, quantized 7B models are about the maximum our 4GiB VRAM can handle. Search for quantized models in .gguf format, or try [the ones on our page](https://huggingface.co/hellork).
 
-**AI Safety.** Monitor kids' usage. Be aware that these models, made by the community, are under active development. They are *not guaranteed safe* for all ages.
+**AI Safety.** Monitor children's activities. Be aware that these models, made by the community, are under active development. They are *not guaranteed safe* for all ages.
 
 **High VRAM usage.** Use a tool like [nvtop](https://github.com/Syllo/nvtop) (availabl from package managers) to keep an eye on available VRAM.
 
@@ -150,7 +152,7 @@ These actions are defined in whisper_dictation.py. See the source code for the f
 
 Try saying:
 - Computer, on screen. (or "start webcam"; opens a webcam window).
-- Computer, take a picture. (saves to /tmp/on_screen.jpg)
+- Computer, take a picture. (saves to webcam/image.jpg)
 - Computer, off screen. (or "stop webcam")
 - Computer, record audio (records audio.mp3)
 - Computer, open terminal.

@@ -23,7 +23,8 @@ import os, sys
 import time
 import queue
 import re
-import openai
+from openai import OpenAI
+
 import webbrowser
 import tempfile
 import threading
@@ -31,7 +32,7 @@ import requests
 import logging
 import tracer
 from mimic3_client import say, shutup
-from on_screen import start_camera
+from on_screen import camera, show_pictures
 from record import delayRecord
 audio_queue = queue.Queue()
 listening = True
@@ -55,9 +56,8 @@ fallback_chat_url = "http://localhost:8888/v1"
 debug = False
 
 gpt_key = os.getenv("OPENAI_API_KEY")
-if (gpt_key):
-    openai.api_key = gpt_key
-else:
+client = OpenAI(api_key=gpt_key)
+if not (gpt_key):
     logging.debug("Export OPENAI_API_KEY if you want answers from ChatGPT.\n")
 gem_key = os.getenv("GENAI_TOKEN")
 if (gem_key):
@@ -110,7 +110,8 @@ actions = {
     r"^(peter|samantha|computer)?.?,? ?(record)( a| an)?( audio| sound| voice| file| clip)+" : "record_mp3()",
     r"^(peter|samantha|computer)?.?,? ?(on|show|start|open) (the )?(webcam|camera|screen)" : "on_screen()",
     r"^(peter|samantha|computer)?.?,? ?(off|stop|close) (the )?(webcam|camera|screen)" : "off_screen()",
-    r"^(peter|samantha|computer)?.?,? ?(take|snap) (a|the) (photo|picture)" : "take_picture()",
+    r"^(peter|samantha|computer)?.?,? ?(take|snap) (a|the|another) (photo|picture)" : "take_picture()",
+    r"^(peter|samantha|computer)?.?,? ?(show|view) (the )?(photo|photos|pictures)( album| collection)?" : "show_pictures()",
     r"^(peter|samantha|computer).?,? ": "generate_text(q)"
     }
 
@@ -132,7 +133,7 @@ def process_actions(tl:str) -> bool:
 
 def on_screen():
     global cam
-    if not cam: cam = start_camera()
+    if not cam: cam = camera()
     cam.pipeline.set_state(cam.on)
     return cam
 
@@ -197,15 +198,13 @@ def generate_text(prompt: str):
     # Try chatGPT
     if gpt_key:
         try:
-            completion = openai.ChatCompletion.create(
-              model="gpt-3.5-turbo",
-              messages=messages
-            )
+            completion = client.chat.completions.create(model="gpt-3.5-turbo",
+            messages=messages)
             completion = completion.choices[0].message.content
         except Exception as e:
                 logging.debug("ChatGPT had a problem. Here's the error message.")
                 logging.debug(e)
-    
+
     # Fallback to Google Gemini
     elif gem_key and not completion:
         logging.debug("Asking Gemini")

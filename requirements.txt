@@ -1,5 +1,6 @@
-onnxruntime>=1.15.1
 openai>=1.14.1
 Pillow>=10.2.0
 PyAutoGUI>=0.9.54
 Requests>=2.31.0
+google.generativeai>=0.7.2
+openai>=1.48

@@ -21,14 +21,24 @@
 import gi
 import os
 import time
+from PIL import Image
 from record import unique_file_name
 gi.require_version('Gst', '1.0')
 from gi.repository import Gst
-class start_camera:
+
+# don't need an instance of camera to show pictures    
+def show_pictures(dir="webcam"):
+    images = os.listdir(dir)
+    for i in images:
+        img = Image.open(dir + os.sep + i)
+        img.thumbnail((128, 128))
+        img.show()
+
+class camera:
     def __init__(self, callback=None):
         Gst.init(None)
         if not os.path.exists("webcam"): os.mkdir("webcam")
-        file_name = unique_file_name("webcam/image.jpg")
+        self.file_name = file_name = unique_file_name("webcam/image.jpg")
         self.pipeline = Gst.parse_launch(
         'autovideosrc ! tee name=t ! videoconvert ! autovideosink t. ! valve name=v ! '+
         f'videoconvert ! jpegenc ! filesink async=false location={file_name} name=f')

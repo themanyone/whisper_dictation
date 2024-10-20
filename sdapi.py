@@ -24,7 +24,7 @@
 ## MA 02110-1301, USA.
 ##
 
-import os, sys
+import sys
 import json
 import requests
 import io

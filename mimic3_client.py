@@ -79,6 +79,7 @@ def shutup():
     for element in pipeline.children:
         if isinstance(element, Gst.Element):
             element.set_state(Gst.State.NULL)
+    time.sleep(0.2)
     if pipeline is not None:
         pipeline.send_event(Gst.Event.new_eos())
         time.sleep(0.6)
