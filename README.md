@@ -4,14 +4,14 @@ Private voice keyboard, AI chat, images, webcam, recordings, voice control in >=
 
 <img src="img/ss.png" alt="example pic" title="Dictation anywhere, even social media." width="300" align="right">
 
-- Hands-free recording with `record.py`,
-- Speech to text conversion by `whisper.cpp`[Whisper.cpp](https://github.com/ggerganov/whisper.cpp),
-- Translate various languages,
-- Launch & control apps, with `pyautogui`,
-- Optional OpenAI `ChatGPT`, Google Gemini, or custom chat servers,
-- Optionally speak answers out loud with `mimic3`.
-- Draw pictures with [stable-diffusion-webui](https://github.com/AUTOMATIC1111/stable-diffusion-webui).
-- Help! [Get us a better video card](https://www.paypal.com/donate/?hosted_button_id=A37BWMFG3XXFG) (PayPal donation link).
+- Hands-free recording with `record.py`
+- Speech to text conversion by `whisper.cpp`[Whisper.cpp](https://github.com/ggerganov/whisper.cpp)
+- Translate various languages
+- Launch & control apps, with `pyautogui`
+- Optional OpenAI `ChatGPT`, Google Gemini, more
+- Optionally speak answers out loud with `mimic3`
+- Draw pictures with [stable-diffusion-webui](https://github.com/AUTOMATIC1111/stable-diffusion-webui)
+- Help! [Get us a better video card](https://www.paypal.com/donate/?hosted_button_id=A37BWMFG3XXFG) (PayPal donation link)
 
 **Freedoms and responsibilities** Free and open-source software comes with NO WARRANTIES. You have permission to copy and modify for individual needs in accordance with the included LICENSE.
 
@@ -144,7 +144,7 @@ webui.sh --api --medvram
 
 ### Spoken commands and program launchers
 
-The computer responds to commands. You can also call him Peter. (Or Samantha, if using female voice).
+The computer responds to commands. You can also call her Samantha (Or Peter with for voice).
 
 **Mute button.** There is no mute button. Say "pause dictation" to turn off text generation. It will keep listening to commands. Say, "Thank you", "resume dictation", or "Computer, type this out" to have it start typing again. Say "stop listening" or "stop dictation" to quit the program entirely. You could configure a button to mute your mic, but that is no longer necessary.
 
@@ -167,7 +167,7 @@ Try saying:
 - Pause dictation.
 - Resume dictation.
 - New paragraph. (also submits chat forms :)
-- Peter, tell me about the benefits of relaxation.**
+- Samantha, tell me about the benefits of relaxation.**
 - Peter, compose a Facebook post about the sunny weather we're having.
 - Stop dictation. (quits program).
 

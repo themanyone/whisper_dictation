@@ -26,7 +26,7 @@ from record import unique_file_name
 gi.require_version('Gst', '1.0')
 from gi.repository import Gst
 
-# don't need an instance of camera to show pictures    
+# don't need an instance of camera to show pictures
 def show_pictures(dir="webcam"):
     images = os.listdir(dir)
     for i in images:
