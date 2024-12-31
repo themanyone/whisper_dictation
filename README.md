@@ -212,3 +212,21 @@ Browse Themanyone
 - Mastodon https://mastodon.social/@themanyone
 - Linkedin https://www.linkedin.com/in/henry-kroll-iii-93860426/
 - [TheNerdShow.com](http://thenerdshow.com/)
+
+## Alpha-Numeric Keyboard
+
+We have added a new feature to support an alpha-numeric keyboard. This keyboard can be used to input alpha-numeric characters directly into the active window.
+
+### How to Use
+
+1. Run the `alpha_numeric_keyboard.py` script to open the alpha-numeric keyboard window.
+2. Click on the buttons to input the corresponding characters into the active window.
+3. The keyboard includes buttons for all alpha-numeric characters, space, enter, and backspace.
+
+To start the alpha-numeric keyboard, use the following command:
+
+```shell
+python alpha_numeric_keyboard.py
+```
+
+This will open a GUI window with the alpha-numeric keyboard. You can then use the mouse to click on the buttons and input characters into the active window.
