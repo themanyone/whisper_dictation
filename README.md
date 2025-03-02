@@ -33,6 +33,7 @@ Say, "Computer, on screen." A window opens up showing the webcam. Say "Computer,
 ## Preparation
 
 [GStreamer](https://gstreamer.freedesktop.org/) is necessary to record temporary audio clips for sending to your local `whisper.cpp` speech to text (STT) server. It should be available from various package managers.
+The required `ladspa-delay-so-delay-5s` may be found in the gstreamer1-plugins-bad-free-extras package.
 
 ```shell
 pip install -r whisper_dictation/requirements.txt

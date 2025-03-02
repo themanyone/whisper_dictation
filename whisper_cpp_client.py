@@ -234,7 +234,7 @@ def generate_text(prompt: str):
         completion = completion.choices[0].message.content
 
     if completion:
-        print(completion)
+        print(f"\r{completion}")
         # handle queries for more information
         if "more information?" in completion or \
             "It sounds like" in completion or \
@@ -334,7 +334,6 @@ def record_to_queue():
 
 def discard_input():
     print("\nShutdown complete. Press ENTER to return to terminal.")
-    pyautogui.write("\n")
     while input(""):
         time.sleep(0.1)
 

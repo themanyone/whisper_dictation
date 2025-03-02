@@ -181,14 +181,16 @@ class delayRecord:
     # Draw a VU meter in the terminal
     def draw_meter(self, level:float):
         terminal_size = os.get_terminal_size()
+        mw = int(self.meter_w)
+        sw = mw + 3
         try:
-            level = 1 - (level / -53.0)
-            num_chars = max(int(level * 50), 0)
-            if terminal_size.columns < 61:
+            level = 1 - (level / -sw)
+            num_chars = max(int(level * mw), 0)
+            if terminal_size.columns < 100-sw:
                 meter_chars = 'Terminal too small'
             else:
-                meter_chars = '=' * num_chars + '-' * (50 - num_chars)
-            meterString = f"[{meter_chars}] {(1 - level) * -53.0:.1f} dB"
+                meter_chars = '=' * num_chars + '-' * (mw - num_chars)
+            meterString = f"[{meter_chars}] {(1 - level) * -sw:.1f} dB"
             print("\r", end='')
             leftToDelete = terminal_size.columns - 2
             for x in range(leftToDelete):
@@ -218,6 +220,7 @@ class delayRecord:
         self.minutes    = 10
         self.ignore     = 0.3
         self.preroll    = 0.6
+        self.meter_w   = 25.0
         self.stop_after = 1.2
         self.threshold  = -20
         self.rate       = "audio/x-raw,rate=16000,channels=1,format=S16LE ! "
@@ -232,6 +235,7 @@ class delayRecord:
             "p": f"preroll    = next_float or {self.preroll}        # preroll delay (seconds)",
             "s": f"stop_after = next_float or {self.stop_after}        # stop after (seconds of silence)",
             "t": f"threshold  = next_float or {self.threshold}        # wait for sound above this level (dB)",
+            "w": f"meter_w   = next_float or {self.meter_w}        # meter not to exceed this width",
         }
         for i in range(1, lsa):
             try:
