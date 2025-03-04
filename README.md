@@ -10,7 +10,7 @@ Private voice keyboard, AI chat, images, webcam, recordings, voice control in >=
 - Voice-controlled webcam, audio recorder
 - Launch & control apps, with `pyautogui`
 - Optional OpenAI `ChatGPT`, Google Gemini, more
-- Optionally speak answers out loud with `mimic3`
+- Optionally speak answers out loud with `mimic3`*
 - Draw pictures with [stable-diffusion-webui](https://github.com/AUTOMATIC1111/stable-diffusion-webui)
 - Help! [Get us a better video card](https://www.paypal.com/donate/?hosted_button_id=A37BWMFG3XXFG) (PayPal donation link)
 
@@ -106,6 +106,9 @@ Use the above API endpoint by simply saying "Computer... What is the capital of 
 If AI is speaking, turn volume down or relocate the mic so it doesn't interact with itself.
 
 **Mimic3.** If you follow the instructions to configure [mimic3](https://github.com/MycroftAI/mimic3) as a service on any `linux` computer or `Raspberry Pi` on the network, Speech Dispatcher will speak answers out loud. It has an open port that other network users can use to enable speech on their devices. But they can also make it speak remotely. So it is essentially a Star Trek communicator that works over wifi. Follow the [instructions for setting up mimic3 as a Systemd Service](https://mycroft-ai.gitbook.io/docs/mycroft-technologies/mimic-tts/mimic-3#web-server). 
+
+According to [this post](https://community.openconversational.ai/t/mimic-3-tts-models-failing-to-load-with-invalid-protobuf-error/15164?replies_to_post_number=6) Mimic3 has been abandoned. The author has written a new speech engine, [piper](https://github.com/rhasspy/piper), which may offer some improvements. We will try it out and see if we can use it instead.
+
 
 *Developer notes.* The `mimic3-server` is already lightening-fast on CPU. Do not bother compiling it with --cuda flag, which requires old `onnxruntime-gpu` that is not compatible with CUDA 12+ and won't compile with nvcc12... We got it working! And it just hogs all of VRAM and provides no noticeable speedup.
 
