@@ -186,7 +186,7 @@ class delayRecord:
         try:
             level = 1 - (level / -sw)
             num_chars = max(int(level * mw), 0)
-            if terminal_size.columns < 100-sw:
+            if terminal_size.columns < sw + 28:
                 meter_chars = 'Terminal too small'
             else:
                 meter_chars = '=' * num_chars + '-' * (mw - num_chars)
