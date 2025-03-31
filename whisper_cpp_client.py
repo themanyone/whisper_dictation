@@ -1,7 +1,7 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 ##
-## Copyright 2023 Henry Kroll <nospam@thenerdshow.com>
+## Copyright 2023-2025 Henry Kroll <nospam@thenerdshow.com>
 ##
 ## This program is free software; you can redistribute it and/or modify
 ## it under the terms of the GNU General Public License as published by
@@ -49,6 +49,10 @@ logging.basicConfig(
 		logging.StreamHandler()
 	]
 )
+
+# bs = "\b" * 99 # if your terminal does not support ANSI
+bs = "\033[1K\r"
+
 # address of whisper.cpp server
 cpp_url = "http://127.0.0.1:7777/inference"
 # address of Fallback Chat Server.
@@ -179,7 +183,7 @@ def gettext(f:str) -> str:
             return result[0]['text']
 
         except requests.exceptions.RequestException as e:
-            logging.debug(f"Error: {e}")
+            logging.debug(f"{bs}Error: {e}")
             return ""
         return ""
 
@@ -191,7 +195,7 @@ messages = [{ "role": "system", "content": "In this conversation between `user:`
 
 def generate_text(prompt: str):
     conversation_length = 9 # try increasing if AI model has a large ctx window
-    logging.debug("Asking ChatGPT") 
+    logging.debug(f"{bs}Asking ChatGPT") 
     global chatting, messages, gpt_key, gem_key
     messages.append({"role": "user", "content": prompt})
     completion = ""
@@ -234,7 +238,7 @@ def generate_text(prompt: str):
         completion = completion.choices[0].message.content
 
     if completion:
-        print(f"\r{completion}")
+        print(f"{bs}{completion}")
         # handle queries for more information
         if "more information?" in completion or \
             "It sounds like" in completion or \
@@ -277,7 +281,7 @@ def transcribe():
                 try: os.remove(f)
                 except Exception: pass
                 if not txt: continue
-                print(txt.strip('\n')) # print the text, in case we filter something important
+                print(bs + txt.strip(' \n')) # print the text, in case we filter something important
                 # filter (noise), (hiccups), *barking* and [system messages]
                 txt = re.sub(r'(^\s)|(\s*[\*\[\(][^\]\)]*[\]\)\*])*\s*$', '', txt)
                 if txt == ' ' or txt == "you " or txt == "Thanks for watching! ":
@@ -349,7 +353,7 @@ def quit():
     # clean up
     try:
         while f := audio_queue.get_nowait():
-            logging.debug(f"Removing temporary file: {f}")
+            logging.debug(f"{bs}Removing temporary file: {f}")
             if f[:5] == "/tmp/": # safety check
                 os.remove(f)
     except Exception: pass
