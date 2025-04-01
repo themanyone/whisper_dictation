@@ -281,10 +281,14 @@ def transcribe():
                 try: os.remove(f)
                 except Exception: pass
                 if not txt: continue
-                print(bs + txt.strip(' \n')) # print the text, in case we filter something important
-                # filter (noise), (hiccups), *barking* and [system messages]
-                txt = re.sub(r'(^\s)|(\s*[\*\[\(][^\]\)]*[\]\)\*])*\s*$', '', txt)
-                if txt == ' ' or txt == "you " or txt == "Thanks for watching! ":
+                # filter space at beginning of lines
+                txt = re.sub(r"(^|\n)\s", r"\1", txt)
+                # print messages [BLANK_AUDIO], (swoosh), *barking*
+                if re.search(r"[\(\[\*]", txt):
+                    print(bs + txt.strip())
+                    # filter it out
+                    txt = re.sub(r'[\*\[\(][^\]\)]*[\]\)\*]*\s*$', '', txt)
+                if txt == " " or txt == "you " or txt == "Thanks for watching! ":
                     continue # ignoring you
                 # get lower-case spoken command string
                 lower_case = txt.lower().strip()
@@ -292,7 +296,11 @@ def transcribe():
                 shutup() # stop bot from talking
                 if match := re.search(r"[^\w\s]$", lower_case):
                     lower_case = lower_case[:match.start()] # remove punctuation
-                    txt += ' ' # add space
+                if txt[-1] != "\n":
+                    txt += ' ' # add space only at EOL
+
+                print(bs + txt.strip(' \n')) # print the text
+
                 # see list of actions and hotkeys at top of file :)
                 # Go to Website.
                 if s:=re.search(r"^(peter|computer).? (go|open|browse|visit|navigate)( up| to| the| website)* [a-zA-Z0-9-]{1,63}(\.[a-zA-Z0-9-]{1,63})+$", lower_case):
