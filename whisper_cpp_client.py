@@ -91,12 +91,14 @@ commands = {
 }
 hotkeys = {
     r"^new paragraph.?$": [['enter'],['enter']],
-    r"^new line.?$":     [['enter']],
-    r"^page up.?$":     	[['pageup']],
-    r"^page down.?$":    [['pagedown']],
-    r"^undo that.?$":    [['ctrl', 'z']],
-    r"^copy that.?$":    [['ctrl', 'c']],
-    r"^paste it.?$":     [['ctrl', 'v']],
+    r"^(new li[nm]e|press enter|submit).?$":     [['enter']],
+    r"^page up.?$":    	  [['pageup']],
+    r"^page down.?$":     [['pagedown']],
+    r"^select all.?$":    [['ctrl', 'a']],
+    r"^undo that.?$":     [['ctrl', 'z']],
+    r"^cut line.?$":      [['ctrl', 'l']],
+    r"^copy that.?$":     [['ctrl', 'c']],
+    r"^paste it.?$":      [['ctrl', 'v']],
     }
 actions = {
     r"^left click.?$": "pyautogui.click()",
@@ -296,10 +298,9 @@ def transcribe():
                 shutup() # stop bot from talking
                 if match := re.search(r"[^\w\s]$", lower_case):
                     lower_case = lower_case[:match.start()] # remove punctuation
-                if txt[-1] != "\n":
-                    txt += ' ' # add space only at EOL
-
-                print(bs + txt.strip(' \n')) # print the text
+                # strip txt unless we specifically say "new paragraph"
+                txt = txt.strip(' \n') + ' '
+                print(bs + txt) # print the text
 
                 # see list of actions and hotkeys at top of file :)
                 # Go to Website.
