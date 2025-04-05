@@ -90,8 +90,16 @@ commands = {
     },
 }
 hotkeys = {
-    r"^new paragraph.?$": [['enter'],['enter']],
-    r"^(new li[nm]e|press enter|submit).?$":     [['enter']],
+    r"^new paragraph.?$": [['backspace'], ['enter'],['enter']],
+    r"^(new li[nm]e|press enter|submit).?$": [['backspace'],['enter']],
+    r"^back ?space.?$":   [['backspace']],
+    r"^space.?$":         [['space']],
+    r"^go up.?$":         [['up']],
+    r"^go down.?$":       [['down']],
+    r"^go right.?$":      [['right']],
+    r"^go left.?$":       [['left']],
+    r"^go home.?$":       [['home']],
+    r"^go (to the )?end.?$": [['end']],
     r"^page up.?$":    	  [['pageup']],
     r"^page down.?$":     [['pagedown']],
     r"^select all.?$":    [['ctrl', 'a']],
