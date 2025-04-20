@@ -219,7 +219,7 @@ class delayRecord:
         self.gstreamer  = ""
         self.minutes    = 10
         self.ignore     = 0.3
-        self.preroll    = 0.6
+        self.preroll    = 1.0
         self.meter_w   = 25.0
         self.stop_after = 1.2
         self.threshold  = -20
