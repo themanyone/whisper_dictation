@@ -209,12 +209,12 @@ If you want real-time AI captions translating everyone's conversations in the ro
 
 ### Thanks for trying out Whisper Dictation!
 
-    - GitHub https://github.com/themanyone
-    - YouTube https://www.youtube.com/themanyone
-    - Mastodon https://mastodon.social/@themanyone
-    - Linkedin https://www.linkedin.com/in/henry-kroll-iii-93860426/
-    - Buy me a coffee https://buymeacoffee.com/isreality
-    - [TheNerdShow.com](http://thenerdshow.com/)
+- GitHub https://github.com/themanyone
+- YouTube https://www.youtube.com/themanyone
+- Mastodon https://mastodon.social/@themanyone
+- Linkedin https://www.linkedin.com/in/henry-kroll-iii-93860426/
+- Buy me a coffee https://buymeacoffee.com/isreality
+- [TheNerdShow.com](http://thenerdshow.com/)
 
 Copyright (C) 2024-2025 Henry Kroll III, www.thenerdshow.com.
 See [LICENSE](LICENSE) for details.
