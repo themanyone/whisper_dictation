@@ -197,7 +197,8 @@ def gettext(f:str) -> str:
             return ""
         return ""
 
-print("Start speaking. Text should appear in the window you are working in.")
+print("Tab over to another window and start speaking.")
+print("Text should appear in the window you are working in.")
 print("Say \"Stop listening.\" or press CTRL-C to stop.")
 say("All systems ready.")
 
@@ -355,7 +356,9 @@ def record_to_queue():
 
 def discard_input():
     print("\nShutdown complete. Press ENTER to return to terminal.")
-    while input(""):
+    # discard input
+    # in case dodo head dictated into the same terminal
+    while input():
         time.sleep(0.1)
 
 def quit():

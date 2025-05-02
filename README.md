@@ -212,8 +212,7 @@ If you want real-time AI captions translating everyone's conversations in the ro
     - GitHub https://github.com/themanyone
     - YouTube https://www.youtube.com/themanyone
     - Mastodon https://mastodon.social/@themanyone
-    - Linkedin
-https://www.linkedin.com/in/henry-kroll-iii-93860426/
+    - Linkedin https://www.linkedin.com/in/henry-kroll-iii-93860426/
     - Buy me a coffee https://buymeacoffee.com/isreality
     - [TheNerdShow.com](http://thenerdshow.com/)
 
