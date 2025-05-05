@@ -34,18 +34,47 @@ Say, "Computer, on screen." A window opens up showing the webcam. Say "Computer,
 Install [GStreamer](https://gstreamer.freedesktop.org/) using the system's package manager. It is necessary to record temporary audio clips for sending to your local `whisper.cpp` speech to text (STT) server.
 The required `ladspa-delay-so-delay-5s` may be found in the `gstreamer1-plugins-bad-free-extras` package.
 
+**Fedora 42 Beta.** This OS is not a supported CUDA arch. But you can install the Fedora 41 CUDA repo from Nvidia, and it will work. But you must also install manually (from any Fedora 41 repo mirror) gcc13-13.3.1-2.fc41.1 and gcc13-c++-13.3.1-2.fc41.1 and remove compatability versions of gcc14, gcc13-c++ first. Finally, edit .bashrc to make the CUDA environment available to compile with.
+
+My Fedora CUDA `.bashrc` configuration.
 ```shell
-pip install -r whisper_dictation/requirements.txt
+export CUDA_HOME=/etc/alternatives/cuda
+export CUDACXX="$CUDA_HOME/bin/nvcc"
+export CUDA_TOOLKIT_ROOT="$CUDA_HOME"
+export CPLUS_INCLUDE_PATH=/usr/local/cuda/include
+export LD_LIBRARY_PATH="${CUDA_HOME}/lib64:/usr/local/lib64:$HOME/.local/lib64"
+export C_INCLUDE_PATH="${CUDA_HOME}/include"
+export GGML_CUDA_ENABLE_UNIFIED_MEMORY=1
+export CMAKE_CXX_COMPILER_LAUNCHER=ccache
+# optional export LD_LIBRARY_PATH=${WHISPERCPP_ROOTDIR}/lib::$LD_LIBRARY_PATH
+if ! [[ "$PATH" =~ "$HOME/.local/bin:$HOME/bin:$CUDA_HOME/bin:$CUDA_HOME/nvvm/bin" ]]; then
+    PATH="$HOME/.local/bin:$HOME/bin:$CUDA_HOME/bin:$CUDA_HOME/nvvm/bin:$PATH"
+fi
+```
+
+**All Linux.** Set up CUDA and gstreamer. Follow instructions from Nvidia, and your distro's website or forums.
+
+```shell
 git clone https://github.com/ggerganov/whisper.cpp
 cd whisper.cpp
-GGML_CUDA=1 make -j # assuming CUDA is available. see docs
-ln -s server ~/.local/bin/whisper_cpp_server # just put it somewhere in $PATH
+
+cmake -B build -DGGML_CUDA=1
+cmake --build build -j6 --config Release
+ln -s $(pwd)/build/bin/whisper-server ~/.local/bin/  # or just copy it it somewhere in $PATH
+ln -s $(pwd)/build/bin/whisper-cli ~/.local/bin/
+```
+
+Finally, install the python requirements for this package.
+
+```shell
+cd ../whisper_dictation
+pip install -r requirements.txt
 ```
 
 ## Quick start
 
 ```shell
-whisper_cpp_server -l en -m models/ggml-tiny.en.bin --port 7777
+whisper-server -l en -m models/ggml-tiny.en.bin --port 7777
 ./whisper_cpp_client.py
 ```
 
@@ -55,17 +84,15 @@ A sound level meter appears. Adjust ambient (quiet) volume to about 33% (-33dB).
 
 If VRAM is scarce, quantize `ggml-tiny.en.bin` according to whisper.cpp docs. Or use `-ng` option to avoid using VRAM altogether. It will lose some performance. But it's not that noticeable with a fast CPU.
 
-If `whisper_cpp_server` is slow or refuses to start, reboot. Or try and reload the crashed NVIDIA uvm module `sudo modprobe -r nvidia_uvm && sudo modprobe nvidia_uvm`.
+If `whisper-server` is slow or refuses to start, reboot. Or try and reload the crashed NVIDIA uvm module `sudo modprobe -r nvidia_uvm && sudo modprobe nvidia_uvm`.
 
 Edit `whisper_cpp_client.py` client to change server locations from localhost to wherever they reside on the network. You can also change the port numbers. Just make sure servers and clients are in agreement on which port to use.
 
 Test clients and servers.
 
 ```shell
-./whisper.cpp -l en -m ./models/ggml-tiny.en.bin samples/jfk.wav
-ln -sf $(pwd)/main whisper_cpp
-ln -sf $(pwd)/server whisper_cpp_server
-./whisper_cpp_server -l en -m models/ggml-tiny.en.bin --port 7777
+whisper-cli -l en -m ./models/ggml-tiny.en.bin samples/jfk.wav
+./whisper-server -l en -m models/ggml-tiny.en.bin --port 7777
 ```
 
 ## Running an AI server
@@ -77,8 +104,9 @@ Supposing any chat server will do. Many use `llama.cpp` behind the scenes. Since
 ```shell
 git clone https://github.com/ggerganov/llama.cpp
 cd llama.cpp
-GGML_CUDA=1 make -j # assuming CUDA is available. see docs
 ```
+
+Compilation steps are the same as for whisper.cpp, but read the docs just in case. 
 
 ### Download language models
 
@@ -150,10 +178,10 @@ webui.sh --api --medvram
 
 The computer responds to commands. You can also call her Samantha (Or Peter with for voice).
 
-**Mute button.** There is no mute button. Say "pause dictation" to turn off text generation. It will keep listening to commands. Say, "Thank you", "resume dictation", or "Computer, type this out" to have it start typing again. Say "stop listening" or "stop dictation" to quit the program entirely. You could configure a button to mute your mic, but that is no longer necessary.
+**Mute button.** There is no mute button. Say "pause dictation" to turn off text generation. It will keep listening to commands. Say, "Thank you", "resume dictation", or "Computer, type this out" to have it start typing again. Say "stop listening" or "stop dictation" to quit the program entirely. You could also configure a button to mute your mic. Something like `bash -c 'pactl set-source-mute $(pactl get-default-source) toggle'` if your system uses `pulseaudio`.0
 
 These actions are defined in whisper_dictation.py. See the source code for the full list. Feel free to edit them too!
-
+0
 Try saying:
 - Computer, on screen. (or "start webcam"; opens a webcam window).
 - Computer, take a picture. (saves to webcam/image.jpg)
@@ -181,7 +209,7 @@ Try saying:
 
 `record.py`: Almost hands-free, sound-activated recorder. You can run it separately. It creates a file named `audio.wav`. Supply optional command line arguments to change the file name, quality, formats, add filters, etc. See `./record.py -h` for help. Some formats require `gst-plugins-bad` or `gst-plugins-ugly`, depending on your distribution.
 
-This update provides a powerful option that lets you insert various plugins, mixers, filters, controllers, and effects directly into the GStreamer pipeline. See the [G-streamer documentation](https://gstreamer.freedesktop.org/) for details. Many audio and video plugins are available. Run `gst-inspect-1.0` for a list. The following records in a high quality, lossless format with echo effect and dynamic range compression.
+The record.py `-g` option lets you insert various GStreamer plugins, mixers, filters, controllers, and effects directly into the pipeline. See the [G-streamer documentation](https://gstreamer.freedesktop.org/) for details. Many audio and video plugins are available. Run `gst-inspect-1.0` for a list. The following records a high quality, lossless audio clip with echo effect and dynamic range compression.
 
 `./record.py -gq 'audioecho delay=250000000 intensity=0.25 ! audiodynamic' echo.flac`
 
