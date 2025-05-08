@@ -34,7 +34,7 @@ Say, "Computer, on screen." A window opens up showing the webcam. Say "Computer,
 Install [GStreamer](https://gstreamer.freedesktop.org/) using the system's package manager. It is necessary to record temporary audio clips for sending to your local `whisper.cpp` speech to text (STT) server.
 The required `ladspa-delay-so-delay-5s` may be found in the `gstreamer1-plugins-bad-free-extras` package.
 
-**Fedora 42 Beta.** This OS is not a supported CUDA arch. But you can install the Fedora 41 CUDA repo from Nvidia, and it will work. But you must also install manually (from any Fedora 41 repo mirror) gcc13-13.3.1-2.fc41.1 and gcc13-c++-13.3.1-2.fc41.1 and remove compatability versions of gcc14, gcc13-c++ first. Finally, edit .bashrc to make the CUDA environment available to compile with.
+**Fedora 42 Beta.** This OS is not a supported CUDA arch. But you can install the Fedora 41 CUDA repo from Nvidia, and it will work. But you must also install manually (from any Fedora 41 repo mirror) gcc13-13.3.1-2.fc41.1 and gcc13-c++-13.3.1-2.fc41.1 and remove compatability versions of gcc14, gcc14-c++ first. Finally, edit .bashrc to make the CUDA environment available to compile with.
 
 My Fedora CUDA `.bashrc` configuration.
 ```shell
