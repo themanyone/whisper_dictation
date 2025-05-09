@@ -37,9 +37,11 @@ The required `ladspa-delay-so-delay-5s` may be found in the `gstreamer1-plugins-
 **Fedora 42 Beta.** This OS is not a supported CUDA arch. But you can install the Fedora 41 CUDA repo from Nvidia, and it will work. But you must also install manually (from any Fedora 41 repo mirror) gcc13-13.3.1-2.fc41.1 and gcc13-c++-13.3.1-2.fc41.1 and remove compatability versions of gcc14, gcc14-c++ first. Finally, edit .bashrc to make the CUDA environment available to compile with.
 
 Sample Fedora CUDA `.bashrc` configuration.
+
 ```shell
-export CUDA_HOME=/etc/alternatives/cuda
+export CUDAHOSTCXX=g++-13
 export CUDACXX="$CUDA_HOME/bin/nvcc"
+export CUDA_HOME=/etc/alternatives/cuda
 export CUDA_TOOLKIT_ROOT="$CUDA_HOME"
 export CPLUS_INCLUDE_PATH=/usr/local/cuda/include
 export LD_LIBRARY_PATH="${CUDA_HOME}/lib64:/usr/local/lib64:$HOME/.local/lib64"
