@@ -36,7 +36,7 @@ The required `ladspa-delay-so-delay-5s` may be found in the `gstreamer1-plugins-
 
 **Fedora 42 Beta.** This OS is not a supported CUDA arch. But you can install the Fedora 41 CUDA repo from Nvidia, and it will work. But you must also install manually (from any Fedora 41 repo mirror) gcc13-13.3.1-2.fc41.1 and gcc13-c++-13.3.1-2.fc41.1 and remove compatability versions of gcc14, gcc14-c++ first. Finally, edit .bashrc to make the CUDA environment available to compile with.
 
-My Fedora CUDA `.bashrc` configuration.
+Sample Fedora CUDA `.bashrc` configuration.
 ```shell
 export CUDA_HOME=/etc/alternatives/cuda
 export CUDACXX="$CUDA_HOME/bin/nvcc"
@@ -74,25 +74,48 @@ pip install -r requirements.txt
 ## Quick start
 
 ```shell
-whisper-server -l en -m models/ggml-tiny.en.bin --port 7777
+whisper-server -l en -sns -m "$MODELS_DIR/ggml-tiny.en.bin" --port 7777
 ./whisper_cpp_client.py
 ```
 
-A sound level meter appears. Adjust ambient (quiet) volume to about 33% (-33dB).  On Windows, use a modern Terminal or Powershell if ANSI escape sequences are cluttering up the output.
+A sound level meter appears. Adjust ambient (quiet) volume to about 33% (-33dB).  On Windows, use a modern Terminal or Powershell if ANSI escape sequences are cluttering up the output. 
+
+## Server setup
+
+There are many ways to start and stop `whisper-server`. There is `/etc/profile.d`, `~/.config/autostart` or launching it with a hotkey. The preferred method is to set up a user service or systemwide service. Users may save the following file as `$HOME/.config/systemd/user/whisper.service`
+
+```shell
+[Unit]
+Description=Run Whisper server
+Documentation=https://github.com/openai/whisper
+
+[Service]
+ExecStart=whisper-server -l en -sns -m \
+ "$MODELS_DIR/ggml-tiny.en.bin" \
+ --port 7777
+
+[Install]
+WantedBy=default.target
+```
+Run `export $MODELS_DIR=/path/to/models` (wherever the models reside). Don't forget to add that export to `.bashrc` too.
+
+Then run `systemctl --user daemon-reload` to update the configuration. Start the service with `systemctl --user start whisper`. Make it run automatically at login with `systemctl --user enable whisper`. Check status with `systemctl --user status whisper`.
+
+If the server and client are on the same machine, uncomment the lines `os.system("systemctl --user start whisper")` near the bottom of `whisper_cpp_client.py`. Then it will start and stop the server automatically, saving resources when not in use.
 
 ## Troubleshooting.
 
-If VRAM is scarce, quantize `ggml-tiny.en.bin` according to whisper.cpp docs. Or use `-ng` option to avoid using VRAM altogether. It will lose some performance. But it's not that noticeable with a fast CPU.
+If `whisper-server` is slow or refuses to use VRAM when it is supposed to, reboot. Or try and reload the crashed NVIDIA uvm module `sudo modprobe -r nvidia_uvm && sudo modprobe nvidia_uvm`.
 
-If `whisper-server` is slow or refuses to start, reboot. Or try and reload the crashed NVIDIA uvm module `sudo modprobe -r nvidia_uvm && sudo modprobe nvidia_uvm`.
+If VRAM is scarce, quantize `ggml-tiny.en.bin` according to whisper.cpp docs. Or use `-ng` option to avoid using VRAM altogether. It might be half as fast. But delays are not that noticeable with a modern CPU.
 
 Edit `whisper_cpp_client.py` client to change server locations from localhost to wherever they reside on the network. You can also change the port numbers. Just make sure servers and clients are in agreement on which port to use.
 
 Test clients and servers.
 
 ```shell
-whisper-cli -l en -m ./models/ggml-tiny.en.bin samples/jfk.wav
-./whisper-server -l en -m models/ggml-tiny.en.bin --port 7777
+whisper-cli -l en -m $MODELS_DIR/ggml-tiny.en.bin samples/jfk.wav
+./whisper-server -l en -m $MODELS_DIR/ggml-tiny.en.bin --port 7777
 ```
 
 ## Running an AI server

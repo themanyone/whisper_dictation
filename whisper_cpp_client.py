@@ -327,7 +327,7 @@ def transcribe():
                 elif process_actions(lower_case): continue
                 if not listening: continue
                 elif process_hotkeys(lower_case): continue
-                else:
+                elif len(txt) > 1:
                     pyautogui.write(txt)
             # continue looping every 1/5 second
             else: time.sleep(0.2)
@@ -378,11 +378,13 @@ def quit():
                 os.remove(f)
     except Exception: pass
     logging.debug("\nFreeing system resources.\n")
+#    os.system("systemctl --user stop whisper")
     discard_input()
     shutup()
 
 if __name__ == '__main__':
     record_thread = threading.Thread(target=record_to_queue)
+#    os.system("systemctl --user start whisper")
     record_thread.start()
     transcribe()
     quit()
