@@ -76,7 +76,7 @@ pip install -r requirements.txt
 ## Quick start
 
 ```shell
-whisper-server -l en -sns -m "$MODELS_DIR/ggml-tiny.en.bin" --port 7777
+whisper-server -l en -m "$MODELS_DIR/ggml-tiny.en.bin" --port 7777
 ./whisper_cpp_client.py
 ```
 
@@ -92,7 +92,7 @@ Description=Run Whisper server
 Documentation=https://github.com/openai/whisper
 
 [Service]
-ExecStart=whisper-server -l en -sns -m \
+ExecStart=whisper-server -l en -m \
  "$MODELS_DIR/ggml-tiny.en.bin" \
  --port 7777
 
