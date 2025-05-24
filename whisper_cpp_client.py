@@ -60,8 +60,10 @@ fallback_chat_url = "http://localhost:8888/v1"
 debug = False
 
 gpt_key = os.getenv("OPENAI_API_KEY")
-client = OpenAI(api_key=gpt_key)
-if not (gpt_key):
+client = None
+if gpt_key:
+    client = OpenAI(api_key=gpt_key)
+else:
     logging.debug("Export OPENAI_API_KEY if you want answers from ChatGPT.\n")
 gem_key = os.getenv("GENAI_TOKEN")
 if (gem_key):
