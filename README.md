@@ -5,12 +5,13 @@ Private voice keyboard, AI chat, images, webcam, recordings, voice control in >=
 <img src="img/ss.png" alt="example pic" title="Dictation anywhere, even social media." width="300" align="right">
 
 - Hands-free recording with `record.py`
-- Speech to text conversion by `whisper.cpp`[Whisper.cpp](https://github.com/ggerganov/whisper.cpp)
+- Speech to text conversion depends on `whisper.cpp`[Whisper.cpp](https://github.com/ggerganov/whisper.cpp)
+- LLM inference depends on [Llama.cpp](https://github.com/ggml-org/llama.cpp)
 - Translate various languages
 - Voice-controlled webcam, audio recorder
 - Launch & control apps, with `pyautogui`
 - Optional OpenAI `ChatGPT`, Google Gemini, more
-- Optionally speak answers out loud with `mimic3`*
+- If desired, speak answers out loud with `mimic3`*
 - Draw pictures with [stable-diffusion-webui](https://github.com/AUTOMATIC1111/stable-diffusion-webui)
 
 **Freedoms and responsibilities** Free and open-source software comes with NO WARRANTIES. You have permission to copy and modify for individual needs in accordance with the included LICENSE.
@@ -25,13 +26,13 @@ Say, "Computer, on screen." A window opens up showing the webcam. Say "Computer,
 
 ## New in this branch
 
-**Fewer dependencies.** We saved over 1Gb of downloads and hours of setup by eliminating torch, pycuda, cudnn, ffmpeg dependencies. Those older versions can be found in the `legacy` branch. Get just the `main` branch to save time.
+**Fewer dependencies.** We saved over 1Gb of downloads and hours of setup with [Whisper.cpp](https://github.com/ggerganov/whisper.cpp), eliminating torch, pycuda, cudnn, ffmpeg dependencies. Those older versions can be found in the `legacy` branch. Get just the `main` branch to save time.
 
 `git clone -b main --single-branch https://github.com/themanyone/whisper_dictation.git`
 
 ## Preparation
 
-Install [GStreamer](https://gstreamer.freedesktop.org/) using the system's package manager. It is necessary to record temporary audio clips for sending to your local `whisper.cpp` speech to text (STT) server.
+Install [GStreamer](https://gstreamer.freedesktop.org/) using the system's package manager. It is necessary for recording temporary audio clips to send to your local `whisper.cpp` speech to text (STT) server for decoding.
 The required `ladspa-delay-so-delay-5s` may be found in the `gstreamer1-plugins-bad-free-extras` package.
 
 **Fedora 42 Beta.** This OS is not a supported CUDA arch. But you can install the [Fedora 41 CUDA repo from Nvidia](https://developer.nvidia.com/cuda-downloads?target_os=Linux&target_arch=x86_64&Distribution=Fedora&target_version=41&target_type=runfile_local), and it will work. But you must also install manually, [from a Fedora 41 repo mirror](https://packages.fedoraproject.org/search?query=gcc), `gcc13-13.3.1-2.fc41.1` and `gcc13-c++-13.3.1-2.fc41.1`, Remove compatability versions of gcc14, gcc14-c++ first. Finally, edit `.bashrc` to make the CUDA environment available to compile with.
