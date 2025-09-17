@@ -204,10 +204,10 @@ webui.sh --api --medvram
 
 The computer responds to commands. You can also call her Samantha (Or Peter with for voice).
 
-**Mute button.** There is no mute button. Say "pause dictation" to turn off text generation. It will keep listening to commands. Say, "Thank you", "resume dictation", or "Computer, type this out" to have it start typing again. Say "stop listening" or "stop dictation" to quit the program entirely. You could also configure a button to mute your mic. Something like `bash -c 'pactl set-source-mute $(pactl get-default-source) toggle'` if your system uses `pulseaudio`.0
+**Mute button.** There is no mute button. Say "pause dictation" to turn off text generation. It will keep listening to commands. Say, "Thank you", "resume dictation", or "Computer, type this out" to have it start typing again. Say "stop listening" or "stop dictation" to quit the program entirely. You could also configure a button to mute your mic. Something like `bash -c 'pactl set-source-mute $(pactl get-default-source) toggle'` if your system uses `pulseaudio`.
 
 These actions are defined in whisper_dictation.py. See the source code for the full list. Feel free to edit them too!
-0
+
 Try saying:
 - Computer, on screen. (or "start webcam"; opens a webcam window).
 - Computer, take a picture. (saves to webcam/image.jpg)
