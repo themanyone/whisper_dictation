@@ -25,6 +25,7 @@ import torch
 import onnxruntime as ort
 
 def test_cuda():
+    print(torch.__version__)
     if torch.cuda.is_available():
         print("CUDA is available")
         print("Device: ", torch.cuda.get_device_name())
