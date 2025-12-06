@@ -357,11 +357,48 @@ def record_to_queue():
         audio_queue.put(record_process.file_name)
 
 def discard_input():
-    print("\nShutdown complete. Press ENTER to return to terminal.")
-    # discard input
-    # in case dodo head dictated into the same terminal
-    while input():
-        time.sleep(0.1)
+    """Discard any pending terminal input without waiting for Enter.
+    Works on POSIX (uses tcflush when stdin is a tty; falls back to nonblocking read)
+    and on Windows (uses msvcrt). Safe to call if stdin is not a tty."""
+    try:
+        if os.name == "nt":
+            import msvcrt
+            while msvcrt.kbhit():
+                msvcrt.getwch()  # consume wide char; use getch() for bytes
+        else:  # POSIX
+            print("Goodbye.")
+            fd = sys.stdin.fileno()
+            if sys.stdin.isatty():
+                # use termios.tcflush when available
+                try:
+                    from termios import tcflush, TCIFLUSH
+                    tcflush(fd, TCIFLUSH)
+                    return
+                except Exception:
+                    pass
+            # fallback: nonblocking read to drain whatever is available
+            import fcntl, termios, errno
+            orig_fl = fcntl.fcntl(fd, fcntl.F_GETFL)
+            try:
+                fcntl.fcntl(fd, fcntl.F_SETFL, orig_fl | os.O_NONBLOCK)
+                try:
+                    while True:
+                        chunk = os.read(fd, 4096)
+                        if not chunk:
+                            break
+                except OSError as e:
+                    if e.errno not in (errno.EAGAIN, errno.EWOULDBLOCK):
+                        raise
+            finally:
+                fcntl.fcntl(fd, fcntl.F_SETFL, orig_fl)
+
+    except Exception:
+        print("Quitting.")
+        # best-effort: if everything fails, try to consume one line (may block)
+        try:
+            sys.stdin.readline()
+        except Exception:
+            pass
 
 def quit():
     logging.debug("\nStopping...")
