@@ -32,15 +32,16 @@ Say, "Computer, on screen." A window opens up showing the webcam. Say "Computer,
 
 ## Preparation
 
-Install [GStreamer](https://gstreamer.freedesktop.org/) using the system's package manager. It is necessary for recording temporary audio clips to send to your local `whisper.cpp` speech to text (STT) server for decoding.
+**Fedora** Get the [Rpmfusion repos]( http://rpmfusion.org) and install [GStreamer](https://gstreamer.freedesktop.org/) using the system's package manager. It is necessary for recording temporary audio clips to send to your local `whisper.cpp` speech to text (STT) server for decoding.
 The required `ladspa-delay-so-delay-5s` may be found in the `gstreamer1-plugins-bad-free-extras` package.
 
-**Fedora 42 Beta.** This OS is not a supported CUDA arch. But you can install the [Fedora 41 CUDA repo from Nvidia](https://developer.nvidia.com/cuda-downloads?target_os=Linux&target_arch=x86_64&Distribution=Fedora&target_version=41&target_type=runfile_local), and it will work. But you must also install manually, [from a Fedora 41 repo mirror](https://packages.fedoraproject.org/search?query=gcc), `gcc13-13.3.1-2.fc41.1` and `gcc13-c++-13.3.1-2.fc41.1`, Remove compatability versions of gcc14, gcc14-c++ first. Finally, edit `.bashrc` to make the CUDA environment available to compile with.
+**Fedora 42** Install the [Fedora 42 CUDA repo from Nvidia](https://rpmfusion.org/Howto/CUDA).
 
 Sample Fedora CUDA `.bashrc` configuration.
 
 ```shell
-export CUDAHOSTCXX=g++-13
+export CUDAHOSTCXX=g++-14
+export CUDAHOSTCC=gcc-14
 export CUDACXX="$CUDA_HOME/bin/nvcc"
 export CUDA_HOME=/etc/alternatives/cuda
 export CUDA_TOOLKIT_ROOT="$CUDA_HOME"
@@ -55,7 +56,9 @@ if ! [[ "$PATH" =~ "$HOME/.local/bin:$HOME/bin:$CUDA_HOME/bin:$CUDA_HOME/nvvm/bi
 fi
 ```
 
-**All Linux.** Set up CUDA and gstreamer. Follow instructions from Nvidia, and your distro's website or forums.
+**Fedora 43.** Should work with the above. You might still have to use the CUDA repo for Fedora 42 because these updates lag behind.
+
+**All Linux.** Set up CUDA and gstreamer. Follow instructions from Nvidia, and your distro's website or forums. Then install `whisper.cpp`
 
 ```shell
 git clone https://github.com/ggerganov/whisper.cpp
