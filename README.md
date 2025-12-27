@@ -50,6 +50,11 @@ export LD_LIBRARY_PATH="${CUDA_HOME}/lib64:/usr/local/lib64:$HOME/.local/lib64"
 export C_INCLUDE_PATH="${CUDA_HOME}/include"
 export GGML_CUDA_ENABLE_UNIFIED_MEMORY=1
 export CMAKE_CXX_COMPILER_LAUNCHER=ccache
+# export TORCH_CUDA_ARCH_LIST=8.6 # card-specific compute capability
+export CUDA_VERSION=130
+export BNB_CUDA_VERSION=130 #python3.10 -m bitsandbytes
+export CUB_HOME=/opt/nvidia/cub-2.1.0
+
 # optional export LD_LIBRARY_PATH=${WHISPERCPP_ROOTDIR}/lib::$LD_LIBRARY_PATH
 if ! [[ "$PATH" =~ "$HOME/.local/bin:$HOME/bin:$CUDA_HOME/bin:$CUDA_HOME/nvvm/bin" ]]; then
     PATH="$HOME/.local/bin:$HOME/bin:$CUDA_HOME/bin:$CUDA_HOME/nvvm/bin:$PATH"
@@ -90,6 +95,8 @@ A sound level meter appears. Adjust ambient (quiet) volume to about 33% (-33dB).
 
 There are many ways to start and stop `whisper-server`. There is `/etc/profile.d`, `~/.config/autostart` or launching it with a hotkey. The preferred method is to set up a user service or systemwide service. Users may save the following file as `$HOME/.config/systemd/user/whisper.service`
 
+Update: We added the --convert flag below. If whisper-server was compiled with ffmpeg, it needs --convert or no output will be generated. Logs will reporet "error: failed to ffmpeg decode". 
+
 ```shell
 [Unit]
 Description=Run Whisper server
@@ -98,7 +105,7 @@ Documentation=https://github.com/openai/whisper
 [Service]
 ExecStart=whisper-server -l en -m \
  "$MODELS_DIR/ggml-tiny.en.bin" \
- --port 7777
+ --convert --port 7777
 
 [Install]
 WantedBy=default.target
@@ -113,6 +120,8 @@ If the server and client are on the same machine, uncomment the lines `os.system
 
 If `whisper-server` is slow or refuses to use VRAM when it is supposed to, reboot. Or try and reload the crashed NVIDIA uvm module `sudo modprobe -r nvidia_uvm && sudo modprobe nvidia_uvm`.
 
+If whisper-server was compiled with ffmpeg, it needs to be restarted with --convert flag or no output will be generated. This might be a whisper.cpp bug. If started as a service: After editing `~/.config/systemd/user/whisper.service` to add the `--convert` flag, run `systemctl --user daemon-reload`.
+
 If VRAM is scarce, quantize `ggml-tiny.en.bin` according to whisper.cpp docs. Or use `-ng` option to avoid using VRAM altogether. It might be half as fast. But delays are not that noticeable with a modern CPU.
 
 Edit `whisper_cpp_client.py` client to change server locations from localhost to wherever they reside on the network. You can also change the port numbers. Just make sure servers and clients are in agreement on which port to use.
@@ -121,7 +130,11 @@ Test clients and servers.
 
 ```shell
 whisper-cli -l en -m $MODELS_DIR/ggml-tiny.en.bin samples/jfk.wav
-./whisper-server -l en -m $MODELS_DIR/ggml-tiny.en.bin --port 7777
+./whisper-server -l en -m $MODELS_DIR/ggml-tiny.en.bin --convert --port 7777
+
+./record.py test.wav # say something
+
+curl http://localhost:7777/inference -F "file=@test.wav;type=audio/wav"
 ```
 
 ## Running an AI server

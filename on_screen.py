@@ -18,13 +18,13 @@
 ## Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
 ## MA 02110-1301, USA.
 ##
+from gi.repository import Gst
 import gi
 import os
 import time
 from PIL import Image
 from record import unique_file_name
 gi.require_version('Gst', '1.0')
-from gi.repository import Gst
 
 # don't need an instance of camera to show pictures
 def show_pictures(dir="webcam"):
@@ -37,7 +37,8 @@ def show_pictures(dir="webcam"):
 class camera:
     def __init__(self, callback=None):
         Gst.init(None)
-        if not os.path.exists("webcam"): os.mkdir("webcam")
+        if not os.path.exists("webcam"):
+            os.mkdir("webcam")
         self.file_name = file_name = unique_file_name("webcam/image.jpg")
         self.pipeline = Gst.parse_launch(
         'autovideosrc ! tee name=t ! videoconvert ! autovideosink t. ! valve name=v ! '+
@@ -82,7 +83,7 @@ class camera:
                 print("Picture saved!")
 
 if __name__ == '__main__':
-    app = start_camera()
+    app = camera()
     app.countdown(5)
     app.take_picture()
     app.stop_camera()

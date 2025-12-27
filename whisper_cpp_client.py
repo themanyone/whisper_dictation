@@ -18,8 +18,10 @@
 ## Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
 ## MA 02110-1301, USA.
 ##
+import openai
 import pyautogui
-import os, sys
+import os
+import sys
 import time
 import queue
 import re
@@ -30,9 +32,8 @@ import tempfile
 import threading
 import requests
 import logging
-import tracer
 from mimic3_client import say, shutup
-from on_screen import camera, show_pictures
+from on_screen import camera
 from record import delayRecord
 audio_queue = queue.Queue()
 listening = True
@@ -144,12 +145,14 @@ def process_actions(tl:str) -> bool:
                 print(q)
             return True # success
     if chatting:
-        generate_text(tl); return True
+        generate_text(tl)
+        return True
     return False # no action
 
 def on_screen():
     global cam
-    if not cam: cam = camera()
+    if not cam:
+        cam = camera()
     cam.pipeline.set_state(cam.on)
     return cam
 
@@ -165,7 +168,8 @@ def take_picture():
 
 def off_screen():
     global cam
-    if cam: cam = cam.stop_camera()
+    if cam:
+        cam = cam.stop_camera()
 
 # search text for hotkeys
 def process_hotkeys(txt: str) -> bool:
@@ -180,23 +184,31 @@ def process_hotkeys(txt: str) -> bool:
             return True
     return False
 
-def gettext(f:str) -> str:
+def gettext(f: str) -> str:
     result = ['']
     if f and os.path.isfile(f):
-        files = {'file': (f, open(f, 'rb'))}
-        data = {'temperature': '0.2', 'response_format': 'json'}
-
         try:
-            response = requests.post(cpp_url, files=files, data=data)
-            response.raise_for_status()  # Check for errors
+            with open(f, 'rb') as file:
+                files = {'file': (os.path.basename(f), file)}
+                data = {'temperature': 0.2, 'response_format': 'json'}
+                
+                response = requests.post(cpp_url, files=files, data=data)
+                response.raise_for_status()  # Raise an exception for HTTP errors
 
-            # Parse the JSON response
-            result = [response.json()]
-            return result[0]['text']
+                result = response.json()
+                return result['text']
 
         except requests.exceptions.RequestException as e:
             logging.debug(f"{bs}Error: {e}")
             return ""
+        except FileNotFoundError:
+            logging.debug(f"{bs}File not found: {f}")
+            return ""
+        except Exception as e:
+            logging.debug(f"{bs}An error occurred: {e}")
+            return ""
+    else:
+        logging.debug(f"{bs}File does not exist or is not a file: {f}")
         return ""
 
 print("Tab over to another window and start speaking.")
@@ -209,7 +221,7 @@ messages = [{ "role": "system", "content": "In this conversation between `user:`
 def generate_text(prompt: str):
     conversation_length = 9 # try increasing if AI model has a large ctx window
     logging.debug(f"{bs}Asking ChatGPT") 
-    global chatting, messages, gpt_key, gem_key
+    global chatting, messages, gpt_key, gem_key, client
     messages.append({"role": "user", "content": prompt})
     completion = ""
     # Try chatGPT
@@ -265,7 +277,8 @@ def generate_text(prompt: str):
             response = pyautogui.prompt("More information, please.",
             "Please clarify.", prompt)
             # on user cancel, stop AI chat & resume dictation
-            if not response: return None
+            if not response:
+                return None
             # otherwise, process the new query
             chatting = True
             return generate_text(response)
@@ -291,9 +304,12 @@ def transcribe():
             if f := audio_queue.get():
                 txt = gettext(f)
                 # delete temporary audio file
-                try: os.remove(f)
-                except Exception: pass
-                if not txt: continue
+                try:
+                    os.remove(f)
+                except Exception:
+                    pass
+                if not txt:
+                    continue
                 # filter space at beginning of lines
                 txt = re.sub(r"(^|\n)\s", r"\1", txt)
                 # print messages [BLANK_AUDIO], (swoosh), *barking*
@@ -305,7 +321,8 @@ def transcribe():
                     continue # ignoring you
                 # get lower-case spoken command string
                 lower_case = txt.lower().strip()
-                if not lower_case: continue
+                if not lower_case:
+                    continue
                 shutup() # stop bot from talking
                 if match := re.search(r"[^\w\s]$", lower_case):
                     lower_case = lower_case[:match.start()] # remove punctuation
@@ -326,13 +343,17 @@ def transcribe():
                 elif re.search(r"^paused? (d.ctation|positi.?i?cation).?$", lower_case):
                     listening = False
                     say("okay")
-                elif process_actions(lower_case): continue
-                if not listening: continue
-                elif process_hotkeys(lower_case): continue
+                elif process_actions(lower_case):
+                    continue
+                if not listening:
+                    continue
+                elif process_hotkeys(lower_case):
+                    continue
                 elif len(txt) > 1:
                     pyautogui.write(txt)
             # continue looping every 1/5 second
-            else: time.sleep(0.2)
+            else:
+                time.sleep(0.2)
         except KeyboardInterrupt:
             say("Goodbye.")
             break
@@ -377,7 +398,8 @@ def discard_input():
                 except Exception:
                     pass
             # fallback: nonblocking read to drain whatever is available
-            import fcntl, termios, errno
+            import fcntl
+            import errno
             orig_fl = fcntl.fcntl(fd, fcntl.F_GETFL)
             try:
                 fcntl.fcntl(fd, fcntl.F_SETFL, orig_fl | os.O_NONBLOCK)
@@ -415,10 +437,12 @@ def quit():
             logging.debug(f"{bs}Removing temporary file: {f}")
             if f[:5] == "/tmp/": # safety check
                 os.remove(f)
-    except Exception: pass
+    except Exception:
+        pass
     logging.debug("\nFreeing system resources.\n")
 #    os.system("systemctl --user stop whisper")
     discard_input()
+    time.sleep(1)
     shutup()
 
 if __name__ == '__main__':

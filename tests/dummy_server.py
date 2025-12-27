@@ -1,6 +1,7 @@
 # just a basic flask app test
 
 from flask import Flask, abort, request, jsonify
+from chopt import generate_text
 
 app = Flask(__name__)
 

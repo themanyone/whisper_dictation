@@ -18,12 +18,12 @@
 ## Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
 ## MA 02110-1301, USA.
 ##
-import gi
-import sys
-import urllib.parse
-import logging
-import time
 # Initialize GStreamer
+import time
+import logging
+import urllib.parse
+import sys
+import gi
 gi.require_version('Gst', '1.0')
 from gi.repository import Gst
 pipeline = None

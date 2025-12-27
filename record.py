@@ -23,13 +23,12 @@
 ## Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
 ## MA 02110-1301, USA.
 ##
-
-import gi
 import os
 import sys
 import time
 import math
 import logging
+import gi
 gi.require_version("Gst", "1.0")
 from gi.repository import Gst, GLib
 
@@ -72,7 +71,8 @@ class delayRecord:
         self.recording   = False
         self.quiet_timer = self.sound_timer = time.time() # start timers
         from_options = self.process_options()
-        if not file_name: file_name = from_options
+        if not file_name:
+            file_name = from_options
         ext = os.path.splitext(file_name)[1].lower()
         # Avoid overwriting files
         file_name = self.file_name = unique_file_name(file_name)
@@ -116,7 +116,8 @@ class delayRecord:
     def monitor_levels(self, bus, message):
         rms = message.get_structure().get_value('rms')[0]
         # peak = message.get_structure().get_value('peak')[0]
-        if math.isnan(rms): return True
+        if math.isnan(rms):
+            return True
         self.draw_meter(rms)
         reset = time.time()
         seconds_of_quiet = reset - self.quiet_timer
@@ -225,7 +226,8 @@ class delayRecord:
         self.threshold  = -20
         self.rate       = "audio/x-raw,rate=16000,channels=1,format=S16LE ! "
         lsa = len(sys.argv)
-        if lsa == 1: return file_name
+        if lsa == 1:
+            return file_name
         options = {
             "h": "print_help(options) # Print this help message",
             "q": "quality    = True # use device bitrate",
@@ -235,19 +237,23 @@ class delayRecord:
             "p": f"preroll    = next_float or {self.preroll}        # preroll delay (seconds)",
             "s": f"stop_after = next_float or {self.stop_after}        # stop after (seconds of silence)",
             "t": f"threshold  = next_float or {self.threshold}        # wait for sound above this level (dB)",
-            "w": f"meter_w   = next_float or {self.meter_w}        # meter not to exceed this width",
+            "w": f"meter_w    = next_float or {self.meter_w}       # meter not to exceed this width",
         }
         for i in range(1, lsa):
             try:
                 next_str = sys.argv[i+1] if i < lsa -1 else None
                 next_float = float(sys.argv[i+1]) if i < lsa -1 else 0.0
             except ValueError:
-                pass
+                continue
             arg = sys.argv[i]
             if arg[0]=='-':
                 for j in arg[1:]:
                     oj = options.get(j)
-                    if oj: exec("self."+oj)
+                    if oj:
+                        # pass linter noinspection PyUnusedLocal
+                        _ = next_str
+                        _ = next_float
+                        exec(f"self.{oj}")
                     else:
                         logging.critical(f" Option '-{j}' not recognized.")
                         self.print_help(options)
@@ -255,7 +261,8 @@ class delayRecord:
                 ext = os.path.splitext(arg)[1]
                 if (len(ext) == 4 or len(ext) == 5) and ext[1] > '9':
                     file_name = arg
-        if self.quality: self.rate = ""
+        if self.quality:
+            self.rate = ""
         # connect plugin to pipeline
         if self.gstreamer and self.gstreamer[-1] != '!':
             self.gstreamer += ' !'

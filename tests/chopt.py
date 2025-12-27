@@ -3,7 +3,6 @@
 # from https://huggingface.co/aisquared/chopt-research-125m
 # pip install transformers torch
 from transformers import pipeline
-import torch
 
 model_name = "aisquared/chopt-research-125m"
 tokenizer_name = "aisquared/chopt-research-125m"

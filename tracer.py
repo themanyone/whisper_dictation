@@ -26,5 +26,5 @@ sys.excepthook = custom_error_handler
 # Example usage to trigger an error
 try:
     raise ValueError("This is a sample error") from None
-except Exception as e:
+except Exception:
     pass  # The error will be handled by our custom error handler
