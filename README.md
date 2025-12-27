@@ -35,11 +35,12 @@ Say, "Computer, on screen." A window opens up showing the webcam. Say "Computer,
 **Arch Linux** Install GStreamer and required plugins:
 
 ```shell
-sudo pacman -S gstreamer gst-plugins-base gst-plugins-good gst-plugins-bad
+sudo pacman -S gstreamer gst-plugins-base gst-plugins-good gst-plugins-bad swh-plugins
 ```
 
 The `gst-plugins-good` package provides `souphttpsrc` required for mimic3 voice output.
-The `gst-plugins-bad` package provides `ladspa` plugins for audio recording effects.
+The `gst-plugins-bad` package provides LADSPA plugin support for audio effects.
+The `swh-plugins` package provides the LADSPA delay effect used for audio recording.
 
 **Fedora** Get the [Rpmfusion repos]( http://rpmfusion.org) and install [GStreamer](https://gstreamer.freedesktop.org/) using the system's package manager. It is necessary for recording temporary audio clips to send to your local `whisper.cpp` speech to text (STT) server for decoding.
 The required `ladspa-delay-so-delay-5s` may be found in the `gstreamer1-plugins-bad-free-extras` package.
