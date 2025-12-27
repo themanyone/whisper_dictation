@@ -82,6 +82,44 @@ cd ../whisper_dictation
 pip install -r requirements.txt
 ```
 
+## Wayland Compatibility
+
+This application now supports both **X11** and **Wayland** display servers with automatic detection.
+
+### System Requirements
+
+**For Wayland sessions**, the application uses `python-evdev` for keyboard and mouse simulation:
+
+```shell
+# Install python-evdev (Arch Linux)
+sudo pacman -S python-evdev
+
+# Configure uinput permissions (required for Wayland)
+echo 'KERNEL=="uinput", MODE="0660", GROUP="input", OPTIONS+="static_node=uinput"' | sudo tee /etc/udev/rules.d/99-input.rules
+sudo usermod -aG input $USER
+```
+
+**Important:** After setting up uinput permissions, you must **logout and login** for the group membership to take effect.
+
+### How It Works
+
+The application automatically detects your session type:
+- **Wayland sessions**: Uses `evdev` backend for input simulation
+- **X11 sessions**: Uses traditional `PyAutoGUI` backend
+
+No manual configuration needed - the appropriate backend is selected at runtime based on the `XDG_SESSION_TYPE` environment variable.
+
+### Troubleshooting Wayland
+
+If keyboard/mouse simulation doesn't work on Wayland:
+
+1. Verify udev rule is in place: `cat /etc/udev/rules.d/99-input.rules`
+2. Check group membership: `groups | grep input`
+3. Ensure you've logged out and back in after adding yourself to the input group
+4. Verify `/dev/uinput` permissions: `ls -l /dev/uinput`
+
+If issues persist, you can fall back to X11 by running under XWayland or switching to an X11 session.
+
 ## Quick start
 
 ```shell
