@@ -58,7 +58,7 @@ conversation_length = 9 # interactions
 # address of whisper.cpp server
 whisper_cpp = "http://127.0.0.1:7777/inference"
 # address of local chat server
-local_chat_url = "http://127.0.0.1:8080/v1"
+local_chat_url = "http://127.0.0.1:8888/v1"
 debug = False
 
 # Export one of these keys to your environment
