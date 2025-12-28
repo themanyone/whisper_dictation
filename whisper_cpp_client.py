@@ -58,7 +58,7 @@ conversation_length = 9 # interactions
 # address of whisper.cpp server
 whisper_cpp = "http://127.0.0.1:7777/inference"
 # address of local chat server
-local_chat_url = "http://127.0.0.1:8888/v1"
+local_chat_url = "http://127.0.0.1:8080/v1"
 debug = False
 
 # Export one of these keys to your environment
@@ -214,7 +214,7 @@ def process_hotkeys(txt: str) -> bool:
             return True
     return False
 
-def gettext(f: str) -> str:
+def recognize_speech(f: str) -> str:
     result = ['']
     if f and os.path.isfile(f):
         try:
@@ -260,19 +260,23 @@ def generate_text(prompt: str):
             messages=messages)
             completion = completion.choices[0].message.content
         except Exception as e:
-                logging.debug("ChatGPT had a problem. Here's the error message.")
-                logging.debug(e)
+                logging.warning("ChatGPT had a problem.")
+                logging.warning(e)
 
     # Fallback to Google Gemini
     elif gem_key and not completion:
         logging.debug("Asking Gemini")
-        chat = model.start_chat(
-            history=[
-            {"role": "user" if x["role"] == "user" else "model",
-                "parts": x["content"]}for x in messages]
-        )
-        response = chat.send_message(prompt)
-        completion = response.text
+        try:
+            chat = model.start_chat(
+                history=[
+                {"role": "user" if x["role"] == "user" else "model",
+                    "parts": x["content"]}for x in messages]
+            )
+            response = chat.send_message(prompt)
+            completion = response.text
+        except Exception as e:
+                logging.warning("Gemini had a problem.")
+                logging.warning(e)
 
     # Fallback to localhost
     if not completion:
@@ -287,7 +291,7 @@ def generate_text(prompt: str):
                 messages=messages
             )
         except Exception as e:
-            logging.debug(f"Error: {e}")
+            logging.warning(f"Local Server Warning: {e}")
             return "Sorry. I'm having some trouble accessing that."
         completion = completion.choices[0].message.content
 
@@ -331,7 +335,7 @@ def transcribe():
         try:
             # transcribe audio from queue
             if f := audio_queue.get():
-                txt = gettext(f)
+                txt = recognize_speech(f)
                 # delete temporary audio file
                 try:
                     os.remove(f)
