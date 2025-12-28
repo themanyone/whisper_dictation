@@ -53,8 +53,8 @@ logging.basicConfig(
 
 # Define some common string constants
 audio_format = ".wav"
-# bs = "\b" * 99 # if your terminal does not support ANSI
-bs = "\033[1K\r"
+# try increasing conversation_length if AI model has a large ctx window
+conversation_length = 9 # interactions
 # address of whisper.cpp server
 whisper_cpp = "http://127.0.0.1:7777/inference"
 # address of local chat server
@@ -153,6 +153,32 @@ def process_actions(tl:str) -> bool:
         return True
     return False # no action
 
+def ANSI_clear_line():
+    """Check if the terminal supports ANSI escape codes."""
+    # Get the TERM environment variable
+    term = os.environ.get('TERM', '')
+    
+    # Common terms that indicate a compatible terminal
+    compatible_terms = {
+        'xterm',
+        'xterm-256color',
+        'rxvt',
+        'rxvt-unicode',
+        'rxvt-unicode-256color',
+        'screen',
+        'screen-256color',
+        'tmux',
+        'tmux-256color',
+        'linux',
+        'alacritty'
+    }
+    ANSI_delete_line = "\033[1K\r"
+    
+    # Check if the TERM environment variable indicates a compatible terminal
+    return ANSI_delete_line if term in compatible_terms else "\b" * 99
+
+bs = ANSI_clear_line()
+
 def on_screen():
     global cam
     if not cam:
@@ -199,11 +225,11 @@ def gettext(f: str) -> str:
                 response = requests.post(whisper_cpp, files=files, data=data)
                 response.raise_for_status()  # Raise an exception for HTTP errors
 
-                result = response.json()
-                return result['text']
+                result = response.json().get("text", "")
+                return result
 
         except requests.exceptions.RequestException as e:
-            logging.debug(f"{bs}Error: {e}")
+            logging.warning(f"{bs}Network or Server Problem: {e}")
             return ""
         except FileNotFoundError:
             logging.debug(f"{bs}File not found: {f}")
@@ -223,9 +249,8 @@ say("All systems ready.")
 messages = [{ "role": "system", "content": "In this conversation between `user:` and `assistant:`, play the role of assistant. Reply as a helpful assistant." },]
 
 def generate_text(prompt: str):
-    conversation_length = 9 # try increasing if AI model has a large ctx window
     logging.debug(f"{bs}Asking ChatGPT") 
-    global chatting, messages, gpt_key, gem_key, client
+    global conversation_length, chatting, messages, gpt_key, gem_key, client
     messages.append({"role": "user", "content": prompt})
     completion = ""
     # Try chatGPT

@@ -6,7 +6,7 @@
 ##
 ## Help: ./record.py -h
 ##
-## Copyright 2024 Henry Kroll <nospam@thenerdshow.com>
+## Copyright (C) 2025 Henry Kroll <nospam@thenerdshow.com>
 ##
 ## This program is free software; you can redistribute it and/or modify
 ## it under the terms of the GNU General Public License as published by
@@ -96,12 +96,12 @@ class delayRecord:
         }
         enc = encodings.get(ext) or 'wavenc'
         # vorbisenc doesn't support 16-bit rates
-        rate = "" if ext[2] in "g" else self.rate
+        rate = "" if "vorbis" in enc else self.rate
         logging.debug(f"format {rate}")
         logging.debug(f"using {enc} encoder")
         src = "autoaudiosrc" # alsasrc | pulsesrc
         delay = "ladspa-delay-so-delay-5s"
-        # valve-type elements require async=off downstream
+        # valve-type elements require async=false downstream
         self.pipeline = Gst.parse_launch(
         f"{src} ! tee name=t ! {delay} name=d ! valve name=v ! {self.gstreamer} audioconvert ! queue ! audioresample ! {rate} {enc} ! filesink name=fs location={file_name} async=false t. ! queue ! level ! fakesink"
         )
