@@ -249,9 +249,8 @@ messages = [{ "role": "system", "content": "In this conversation between `user:`
 
 def generate_text(prompt: str):
     logging.debug(f"{bs}Asking ChatGPT") 
-    global conversation_length, chatting, messages, gpt_key, gem_key, client
-    global listening
-    listening = False
+    global conversation_length, chatting, messages
+    global listening, gpt_key, gem_key, client
     messages.append({"role": "user", "content": prompt})
     completion = ""
     # Try chatGPT
@@ -297,6 +296,8 @@ def generate_text(prompt: str):
         completion = completion.choices[0].message.content
 
     if completion:
+        # remove '<|...|>' tags from completion
+        completion = re.sub(r'<\|.*\|>', '', completion)
         print(f"{bs}{completion}")
         # handle queries for more information
         if "more information?" in completion or \
@@ -317,13 +318,14 @@ def generate_text(prompt: str):
             chatting = True
             return generate_text(response)
         pyautogui.write(completion)
-        say(completion)
+        listening = False
         chatting = True
+        say(completion)
         # add to conversation
         messages.append({"role": "assistant", "content": completion})
         if len(messages) > conversation_length:
             messages.remove(messages[1])
-            messages.remove(messages[1])
+            messages.remove(messages[1]) # remove oldest user & assistant messages
 
 def resume_dictation():
     global chatting, listening

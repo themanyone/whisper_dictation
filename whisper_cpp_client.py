@@ -325,6 +325,7 @@ def generate_text(prompt: str):
         messages.append({"role": "assistant", "content": completion})
         if len(messages) > conversation_length:
             messages.remove(messages[1])
+            messages.remove(messages[1]) # remove oldest user & assistant messages
 
 def resume_dictation():
     global chatting, listening
