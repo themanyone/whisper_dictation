@@ -51,28 +51,32 @@ logging.basicConfig(
 	]
 )
 
+# Define some common string constants
+audio_format = ".wav"
 # bs = "\b" * 99 # if your terminal does not support ANSI
 bs = "\033[1K\r"
-
 # address of whisper.cpp server
-cpp_url = "http://127.0.0.1:7777/inference"
-# address of Fallback Chat Server.
-fallback_chat_url = "http://localhost:8888/v1"
+whisper_cpp = "http://127.0.0.1:7777/inference"
+# address of local chat server
+local_chat_url = "http://127.0.0.1:8888/v1"
 debug = False
 
+# Export one of these keys to your environment
+# and we'll use that instead of the local chat server.
 gpt_key = os.getenv("OPENAI_API_KEY")
+gem_key = os.getenv("GENAI_TOKEN")
+
 client = None
 if gpt_key:
     client = OpenAI(api_key=gpt_key)
 else:
-    logging.debug("Export OPENAI_API_KEY if you want answers from ChatGPT.\n")
-gem_key = os.getenv("GENAI_TOKEN")
+    logging.debug("Export OPENAI_API_KEY if you prefer answers from ChatGPT.\n")
 if (gem_key):
     import google.generativeai as genai
     genai.configure(api_key=gem_key)
     model = genai.GenerativeModel("gemini-1.5-flash")
 else:
-    logging.debug("Export GENAI_TOKEN if you want answers from Gemini.\n")
+    logging.debug("Export GENAI_TOKEN if you prefer answers from Gemini.\n")
 
 # commands and hotkeys for various platforms
 commands = {
@@ -192,7 +196,7 @@ def gettext(f: str) -> str:
                 files = {'file': (os.path.basename(f), file)}
                 data = {'temperature': 0.2, 'response_format': 'json'}
                 
-                response = requests.post(cpp_url, files=files, data=data)
+                response = requests.post(whisper_cpp, files=files, data=data)
                 response.raise_for_status()  # Raise an exception for HTTP errors
 
                 result = response.json()
@@ -247,11 +251,11 @@ def generate_text(prompt: str):
 
     # Fallback to localhost
     if not completion:
-        logging.debug(f"Querying {fallback_chat_url}")
+        logging.debug(f"Querying {local_chat_url}")
         # ref. llama.cpp/examples/server/README.md
         try:
             client = openai.OpenAI(
-            base_url=fallback_chat_url,
+            base_url=local_chat_url,
             api_key = "sk-no-key-required")
             completion = client.chat.completions.create(
                 model="gpt-3.5-turbo",
@@ -373,7 +377,7 @@ def record_to_queue():
     global record_process
     global running
     while running:
-        record_process = delayRecord(tempfile.mktemp()+ '.wav')
+        record_process = delayRecord(tempfile.mktemp()+ audio_format)
         record_process.start()
         audio_queue.put(record_process.file_name)
 

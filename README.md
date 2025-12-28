@@ -95,7 +95,7 @@ A sound level meter appears. Adjust ambient (quiet) volume to about 33% (-33dB).
 
 There are many ways to start and stop `whisper-server`. There is `/etc/profile.d`, `~/.config/autostart` or launching it with a hotkey. The preferred method is to set up a user service or systemwide service. Users may save the following file as `$HOME/.config/systemd/user/whisper.service`
 
-Update: We added the --convert flag below. If whisper-server was compiled with ffmpeg, it needs --convert or no output will be generated. Logs will reporet "error: failed to ffmpeg decode". 
+Update: We added the `--convert` flag to this service file. If `whisper-server` was compiled with ffmpeg, it needs --convert or no output will be generated. Logs will reporet "error: failed to ffmpeg decode".
 
 ```shell
 [Unit]
@@ -112,9 +112,11 @@ WantedBy=default.target
 ```
 Run `export $MODELS_DIR=/path/to/models` (wherever the models reside). Don't forget to add that export to `.bashrc` too.
 
-Then run `systemctl --user daemon-reload` to update the configuration. Start the service with `systemctl --user start whisper`. Make it run automatically at login with `systemctl --user enable whisper`. Check status with `systemctl --user status whisper`.
+Then run `systemctl --user daemon-reload` to update the configuration. Start the service with `systemctl --user start whisper`. If you want it to start automatically at login, use `systemctl --user enable whisper`. Check status with `systemctl --user status whisper`.
 
 If the server and client are on the same machine, uncomment the lines `os.system("systemctl --user start whisper")` near the bottom of `whisper_cpp_client.py`. Then it will start and stop the server automatically, saving resources when not in use.
+
+If your server is on another machine, and if `whisper-server` is compiled with `ffmpeg`, you may change audio_format from ".wav" to ".ogg" in whisper_cpp_client.py to save some network bandwidth.
 
 ## Troubleshooting.
 
