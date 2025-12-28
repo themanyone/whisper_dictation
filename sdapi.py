@@ -6,7 +6,7 @@
 ##
 ## Usage: sdapi.py [prompt] [output image]
 ##
-## Copyright 2023 Henry Kroll <nospam@thenerdshow.com>
+## Copyright 2025 Henry Kroll <nospam@thenerdshow.com>
 ##
 ## This program is free software; you can redistribute it and/or modify
 ## it under the terms of the GNU General Public License as published by
