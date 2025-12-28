@@ -387,9 +387,7 @@ def transcribe():
                     continue
                 elif len(txt) > 1:
                     pyautogui.write(txt)
-            # continue looping every 1/5 second
-            else:
-                time.sleep(0.2)
+            # continue looping
         except KeyboardInterrupt:
             say("Goodbye.")
             break
@@ -423,7 +421,6 @@ def discard_input():
             while msvcrt.kbhit():
                 msvcrt.getwch()  # consume wide char; use getch() for bytes
         else:  # POSIX
-            print("Goodbye.")
             fd = sys.stdin.fileno()
             if sys.stdin.isatty():
                 # use termios.tcflush when available
@@ -457,6 +454,7 @@ def discard_input():
             sys.stdin.readline()
         except Exception:
             pass
+    print("Goodbye.")
 
 def quit():
     logging.debug("\nStopping...")
@@ -478,7 +476,7 @@ def quit():
     logging.debug("\nFreeing system resources.\n")
 #    os.system("systemctl --user stop whisper")
     discard_input()
-    time.sleep(1)
+    time.sleep(1.0)
     shutup()
 
 if __name__ == '__main__':
