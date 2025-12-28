@@ -1,0 +1,104 @@
+#!/usr/bin/python
+import requests
+import io
+import sys
+import gi
+import threading
+
+# Initialize GStreamer
+gi.require_version('Gst', '1.0')
+from gi.repository import Gst, GObject, GLib
+
+# Initialize GObject threads
+# GObject.threads_init() deprecated. no longer needed.
+Gst.init(None)
+
+def say(text, base_url="http://localhost:59125/api/tts"):
+    # Define the parameters for the TTS request
+    params = {'text': text, "voice": "en_US/vctk_low"}
+
+    try:
+        # Send the GET request to the TTS API
+        response = requests.get(base_url, params=params)
+        response.raise_for_status()  # Raise an error for bad status codes
+    except requests.RequestException as e:
+        print(f"HTTP Request failed: {e}", file=sys.stderr)
+        return
+
+    # Get the audio bytes from the response
+    audio_bytes = response.content
+
+    # Create a BytesIO stream from the audio bytes
+    audio_stream = io.BytesIO(audio_bytes)
+
+    # Define the GStreamer pipeline
+    pipeline_description = (
+        'appsrc name=source is-live=true format=time '
+        '! wavparse '
+        '! audioconvert '
+        '! audioresample '
+        '! autoaudiosink'
+    )
+    pipeline = Gst.parse_launch(pipeline_description)
+
+    # Get the appsrc element from the pipeline
+    appsrc = pipeline.get_by_name('source')
+
+    # Set appsrc caps (assuming the audio is 16-bit PCM WAV, 44100 Hz, stereo)
+    caps = Gst.Caps.from_string('audio/x-wav, format=S16LE, channels=2, rate=44100')
+    appsrc.set_property('caps', caps)
+
+    # Function to push data into appsrc
+    def push_data():
+        # Read data in chunks
+        chunk_size = 4096
+        while True:
+            data = audio_stream.read(chunk_size)
+            if not data:
+                break
+            buf = Gst.Buffer.new_allocate(None, len(data), None)
+            buf.fill(0, data)
+            # Set timestamp and duration
+            appsrc.emit('push-buffer', buf)
+        appsrc.emit('end-of-stream')
+
+    # Create a GLib Main Loop to handle asynchronous playback
+    loop = GLib.MainLoop()
+
+    # Bus callback to handle EOS and ERROR
+    def on_message(bus, message):
+        mtype = message.type
+        if mtype == Gst.MessageType.EOS:
+            print("End-Of-Stream reached.")
+            loop.quit()
+        elif mtype == Gst.MessageType.ERROR:
+            err, debug = message.parse_error()
+            print(f"Error received from element {message.src.get_name()}: {err.message}", file=sys.stderr)
+            if debug:
+                print(f"Debugging information: {debug}", file=sys.stderr)
+            loop.quit()
+
+    # Add a bus watch to the pipeline
+    bus = pipeline.get_bus()
+    bus.add_signal_watch()
+    bus.connect("message", on_message)
+
+    # Start the pipeline
+    pipeline.set_state(Gst.State.PLAYING)
+
+    # Start a separate thread to push data
+    push_thread = threading.Thread(target=push_data)
+    push_thread.start()
+
+    try:
+        # Run the main loop; this will block until EOS or ERROR occurs
+        loop.run()
+    except KeyboardInterrupt:
+        print("Interrupted by user.")
+    finally:
+        # Clean up
+        pipeline.set_state(Gst.State.NULL)
+
+# Example usage
+if __name__ == "__main__":
+    say("Hello, this is a test of the text to speech system.")

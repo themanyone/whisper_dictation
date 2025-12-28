@@ -1,0 +1,153 @@
+<!DOCTYPE html><html><head>
+        <meta charset="UTF-8"><!--//
+    AI Image Gallery.
+    Copyright (C) 2024 Henry F Kroll III, www.thenerdshow.com
+
+    This program is free software; you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation; either version 2 of the License, or
+    (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License along
+    with this program; if not, write to the Free Software Foundation, Inc.,
+    51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+        //-->
+        <title>Image Gallery</title>
+        <style>
+        html {
+            height: 100%;
+            width: 100%;
+        }
+        #root {
+            height: 100%;
+            width: 100%;
+            overflow: auto;
+        }
+        a {
+            color: #eee;
+            text-decoration: none;
+        }
+        a:hover {
+            color: #ccc;
+        }
+        body {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: flex-start;
+            margin: 0;
+            padding: 0;
+            background-color: #333; /* Charcoal gray */
+            color: white;
+            font-family: arial,verdana,helvetica,sans-serif;
+        }
+        p {
+            font-size:12pt;
+        }
+        figure {
+            width:320px;
+            display:inline;
+            white-space: nowrap;
+        }
+        figure:hover{
+            white-space: normal;
+        }
+        figcaption {
+            position: relative;
+            width: inherit;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            background: #181818;
+        }
+        header {
+            width: 100%;
+            background-color: #101010;
+        }
+        header div * {
+            position: relative;
+            -webkit-border-radius: 5px;
+        }
+        header div {
+            margin: 0 auto;
+            width: 350px;
+        }
+        .button {
+        	background:linear-gradient(to bottom, #e6e6e6 5%, #757575 100%);
+        	background-color:#e6e6e6;
+        	border-radius:5px;
+        	display:inline-block;
+        	cursor:pointer;
+        	color:#505739;
+        	font-family:Arial;
+        	font-size:14px;
+        	font-weight:bold;
+        	padding:5px;
+        	text-decoration:none;
+        }
+        .button:hover {
+        	background:linear-gradient(to bottom, #757575 5%, #e6e6e6 100%);
+        	background-color:#757575;
+        }
+        .button:active {
+        	position:relative;
+        	top:1px;
+        }
+        </style>
+    </head>
+    <body><header>
+    
+    <div>
+        <input class="search" placeholder="Search..." type="search" id="search">
+        <svg role="presentation" class="i-search" viewBox="0 0 32 32" width="24" height="24" fill="none" stroke="#888" stroke-linecap="round" stroke-linejoin="round" stroke-width="3">
+          <circle cx="14" cy="14" r="12"></circle>
+          <path d="M23 23 L30 30"></path>
+        </svg>
+    </div>
+    </header>
+        
+            <figure style="float: left; margin: 10px;">
+                <img src="image.jpg" alt="image.jpg" style="width: 320px;"><br>
+                <figcaption onclick="blank(this)" contenteditable="true" id="image_jpg">A man with a beard and glasses smiles for the camera while wearing a necklace. he is sitting at a desk in a cluttered workspace.  there is a 3d printer to his right.  the man is likely working on a project or hobby.</figcaption>
+            </figure>
+        
+            <figure style="float: left; margin: 10px;">
+                <img src="image(1).jpg" alt="image(1).jpg" style="width: 320px;"><br>
+                <figcaption onclick="blank(this)" contenteditable="true" id="image(1)_jpg">A man wearing a black beanie sits in front of a computer monitor and a 3d printer. he looks tired.  maybe it's the 3d printing. 
+</figcaption>
+            </figure>
+        
+    <script>
+        // Search functions
+        let figures = document.querySelectorAll('figure');
+
+        function init() {
+            let search = document.getElementById('search');
+            search.addEventListener('keyup', filterFigures, true);
+            search.addEventListener('click', (e) => {
+                e.target.select();
+                filterFigures(e);
+            }, true);
+        }
+
+        function filterFigures(event) {
+            if (event.key == "Escape") event.target.value = '';
+            let searchTerm = event.target.value.trim().toLowerCase();
+            if (searchTerm.length == 0) searchTerm = ' ';
+            figures.forEach(figure => {
+                if (!figure.querySelector('figcaption')) {
+                    console.log(figure.querySelector('img').src);
+                    figure.style.display = 'inline-block';
+                } else
+                if (figure.querySelector('figcaption').innerText.toLowerCase()
+                    .includes(searchTerm))
+                    figure.style.display = 'inline-block';
+                else figure.style.display = 'none';
+            });
+        }
+        init();
+    </script>
+    </body></html>

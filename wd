@@ -58,7 +58,7 @@ conversation_length = 9 # interactions
 # address of whisper.cpp server
 whisper_cpp = "http://127.0.0.1:7777/inference"
 # address of local chat server
-local_chat_url = "http://127.0.0.1:8888/v1"
+local_chat_url = "http://127.0.0.1:8080/v1"
 debug = False
 
 # Export one of these keys to your environment
@@ -249,8 +249,9 @@ messages = [{ "role": "system", "content": "In this conversation between `user:`
 
 def generate_text(prompt: str):
     logging.debug(f"{bs}Asking ChatGPT") 
-    global conversation_length, chatting, messages
-    global listening, gpt_key, gem_key, client
+    global conversation_length, chatting, messages, gpt_key, gem_key, client
+    global listening
+    listening = False
     messages.append({"role": "user", "content": prompt})
     completion = ""
     # Try chatGPT
@@ -296,8 +297,6 @@ def generate_text(prompt: str):
         completion = completion.choices[0].message.content
 
     if completion:
-        # remove '<|...|>' tags from completion
-        completion = re.sub(r'<\|.*\|>', '', completion)
         print(f"{bs}{completion}")
         # handle queries for more information
         if "more information?" in completion or \
@@ -318,12 +317,12 @@ def generate_text(prompt: str):
             chatting = True
             return generate_text(response)
         pyautogui.write(completion)
-        listening = False
-        chatting = True
         say(completion)
+        chatting = True
         # add to conversation
         messages.append({"role": "assistant", "content": completion})
         if len(messages) > conversation_length:
+            messages.remove(messages[1])
             messages.remove(messages[1])
 
 def resume_dictation():
@@ -475,14 +474,14 @@ def quit():
     except Exception:
         pass
     logging.debug("\nFreeing system resources.\n")
-#    os.system("systemctl --user stop whisper")
+    os.system("systemctl --user stop whisper")
     discard_input()
     time.sleep(1)
     shutup()
 
 if __name__ == '__main__':
     record_thread = threading.Thread(target=record_to_queue)
-#    os.system("systemctl --user start whisper")
+    os.system("systemctl --user start whisper")
     record_thread.start()
     transcribe()
     quit()
