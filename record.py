@@ -76,7 +76,7 @@ class delayRecord:
         ext = os.path.splitext(file_name)[1].lower()
         # Avoid overwriting files
         file_name = self.file_name = unique_file_name(file_name)
-        
+
         # Create GStreamer elements
         self.pipeline = Gst.Pipeline.new("audio_pipeline")
         # recording source (alsasrc, pulsesrc, autoaudiosrc, etc.)
@@ -100,15 +100,15 @@ class delayRecord:
         logging.debug(f"format {rate}")
         logging.debug(f"using {enc} encoder")
         src = "autoaudiosrc" # alsasrc | pulsesrc
-        delay = "ladspa-delay-so-delay-5s"
-        # valve-type elements require async=false downstream
+        delay = "ladspa-delay-1898-so-delay-l"  # Arch Linux: linear interpolation delay
+        # valve-type elements require async=off downstream
         self.pipeline = Gst.parse_launch(
         f"{src} ! tee name=t ! {delay} name=d ! valve name=v ! {self.gstreamer} audioconvert ! queue ! audioresample ! {rate} {enc} ! filesink name=fs location={file_name} async=false t. ! queue ! level ! fakesink"
         )
         self.filesink = self.pipeline.get_by_name('fs')
         self.delay = self.pipeline.get_by_name('d')
-        self.delay.set_property("delay", self.preroll)
-        self.delay.set_property("dry-wet-balance", 1.0)
+        self.delay.set_property("delay-time", self.preroll)
+        self.delay.set_property("max-delay", 5.0)  # Max 5 seconds
         self.valve = self.pipeline.get_by_name('v')
         self.valve.set_property("drop", True)
 
@@ -163,7 +163,7 @@ class delayRecord:
         # Connect to the 'level' signal
         self.bus.connect("message", self.on_bus_message)
         self.bus.connect('message::element', self.monitor_levels)
-        
+
         # Start playing the pipeline
         self.pipeline.set_state(Gst.State.PLAYING)
         logging.debug("Listening for voice...")
@@ -204,9 +204,9 @@ class delayRecord:
         print("""Usage:  record.py
 
         No arguments. Simply record voice to audio.wav until I stop speaking.
-        
+
         record.py [file_name.ogg]
-        
+
         record.py [-options] [file_name.[aiff|flac|gsm|m4a|mp3|ogg|ogx|spx|wav|wma]]
         """)
         for k in options:
@@ -268,7 +268,7 @@ class delayRecord:
             self.gstreamer += ' !'
             logging.debug(f"Custom gstreamer options '{self.gstreamer}'")
         return file_name
-        
+
 if __name__ == "__main__":
     rec     = delayRecord()
     rec.start()

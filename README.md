@@ -32,6 +32,16 @@ Say, "Computer, on screen." A window opens up showing the webcam. Say "Computer,
 
 ## Preparation
 
+**Arch Linux** Install GStreamer and required plugins:
+
+```shell
+sudo pacman -S gstreamer gst-plugins-base gst-plugins-good gst-plugins-bad swh-plugins
+```
+
+The `gst-plugins-good` package provides `souphttpsrc` required for mimic3 voice output.
+The `gst-plugins-bad` package provides LADSPA plugin support for audio effects.
+The `swh-plugins` package provides LADSPA delay plugins (`delay_1898.so`) for audio recording.
+
 **Fedora** Get the [Rpmfusion repos]( http://rpmfusion.org) and install [GStreamer](https://gstreamer.freedesktop.org/) using the system's package manager. It is necessary for recording temporary audio clips to send to your local `whisper.cpp` speech to text (STT) server for decoding.
 The required `ladspa-delay-so-delay-5s` may be found in the `gstreamer1-plugins-bad-free-extras` package.
 
@@ -81,6 +91,44 @@ Finally, install the python requirements for this package.
 cd ../whisper_dictation
 pip install -r requirements.txt
 ```
+
+## Wayland Compatibility
+
+This application now supports both **X11** and **Wayland** display servers with automatic detection.
+
+### System Requirements
+
+**For Wayland sessions**, the application uses `python-evdev` for keyboard and mouse simulation:
+
+```shell
+# Install python-evdev (Arch Linux)
+sudo pacman -S python-evdev
+
+# Configure uinput permissions (required for Wayland)
+echo 'KERNEL=="uinput", MODE="0660", GROUP="input", OPTIONS+="static_node=uinput"' | sudo tee /etc/udev/rules.d/99-input.rules
+sudo usermod -aG input $USER
+```
+
+**Important:** After setting up uinput permissions, you must **logout and login** for the group membership to take effect.
+
+### How It Works
+
+The application automatically detects your session type:
+- **Wayland sessions**: Uses `evdev` backend for input simulation
+- **X11 sessions**: Uses traditional `PyAutoGUI` backend
+
+No manual configuration needed - the appropriate backend is selected at runtime based on the `XDG_SESSION_TYPE` environment variable.
+
+### Troubleshooting Wayland
+
+If keyboard/mouse simulation doesn't work on Wayland:
+
+1. Verify udev rule is in place: `cat /etc/udev/rules.d/99-input.rules`
+2. Check group membership: `groups | grep input`
+3. Ensure you've logged out and back in after adding yourself to the input group
+4. Verify `/dev/uinput` permissions: `ls -l /dev/uinput`
+
+If issues persist, you can fall back to X11 by running under XWayland or switching to an X11 session.
 
 ## Quick start
 

@@ -1,6 +1,7 @@
-openai>=1.14.1
+openai>=1.48
 Pillow>=10.2.0
 PyAutoGUI>=0.9.54
+evdev>=1.9.2
+PyGObject>=3.42.0
 Requests>=2.31.0
 google.generativeai>=0.7.2
-openai>=1.48

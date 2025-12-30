@@ -19,9 +19,16 @@
 ## MA 02110-1301, USA.
 ##
 import openai
-import pyautogui
 import os
 import sys
+
+# Session detection for X11/Wayland compatibility
+if os.environ.get('XDG_SESSION_TYPE') == 'wayland':
+    from input_backend import InputSimulator
+    pyautogui = InputSimulator()
+else:
+    import pyautogui
+
 import time
 import queue
 import re
@@ -123,7 +130,7 @@ actions = {
     r"^directory listing.?$": "pyautogui.write('ls\n')",
     r"^(peter|samantha|computer).?,? (run|open|start|launch)(up)?( a| the)? ": "os.system(commands[sys.platform][q])",
     r"^(peter|samantha|computer).?,? closed? window": "pyautogui.hotkey('alt', 'F4')",
-    r"^(peter|samantha|computer).?,? search( the)?( you| web| google| bing| online)?(.com)? for ": 
+    r"^(peter|samantha|computer).?,? search( the)?( you| web| google| bing| online)?(.com)? for ":
        "webbrowser.open('https://you.com/search?q=' + re.sub(' ','%20',q))",
     r"^(peter|samantha|computer).?,? (send|compose|write)( an| a) email to ": "os.popen('xdg-open \"mailto://' + q.replace(' at ', '@') + '\"')",
     r"^(peter|samantha|computer).?,? (i need )?(let's )?(see |have |show )?(us |me )?(an? )?(image|picture|draw|create|imagine|paint)(ing| of)? ": "os.popen(f'./sdapi.py \"{q}\"')",
@@ -156,7 +163,7 @@ def ANSI_clear_line():
     """Check if the terminal supports ANSI escape codes."""
     # Get the TERM environment variable
     term = os.environ.get('TERM', '')
-    
+
     # Common terms that indicate a compatible terminal
     compatible_terms = {
         'xterm',
@@ -172,7 +179,7 @@ def ANSI_clear_line():
         'alacritty'
     }
     ANSI_delete_line = "\033[1K\r"
-    
+
     # Check if the TERM environment variable indicates a compatible terminal
     return ANSI_delete_line if term in compatible_terms else "\b" * 99
 
@@ -220,7 +227,7 @@ def recognize_speech(f: str) -> str:
             with open(f, 'rb') as file:
                 files = {'file': (os.path.basename(f), file)}
                 data = {'temperature': 0.2, 'response_format': 'json'}
-                
+
                 response = requests.post(whisper_cpp, files=files, data=data)
                 response.raise_for_status()  # Raise an exception for HTTP errors
 
@@ -248,7 +255,7 @@ say("All systems ready.")
 messages = [{ "role": "system", "content": "In this conversation between `user:` and `assistant:`, play the role of assistant. Reply as a helpful assistant." },]
 
 def generate_text(prompt: str):
-    logging.debug(f"{bs}Asking ChatGPT") 
+    logging.debug(f"{bs}Asking ChatGPT")
     global conversation_length, chatting, messages
     global listening, gpt_key, gem_key, client
     messages.append({"role": "user", "content": prompt})
