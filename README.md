@@ -28,6 +28,12 @@ Say, "Computer, on screen." A window opens up showing the webcam. Say "Computer,
 
 **Fewer dependencies.** We saved over 1Gb of downloads and hours of setup with [Whisper.cpp](https://github.com/ggerganov/whisper.cpp), eliminating torch, pycuda, cudnn, ffmpeg dependencies. Those older versions can be found in the `legacy` branch. Get just the `main` branch to save time.
 
+**Semantic voice commands.** Replaced brittle regex-based command routing with a sentence-transformer model (`all-MiniLM-L6-v2`). Voice commands are matched by meaning, not exact phrasing — you can say "launch the terminal", "open a terminal window", or "start terminal" and they all work. No `eval()` anywhere.
+
+**User-editable command table.** Commands live in `commands_table.py` — a plain list of `{intent, handler}` entries that's easy to read and edit. Add new commands or change existing ones without touching the main program logic.
+
+**First-run configuration.** On first launch you're prompted for server URLs and API keys. Settings are saved to `~/.config/whisper_dictation/config.json`. Edit that file or set environment variables (`OPENAI_API_KEY`, `GENAI_TOKEN`, `WHISPER_URL`, `CHAT_URL`) to override.
+
 `git clone -b main --single-branch https://github.com/themanyone/whisper_dictation.git`
 
 ## Preparation
@@ -137,6 +143,8 @@ whisper-server -l en -m "$MODELS_DIR/ggml-tiny.en.bin" --port 7777
 ./whisper_cpp_client.py
 ```
 
+On first run you'll be prompted for server URLs and API keys. Press Enter to accept defaults. Settings are stored in `~/.config/whisper_dictation/config.json`.
+
 A sound level meter appears. Adjust ambient (quiet) volume to about 33% (-33dB).  On Windows, use a modern Terminal or Powershell if ANSI escape sequences are cluttering up the output. 
 
 ## Server setup
@@ -164,7 +172,7 @@ Then run `systemctl --user daemon-reload` to update the configuration. Start the
 
 If the server and client are on the same machine, uncomment the lines `os.system("systemctl --user start whisper")` near the bottom of `whisper_cpp_client.py`. Then it will start and stop the server automatically, saving resources when not in use.
 
-If your server is on another machine, and if `whisper-server` is compiled with `ffmpeg`, you may change audio_format from ".wav" to ".ogg" in whisper_cpp_client.py to save some network bandwidth.
+If your server is on another machine, and if `whisper-server` is compiled with `ffmpeg`, you may change `audio_format` from `.wav` to `.ogg` in `~/.config/whisper_dictation/config.json` to save some network bandwidth.
 
 ## Troubleshooting.
 
@@ -174,7 +182,7 @@ If whisper-server was compiled with ffmpeg, it needs to be restarted with --conv
 
 If VRAM is scarce, quantize `ggml-tiny.en.bin` according to whisper.cpp docs. Or use `-ng` option to avoid using VRAM altogether. It might be half as fast. But delays are not that noticeable with a modern CPU.
 
-Edit `whisper_cpp_client.py` client to change server locations from localhost to wherever they reside on the network. You can also change the port numbers. Just make sure servers and clients are in agreement on which port to use.
+Edit `~/.config/whisper_dictation/config.json` to change server locations from localhost to wherever they reside on the network. You can also change the port numbers. Just make sure servers and clients are in agreement on which port to use. Environment variables (`WHISPER_URL`, `CHAT_URL`) override the config file at runtime.
 
 Test clients and servers.
 
@@ -278,7 +286,7 @@ The computer responds to commands. You can also call her Samantha (Or Peter with
 
 **Mute button.** There is no mute button. Say "pause dictation" to turn off text generation. It will keep listening to commands. Say, "Thank you", "resume dictation", or "Computer, type this out" to have it start typing again. Say "stop listening" or "stop dictation" to quit the program entirely. You could also configure a button to mute your mic. Something like `bash -c 'pactl set-source-mute $(pactl get-default-source) toggle'` if your system uses `pulseaudio`.
 
-These actions are defined in whisper_dictation.py. See the source code for the full list. Feel free to edit them too!
+These actions are defined in `commands_table.py`. See that file for the full list. Each entry pairs an intent phrase with a handler function — add your own commands or change existing ones freely. No regex or `eval()` involved.
 
 Try saying:
 - Computer, on screen. (or "start webcam"; opens a webcam window).
@@ -303,7 +311,13 @@ Try saying:
 
 # Files in this branch
 
-`whisper_cpp_client.py`: A small and efficient Python client that connects to a running [Whisper.cpp](https://github.com/ggerganov/whisper.cpp) server on the local machine or across the network.
+`whisper_cpp_client.py`: A small and efficient Python client that connects to a running [Whisper.cpp](https://github.com/ggerganov/whisper.cpp) server on the local machine or across the network. Routes voice commands through a semantic matcher — no regex, no `eval()`.
+
+`commands_table.py`: User-editable command table. Each entry is `{intent, handler}` — add, remove, or reorder commands without touching the main program. Intents are matched by meaning, not exact phrasing.
+
+`matcher.py`: Semantic matching engine using `all-MiniLM-L6-v2` sentence-transformer. Converts spoken text to an embedding and picks the closest command by cosine similarity.
+
+`config.py`: First-run configuration with interactive prompts. Settings saved to `~/.config/whisper_dictation/config.json`. Environment variables override file values at runtime.
 
 `record.py`: Almost hands-free, sound-activated recorder. You can run it separately. It creates a file named `audio.wav`. Supply optional command line arguments to change the file name, quality, formats, add filters, etc. See `./record.py -h` for help. Some formats require `gst-plugins-bad` or `gst-plugins-ugly`, depending on your distribution.
 

@@ -45,6 +45,7 @@ from on_screen import camera, show_pictures
 from record import delayRecord
 from commands_table import COMMANDS
 from matcher import Matcher
+from config import get_config
 
 audio_queue = queue.Queue()
 listening = True
@@ -62,24 +63,24 @@ logging.basicConfig(
     ],
 )
 
-# Define some common string constants
-audio_format = ".wav"
-# try increasing conversation_length if AI model has a large ctx window
-conversation_length = 9  # interactions
-# address of whisper.cpp server
-whisper_cpp = "http://127.0.0.1:7777/inference"
-# address of local chat server
-local_chat_url = "http://127.0.0.1:8888/v1"
-debug = False
+# ── Configuration ────────────────────────────────────────────────────
+cfg = get_config()
 
-# Export one of these keys to your environment
-# and we'll use that instead of the local chat server.
-gpt_key = os.getenv("OPENAI_API_KEY")
-gem_key = os.getenv("GENAI_TOKEN")
+audio_format = cfg["audio_format"]
+conversation_length = cfg["conversation_length"]
+whisper_cpp = cfg["whisper_url"]
+local_chat_url = cfg["chat_url"]
+debug = cfg.get("debug", False)
+
+gpt_key = cfg.get("openai_api_key") or os.getenv("OPENAI_API_KEY")
+gem_key = cfg.get("gemini_api_key") or os.getenv("GENAI_TOKEN")
 
 client = None
 if gpt_key:
-    client = OpenAI(api_key=gpt_key)
+    kwargs = {"api_key": gpt_key}
+    if cfg.get("openai_base_url"):
+        kwargs["base_url"] = cfg["openai_base_url"]
+    client = OpenAI(**kwargs)
 else:
     logging.debug("Export OPENAI_API_KEY if you prefer answers from ChatGPT.\n")
 if gem_key:
@@ -487,7 +488,7 @@ HANDLER_MAP = {
 }
 
 # Initialize semantic command matcher
-matcher = Matcher(COMMANDS)
+matcher = Matcher(COMMANDS, threshold=cfg.get("threshold", 0.45))
 
 
 def transcribe():
