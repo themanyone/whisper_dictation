@@ -37,7 +37,8 @@ CONFIG_PATH = os.path.join(CONFIG_DIR, "config.json")
 
 DEFAULT_CONFIG = {
     "whisper_url": "http://127.0.0.1:7777/inference",
-    "chat_url": "http://127.0.0.1:8888/v1",
+    "chat_url": "http://127.0.0.1:8888/v1/chat",
+    "embed_url": "http://127.0.0.1:8888/v1/embeddings",
     "openai_api_key": "",
     "openai_base_url": "",
     "gemini_api_key": "",
@@ -124,6 +125,7 @@ def get_config():
         "gemini_api_key": os.getenv("GENAI_TOKEN"),
         "whisper_url": os.getenv("WHISPER_URL"),
         "chat_url": os.getenv("CHAT_URL"),
+        "embed_url": os.getenv("EMBED_URL"),
         "debug": (os.getenv("DEBUG", "").lower() in ("1", "true", "yes")),
     }
     for key, val in env_overrides.items():

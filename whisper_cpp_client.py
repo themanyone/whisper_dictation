@@ -20,6 +20,7 @@
 ##
 import openai
 import os
+import subprocess
 import sys
 
 # Session detection for X11/Wayland compatibility
@@ -117,10 +118,29 @@ def open_app(q):
     ql = (q or "").strip().lower()
     for name, cmd in app_map.items():
         if name in ql or ql in name:
-            os.system(cmd)
+            subprocess.Popen(
+                cmd, shell=True, start_new_session=True,
+                stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL
+            )
             return
     if ql:
-        os.system(ql)
+        subprocess.Popen(
+            ql, shell=True, start_new_session=True,
+            stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL
+        )
+
+
+def open_terminal(q=None):
+    """Launch the terminal emulator directly."""
+    app_map = APPS_WINDOWS if sys.platform.startswith("win") else APPS_LINUX
+    cmd = app_map.get("terminal", "xterm&")
+    subprocess.Popen(
+        cmd, shell=True, start_new_session=True,
+        stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL
+    )
 
 
 def left_click(q=None):
@@ -455,6 +475,7 @@ HANDLER_MAP = {
     "right_click": right_click,
     "middle_click": middle_click,
     "open_app": open_app,
+    "open_terminal": open_terminal,
     "close_window": close_window,
     "search_web": search_web,
     "go_to_website": go_to_website,
@@ -488,7 +509,11 @@ HANDLER_MAP = {
 }
 
 # Initialize semantic command matcher
-matcher = Matcher(COMMANDS, threshold=cfg.get("threshold", 0.45))
+matcher = Matcher(
+    COMMANDS,
+    embed_url=cfg.get("embed_url", "http://127.0.0.1:8088/v1/embeddings"),
+    threshold=cfg.get("threshold", 0.45),
+)
 
 
 def transcribe():

@@ -21,9 +21,13 @@
 """
 Semantic matching engine for voice commands.
 
-Uses sentence-transformers/all-MiniLM-L6-v2 to embed intent phrases
-and match spoken text by cosine similarity. Replaces regex-based
-command routing with natural-language-tolerant matching.
+Uses llama.cpp's embeddings endpoint (OpenAI-compatible API) with
+all-MiniLM-L6-v2-GGUF to embed intent phrases and match spoken text
+by cosine similarity. Replaces sentence-transformers to avoid CUDA/torch
+dependencies.
+
+Requires a llama.cpp server running with --embeddings flag, serving
+an embedding model like all-MiniLM-L6-v2-GGUF.
 
 Usage:
     from matcher import Matcher
@@ -36,13 +40,22 @@ Usage:
         globals()[handler_name](arg)
 """
 
+import json
+import math
+import os
 import re
 import logging
+import hashlib
+from typing import Optional, Tuple
 
-from sentence_transformers import SentenceTransformer, util
+import requests
 
 # Wake words to strip from spoken text before matching
 WAKE_WORDS_RE = re.compile(r"^(peter|samantha|computer)[,\s]*", re.IGNORECASE)
+
+# Cache file location
+CONFIG_DIR = os.path.expanduser("~/.config/whisper_dictation")
+CACHE_PATH = os.path.join(CONFIG_DIR, "embeddings_cache.json")
 
 
 def _strip_wake_words(text: str) -> str:
@@ -75,30 +88,113 @@ def _extract_remainder(spoken: str, intent: str) -> str:
     return spoken  # fallback: whole utterance is the argument
 
 
+def _cosine_similarity(a: list, b: list) -> float:
+    """Compute cosine similarity between two vectors using plain Python."""
+    dot = sum(x * y for x, y in zip(a, b))
+    norm_a = math.sqrt(sum(x * x for x in a))
+    norm_b = math.sqrt(sum(y * y for y in b))
+    if norm_a == 0 or norm_b == 0:
+        return 0.0
+    return dot / (norm_a * norm_b)
+
+
+def _embed_texts(texts: list, embed_url: str) -> list:
+    """
+    Embed a list of texts via the llama.cpp embeddings endpoint.
+
+    Uses the OpenAI-compatible /v1/embeddings API.
+    Returns a list of embedding vectors (each a list of floats),
+    or an empty list on failure.
+    """
+    if not texts:
+        return []
+
+    try:
+        response = requests.post(
+            embed_url,
+            json={"input": texts, "model": "gpt-3.5-turbo"},
+            timeout=30,
+        )
+        response.raise_for_status()
+        data = response.json()
+        # Sort by index to maintain order
+        embeddings = [None] * len(texts)
+        for item in data["data"]:
+            embeddings[item["index"]] = item["embedding"]
+        return embeddings
+    except Exception as e:
+        logging.warning(f"Embedding request failed: {e}")
+        return []
+
+
+def _cache_key(texts: list, embed_url: str) -> str:
+    """Generate a cache key from the intent texts and URL."""
+    raw = embed_url + "|" + "|".join(texts)
+    return hashlib.sha256(raw.encode()).hexdigest()
+
+
+def _load_cache() -> dict:
+    """Load cached embeddings from disk, or return empty dict."""
+    try:
+        if os.path.exists(CACHE_PATH):
+            with open(CACHE_PATH) as f:
+                return json.load(f)
+    except Exception as e:
+        logging.debug(f"Failed to load embedding cache: {e}")
+    return {}
+
+
+def _save_cache(cache: dict):
+    """Save cached embeddings to disk."""
+    try:
+        os.makedirs(CONFIG_DIR, exist_ok=True)
+        with open(CACHE_PATH, "w") as f:
+            json.dump(cache, f)
+    except Exception as e:
+        logging.debug(f"Failed to save embedding cache: {e}")
+
+
 class Matcher:
     """
-    Semantic command matcher using sentence-transformers.
+    Semantic command matcher using llama.cpp embeddings.
 
-    Pre-computes intent embeddings at construction, then matches
-    spoken text by cosine similarity at match() time.
+    Pre-computes intent embeddings at construction via HTTP, then matches
+    spoken text by cosine similarity at match() time. Caches embeddings
+    to disk to avoid redundant API calls.
     """
 
-    def __init__(self, commands, model_name="all-MiniLM-L6-v2", threshold=0.45):
+    def __init__(self, commands, embed_url="http://127.0.0.1:8888/v1/embeddings", threshold=0.45):
         """
         Initialize the matcher with a command list.
 
         Args:
             commands: List of dicts with "intent", "handler", and "argument" keys.
-            model_name: Sentence transformer model name.
+            embed_url: llama.cpp embeddings endpoint URL.
             threshold: Default cosine similarity threshold for match().
         """
         self.commands = commands
         self.default_threshold = threshold
+        self.embed_url = embed_url
         self.intent_texts = [c["intent"] for c in commands]
-        logging.debug(f"Loading sentence transformer model '{model_name}'...")
-        self.model = SentenceTransformer(model_name)
-        self.embeddings = self.model.encode(self.intent_texts, convert_to_tensor=True)
-        logging.debug(f"Pre-computed {len(self.intent_texts)} intent embeddings.")
+
+        # Try to load from cache
+        cache = _load_cache()
+        key = _cache_key(self.intent_texts, embed_url)
+        cached = cache.get(key)
+
+        if cached and len(cached) == len(self.intent_texts):
+            self.embeddings = cached
+            logging.debug(f"Loaded {len(self.embeddings)} intent embeddings from cache.")
+        else:
+            logging.debug(f"Embedding {len(self.intent_texts)} intent phrases via {embed_url}...")
+            self.embeddings = _embed_texts(self.intent_texts, embed_url)
+            if self.embeddings and all(e is not None for e in self.embeddings):
+                cache[key] = self.embeddings
+                _save_cache(cache)
+                logging.debug(f"Pre-computed and cached {len(self.embeddings)} intent embeddings.")
+            else:
+                logging.warning("Failed to compute embeddings; commands won't match.")
+                self.embeddings = [None] * len(self.intent_texts)
 
     def match(self, text: str, threshold=None):
         """
@@ -119,12 +215,24 @@ class Matcher:
         if not cleaned:
             return None
 
-        emb = self.model.encode(cleaned, convert_to_tensor=True)
-        scores = util.cos_sim(emb, self.embeddings)[0]
-        best_idx = scores.argmax().item()
-        best_score = scores[best_idx].item()
+        # Embed the spoken text
+        emb_list = _embed_texts([cleaned], self.embed_url)
+        if not emb_list or emb_list[0] is None:
+            return None
+        emb = emb_list[0]
 
-        if best_score < threshold:
+        # Find best match by cosine similarity
+        best_idx = -1
+        best_score = 0.0
+        for i, cmd_emb in enumerate(self.embeddings):
+            if cmd_emb is None:
+                continue
+            score = _cosine_similarity(emb, cmd_emb)
+            if score > best_score:
+                best_score = score
+                best_idx = i
+
+        if best_idx < 0 or best_score < threshold:
             return None
 
         entry = self.commands[best_idx]

@@ -86,12 +86,13 @@ def say(text, base_url="http://localhost:59125/api/tts"):
 
 def shutup():
     global pipeline
+    if pipeline is None:
+        return
     for element in pipeline.children:
         if isinstance(element, Gst.Element):
             element.set_state(Gst.State.NULL)
-    if pipeline is not None:
-        pipeline.send_event(Gst.Event.new_eos())
-        pipeline.set_state(Gst.State.NULL)
+    pipeline.send_event(Gst.Event.new_eos())
+    pipeline.set_state(Gst.State.NULL)
 
 
 # Example usage

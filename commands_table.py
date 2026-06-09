@@ -47,6 +47,12 @@ COMMANDS = [
     {"intent": "open application", "handler": "open_app", "argument": "remainder"},
     {"intent": "launch program", "handler": "open_app", "argument": "remainder"},
     {"intent": "start application", "handler": "open_app", "argument": "remainder"},
+    # ── Terminal (dedicated handlers so "open a terminal window" doesn't
+    #    drift semantically toward "close window") ────────────────────────────
+    {"intent": "open terminal", "handler": "open_terminal", "argument": None},
+    {"intent": "open a terminal", "handler": "open_terminal", "argument": None},
+    {"intent": "open a terminal window", "handler": "open_terminal", "argument": None},
+    {"intent": "launch terminal", "handler": "open_terminal", "argument": None},
     # ── Navigation & window control ────────────────────────────────────────
     {"intent": "close window", "handler": "close_window", "argument": None},
     {"intent": "close the window", "handler": "close_window", "argument": None},

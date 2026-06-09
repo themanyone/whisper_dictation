@@ -14,6 +14,22 @@ Private voice keyboard, AI chat, images, webcam, recordings, voice control in >=
 - If desired, speak answers out loud with `mimic3`*
 - Draw pictures with [stable-diffusion-webui](https://github.com/AUTOMATIC1111/stable-diffusion-webui)
 
+## How it works — two modes, one pipeline
+
+**Dictation mode** — transcribed speech goes straight to text output (fast, no LLM involved). The hot path for everyday typing.
+
+**Agent mode** — speech is routed through the LLM which can chat, answer questions, or call tools (open apps, search the web, draw pictures, control the webcam, etc.). One tool switches back to dictation mode.
+
+The secret sauce is a **semantic fast-path** between them: an embedding-based matcher (all-MiniLM-L6-v2) recognizes common commands like "new paragraph", "copy that", or "open terminal" in ~50ms — no LLM round trip needed. Anything the matcher doesn't recognize falls through to the LLM, which acts as the general-purpose agent.
+
+```
+Transcript → semantic matcher → matched? → run tool (fast path)
+                              → no match, in agent mode? → LLM with tool calling
+                              → no match, in dictation mode? → write text
+```
+
+This gives you the speed of a voice keyboard for everyday use and the power of an AI assistant when you need it — all without switching modes manually.
+
 **Freedoms and responsibilities** Free and open-source software comes with NO WARRANTIES. You have permission to copy and modify for individual needs in accordance with the included LICENSE.
 
 **The ship's computer.** Inspired by the *Star Trek* television series. Talk to your computer. Have it answer back with clear, easy-to-understand speech. Network it throughout the ship. Use your voice to write Captain's Log entries when the internet is down, when satellites are busy, or in the far reaches of the galaxy, "where no man has gone before."
@@ -28,11 +44,23 @@ Say, "Computer, on screen." A window opens up showing the webcam. Say "Computer,
 
 **Fewer dependencies.** We saved over 1Gb of downloads and hours of setup with [Whisper.cpp](https://github.com/ggerganov/whisper.cpp), eliminating torch, pycuda, cudnn, ffmpeg dependencies. Those older versions can be found in the `legacy` branch. Get just the `main` branch to save time.
 
-**Semantic voice commands.** Replaced brittle regex-based command routing with a sentence-transformer model (`all-MiniLM-L6-v2`). Voice commands are matched by meaning, not exact phrasing — you can say "launch the terminal", "open a terminal window", or "start terminal" and they all work. No `eval()` anywhere.
+**Semantic voice commands.** Replaced brittle regex-based command routing with an embedding model (`all-MiniLM-L6-v2` via llama.cpp). Voice commands are matched by meaning, not exact phrasing — you can say "launch the terminal", "open a terminal window", or "start terminal" and they all work. Uses llama.cpp's HTTP server for embeddings instead of sentence-transformers, removing the CUDA/torch dependency.
 
 **User-editable command table.** Commands live in `commands_table.py` — a plain list of `{intent, handler}` entries that's easy to read and edit. Add new commands or change existing ones without touching the main program logic.
 
-**First-run configuration.** On first launch you're prompted for server URLs and API keys. Settings are saved to `~/.config/whisper_dictation/config.json`. Edit that file or set environment variables (`OPENAI_API_KEY`, `GENAI_TOKEN`, `WHISPER_URL`, `CHAT_URL`) to override.
+**First-run configuration.** If not already set, you're prompted for server URLs and API keys. Settings are saved to `~/.config/whisper_dictation/config.json`. Edit or delete that file, or set environment variables (`OPENAI_API_KEY`, `GENAI_TOKEN`, `WHISPER_URL`, `CHAT_URL`) to override.
+
+**Obtaining code**
+
+Fetch the whole project
+
+`git clone https://github.com/themanyone/whisper_dictation.git`
+
+To use the old regex branch
+
+`git checkout regex`
+
+Or get the latest, main branch while saving bandwidth
 
 `git clone -b main --single-branch https://github.com/themanyone/whisper_dictation.git`
 
@@ -77,7 +105,7 @@ if ! [[ "$PATH" =~ "$HOME/.local/bin:$HOME/bin:$CUDA_HOME/bin:$CUDA_HOME/nvvm/bi
 fi
 ```
 
-**Fedora 43.** Should work with the above. You might still have to use the CUDA repo for Fedora 42 because these updates lag behind.
+**Fedora 43 and beyond.** [Follow these instructions](https://rpmfusion.org/Howto/CUDA). You may have to use the CUDA repo for an earlier Fedora version because updates lag behind.
 
 **All Linux.** Set up CUDA and gstreamer. Follow instructions from Nvidia, and your distro's website or forums. Then install `whisper.cpp`
 
@@ -86,7 +114,7 @@ git clone https://github.com/ggerganov/whisper.cpp
 cd whisper.cpp
 
 cmake -B build -DGGML_CUDA=1
-cmake --build build -j6 --config Release
+cmake --build build -j$(nproc) --config Release
 ln -s $(pwd)/build/bin/whisper-server ~/.local/bin/  # or just copy it it somewhere in $PATH
 ln -s $(pwd)/build/bin/whisper-cli ~/.local/bin/
 ```
@@ -315,7 +343,7 @@ Try saying:
 
 `commands_table.py`: User-editable command table. Each entry is `{intent, handler}` — add, remove, or reorder commands without touching the main program. Intents are matched by meaning, not exact phrasing.
 
-`matcher.py`: Semantic matching engine using `all-MiniLM-L6-v2` sentence-transformer. Converts spoken text to an embedding and picks the closest command by cosine similarity.
+`matcher.py`: Semantic matching engine using `all-MiniLM-L6-v2` (via llama.cpp embeddings endpoint). Converts spoken text to an embedding and picks the closest command by cosine similarity. Caches intent embeddings to disk.
 
 `config.py`: First-run configuration with interactive prompts. Settings saved to `~/.config/whisper_dictation/config.json`. Environment variables override file values at runtime.
 
