@@ -198,7 +198,7 @@ Run `export $MODELS_DIR=/path/to/models` (wherever the models reside). Don't for
 
 Then run `systemctl --user daemon-reload` to update the configuration. Start the service with `systemctl --user start whisper`. If you want it to start automatically at login, use `systemctl --user enable whisper`. Check status with `systemctl --user status whisper`.
 
-If the server and client are on the same machine, uncomment the lines `os.system("systemctl --user start whisper")` near the bottom of `whisper_cpp_client.py`. Then it will start and stop the server automatically, saving resources when not in use.
+If the server and client are on the same machine, the client will automatically start and stop the server when it launches and exits, saving resources when not in use.
 
 If your server is on another machine, and if `whisper-server` is compiled with `ffmpeg`, you may change `audio_format` from `.wav` to `.ogg` in `~/.config/whisper_dictation/config.json` to save some network bandwidth.
 

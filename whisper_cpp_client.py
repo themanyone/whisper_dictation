@@ -297,6 +297,30 @@ def ANSI_clear_line():
 bs = ANSI_clear_line()
 
 
+def manage_whisper_service(action: str):
+    """Start or stop the whisper systemd service if it exists.
+
+    Checks whether ``systemctl --user`` is available and the ``whisper``
+    unit is installed before running the requested action.  Silent no-op
+    when the service isn't present.
+    """
+    if action not in ("start", "stop"):
+        return
+    try:
+        # Is systemctl on PATH and does ``--user`` work?
+        subprocess.run(
+            ["systemctl", "--user", "status", "whisper"],
+            capture_output=True, timeout=5,
+        )
+    except (FileNotFoundError, subprocess.TimeoutExpired):
+        return  # systemctl or service not available
+
+    subprocess.run(
+        ["systemctl", "--user", action, "whisper"],
+        capture_output=True, timeout=30,
+    )
+
+
 def on_screen():
     global cam
     if not cam:
@@ -656,7 +680,7 @@ def quit():
     except Exception:
         pass
     logging.debug("\nFreeing system resources.\n")
-    #    os.system("systemctl --user stop whisper")
+    manage_whisper_service("stop")
     discard_input()
     time.sleep(1.0)
     shutup()
@@ -664,7 +688,7 @@ def quit():
 
 if __name__ == "__main__":
     record_thread = threading.Thread(target=record_to_queue)
-    #    os.system("systemctl --user start whisper")
+    manage_whisper_service("start")
     record_thread.start()
     transcribe()
     quit()
