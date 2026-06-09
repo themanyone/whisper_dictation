@@ -1,7 +1,7 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 ##
-## Copyright 2023-2025 Henry Kroll <nospam@thenerdshow.com>
+## Copyright (C) 2023-2026 Henry Kroll III <nospam@thenerdshow.com>
 ##
 ## This program is free software; you can redistribute it and/or modify
 ## it under the terms of the GNU General Public License as published by

@@ -202,15 +202,15 @@ Compilation steps are the same as for whisper.cpp, but read the docs just in cas
 
 ### Download language models
 
-**Finding free models.** Save hundreds on annual subscriptions by running your own AI servers for every task. Look at the [leaderboard](https://huggingface.co/spaces/open-llm-leaderboard/open_llm_leaderboard) to see which models perform best in the categories you want. As a rule of thumb, quantized 7B models are about the maximum our 4GiB VRAM can handle. Search for quantized models in .gguf format, or try [the ones on our page](https://huggingface.co/hellork).
+**Finding free models.** Save hundreds on annual subscriptions by running your own AI servers for every task. Look at the [leaderboard](https://huggingface.co/open-llm-leaderboard) to see which models perform best in the categories you want. As a rule of thumb, quantized 7B models are about the maximum our 4GiB VRAM can handle. Search for quantized models in .gguf format, or try [the ones on our page](https://huggingface.co/hellork).
 
 **AI Safety.** Monitor children's activities. Be aware that these models, made by the community, are under active development. They are *not guaranteed safe* for all ages.
 
 **High VRAM usage.** Use a tool like [nvtop](https://github.com/Syllo/nvtop) (availabl from package managers) to keep an eye on available VRAM.
 
-*Context window.* The context window is the size of input plus output. Running large models with a large context window (`-ctx` 8192), while sending graphics layers to the GPU (`-ngl` 33) for speed, uses lots of VRAM. They might even crash. With small models, it is okay to run the `llama-server` with `-ngl 33` for high speed/high memory usage. With large (> 3GiB) models, use lower values, such as `-ngl 17` and `-ctx 512`, or avoid `-ngl` altogether.
+*Context window.* The context window is the size of input plus output. Running large models with a large context window (`-ctx` 8192), while sending graphics layers to the GPU for speed, uses lots of VRAM. They might even crash. With small models, `llama-server` now defaults to using VRAM. With large (> 3GiB) models, use `-ngl` and `-c` options with lower values, such as `-ngl 17` and `-c 512.
 
-Help! [Get this project off the ground with some better hardware](https://www.paypal.com/donate/?hosted_button_id=A37BWMFG3XXFG) (PayPal donation link).
+Help! [Get this project off the ground with some better hardware](https://www.paypal.com/donate/?hosted_button_id=A37BWMFG3XXFG) (PayPal donation link). Thanks to supporters, we have better laptops now, with 8GiB VRAM, and many software improvements, so keep those donations coming!
 
 ### Start chatting
 
@@ -218,11 +218,11 @@ Help! [Get this project off the ground with some better hardware](https://www.pa
 ./llama-server -m models/gemma-2-2b-it-q4_k_m.gguf -c 2048 -ngl 33 --port 8888
 ```
 
-Use the above API endpoint by simply saying "Computer... What is the capital of France!" etc. Or navigate to its handy web interface at http://127.0.0.1:8888 and dictate into that. From there you can adjust settings like `temperature` to make it more creative, or more strict with its fact checking and self censorship.
+Use the above API endpoint by simply saying "Computer... What is the capital of France!" etc. Or navigate to the `llama.cpp` web interface at http://127.0.0.1:8888 and dictate into that. From there you can adjust settings like `temperature` to make it more creative, or more deterministic in its responses. 
 
 ## Give it a voice
 
-If AI is speaking, turn volume down or relocate the mic so it doesn't interact with itself.
+If AI is speaking, it used to be necessary to turn volume down or relocate the mic to keep it from interacting with itself. Now it is more selective about what it hears.
 
 **Mimic3.** If you follow the instructions to configure [mimic3](https://github.com/MycroftAI/mimic3) as a service on any `linux` computer or `Raspberry Pi` on the network, Speech Dispatcher will speak answers out loud. It has an open port that other network users can use to enable speech on their devices. But they can also make it speak remotely. So it is essentially a Star Trek communicator that works over wifi. Follow the [instructions for setting up mimic3 as a Systemd Service](https://mycroft-ai.gitbook.io/docs/mycroft-technologies/mimic-tts/mimic-3#web-server). 
 
@@ -342,5 +342,5 @@ If you want real-time AI captions translating everyone's conversations in the ro
 - Buy me a coffee https://buymeacoffee.com/isreality
 - [TheNerdShow.com](http://thenerdshow.com/)
 
-Copyright (C) 2024-2025 Henry Kroll III, www.thenerdshow.com.
+Copyright (C) 2023-2026 Henry Kroll III, www.thenerdshow.com.
 See [LICENSE](LICENSE) for details.

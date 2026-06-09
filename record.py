@@ -6,7 +6,7 @@
 ##
 ## Help: ./record.py -h
 ##
-## Copyright (C) 2025 Henry Kroll <nospam@thenerdshow.com>
+## Copyright (C) 2026 Henry Kroll III <nospam@thenerdshow.com>
 ##
 ## This program is free software; you can redistribute it and/or modify
 ## it under the terms of the GNU General Public License as published by
