@@ -241,3 +241,28 @@ class Matcher:
             arg = _extract_remainder(cleaned, entry["intent"])
 
         return entry["handler"], arg, best_score
+
+    def add_command(self, intent, handler, argument=None):
+        """Add a single command entry and embed its intent at runtime.
+
+        This lets voice commands be added on-the-fly without re-embedding
+        the entire command table.
+
+        Args:
+            intent:     Natural-language intent phrase for the new command.
+            handler:    Handler function name (must already be in HANDLER_MAP).
+            argument:   ``None`` or ``"remainder"``.
+
+        Returns:
+            The new entry dict, or ``None`` if embedding failed.
+        """
+        entry = {"intent": intent, "handler": handler, "argument": argument}
+        self.commands.append(entry)
+        self.intent_texts.append(intent)
+
+        emb = _embed_texts([intent], self.embed_url)
+        if emb and emb[0]:
+            self.embeddings.append(emb[0])
+            return entry
+        self.embeddings.append(None)
+        return None

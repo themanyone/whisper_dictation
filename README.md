@@ -24,9 +24,12 @@ The secret sauce is a **semantic fast-path** between them: an embedding-based ma
 
 ```
 Transcript → semantic matcher → matched? → run tool (fast path)
-                              → no match, in agent mode? → LLM with tool calling
-                              → no match, in dictation mode? → write text
+                              → no match, wake word? → LLM proposes command → approved? → save & run
+                              → no match, agent mode? → LLM with tool calling
+                              → no match, dictation mode? → write text
 ```
+
+The **agent learning** path is unique: say "Computer, record a 30 second video" and the LLM generates a shell command, asks for voice confirmation, then saves it as a new command. Next time you say it, the semantic matcher catches it directly — no LLM round trip. Commands persist across restarts via `~/.config/whisper_dictation/custom_commands.json`.
 
 This gives you the speed of a voice keyboard for everyday use and the power of an AI assistant when you need it — all without switching modes manually.
 
@@ -42,27 +45,23 @@ Say, "Computer, on screen." A window opens up showing the webcam. Say "Computer,
 
 ## New in this branch
 
-**Fewer dependencies.** We saved over 1Gb of downloads and hours of setup with [Whisper.cpp](https://github.com/ggerganov/whisper.cpp), eliminating torch, pycuda, cudnn, ffmpeg dependencies. Those older versions can be found in the `legacy` branch. Get just the `main` branch to save time.
+**Fewer dependencies.** We saved over 1Gb of downloads and hours of setup with [Whisper.cpp](https://github.com/ggerganov/whisper.cpp), eliminating torch, pycuda, cudnn, ffmpeg dependencies.
 
 **Semantic voice commands.** Replaced brittle regex-based command routing with an embedding model (`all-MiniLM-L6-v2` via llama.cpp). Voice commands are matched by meaning, not exact phrasing — you can say "launch the terminal", "open a terminal window", or "start terminal" and they all work. Uses llama.cpp's HTTP server for embeddings instead of sentence-transformers, removing the CUDA/torch dependency.
 
 **User-editable command table.** Commands live in `commands_table.py` — a plain list of `{intent, handler}` entries that's easy to read and edit. Add new commands or change existing ones without touching the main program logic.
 
+**Voice-prompted agent learning.** Say "Computer, record a 30 second video" and the LLM proposes a shell command, asks "Run this command?" for voice confirmation, then saves it as a permanent command. The semantic matcher catches it on the next utterance — zero LLM overhead. Commands persist in `~/.config/whisper_dictation/custom_commands.json`.
+
+**Recommended LLM model.** Default recommendation is [Qwen2.5-7B-Instruct-Q4_K_S](https://huggingface.co/bartowski/Qwen2.5-7B-Instruct-GGUF) — the best 7B for tool/function calling, fits in 4 GiB VRAM with full GPU offload.
+
 **First-run configuration.** If not already set, you're prompted for server URLs and API keys. Settings are saved to `~/.config/whisper_dictation/config.json`. Edit or delete that file, or set environment variables (`OPENAI_API_KEY`, `GENAI_TOKEN`, `WHISPER_URL`, `CHAT_URL`) to override.
 
 **Obtaining code**
 
-Fetch the whole project
-
-`git clone https://github.com/themanyone/whisper_dictation.git`
-
-To use the old regex branch
-
-`git checkout regex`
-
-Or get the latest, main branch while saving bandwidth
-
-`git clone -b main --single-branch https://github.com/themanyone/whisper_dictation.git`
+```shell
+git clone -b nl --single-branch https://github.com/themanyone/whisper_dictation.git
+```
 
 ## Preparation
 
@@ -238,23 +237,41 @@ Compilation steps are the same as for whisper.cpp, but read the docs just in cas
 
 ### Download language models
 
-**Finding free models.** Save hundreds on annual subscriptions by running your own AI servers for every task. Search for an online leaderboard (locations vary) to see which models perform best in the categories you want. As a rule of thumb, quantized 7B models are about the maximum our 4GiB VRAM can handle. Search for quantized models in .gguf format, or try [the ones on our page](https://huggingface.co/hellork).
+**Default recommendation: Qwen2.5-7B-Instruct Q4_K_S**
+
+```shell
+wget -O qwen2.5-7b-q4_k_s.gguf \
+  https://huggingface.co/bartowski/Qwen2.5-7B-Instruct-GGUF/resolve/main/Qwen2.5-7B-Instruct-Q4_K_S.gguf
+```
+
+This is the best 7B model for tool calling and structured JSON output. The Q4_K_S quantization fits entirely in 4 GiB VRAM (`-ngl 99`) with room for a 4096-token context window. For tighter VRAM budgets, the IQ4_XS variant (~3.6 GiB) works too.
+
+**Finding other models.** Save hundreds on annual subscriptions by running your own AI servers for every task. Search for online leaderboards (locations vary) to see which models perform best in the categories you want. Look for `.gguf` format models — [bartowski's](https://huggingface.co/bartowski) and [MaziyarPanahi's](https://huggingface.co/MaziyarPanahi) quantizations are well-maintained.
 
 **AI Safety.** Monitor children's activities. Be aware that these models, made by the community, are under active development. They are *not guaranteed safe* for all ages.
-
-**High VRAM usage.** Use a tool like [nvtop](https://github.com/Syllo/nvtop) or `btop` (availabl from package managers) to keep an eye on available VRAM.
-
-*Context window.* The context window is the size of input plus output. Running large models with a large context window (`-ctx` 8192), while sending graphics layers to the GPU for speed, uses lots of VRAM. They might even crash. With small models, `llama-server` now defaults to using VRAM. With large (> 3GiB) models, use `-ngl` and `-c` options with lower values, such as `-ngl 17`.
 
 Help! [Get this project off the ground with some better hardware](https://www.paypal.com/donate/?hosted_button_id=A37BWMFG3XXFG) (PayPal donation link). Thanks to supporters, we have better laptops now, with 8GiB VRAM, and many software improvements, so keep those donations coming!
 
 ### Start chatting
 
 ```shell
-./llama-server -m models/gemma-2-2b-it-q4_k_m.gguf -c 2048 -ngl 33 --port 8888
+llama-server \
+  -m qwen2.5-7b-q4_k_s.gguf \
+  -ngl 99 \
+  -c 4096 \
+  --port 8888 \
+  --host 127.0.0.1
 ```
 
-Use the above API endpoint by simply saying "Computer... What is the capital of France!" etc. Or navigate to the `llama.cpp` web interface at http://127.0.0.1:8888 and dictate into that. From there you can adjust settings like `temperature` to make it more creative, or more deterministic in its responses.
+Use the above API endpoint by simply saying "Computer, what is the capital of France?" etc. Or navigate to the `llama.cpp` web interface at http://127.0.0.1:8888 and dictate into that. From there you can adjust settings like `temperature`.
+
+If this is your first time, run the dictation client from another terminal:
+
+```shell
+./whisper_cpp_client.py
+```
+
+It will prompt for server locations — accept the defaults to connect to whisper at port 7777 and llama at port 8888.
 
 ## Give it a voice
 
@@ -310,13 +327,19 @@ webui.sh --api --medvram
 
 ### Spoken commands and program launchers
 
-The computer responds to commands. You can also call her Samantha (Or Peter with for voice).
+**Wake words.** Start a command with "Computer", "Samantha", or "Peter" to trigger the LLM agent. If the command is already known (defined in `commands_table.py` or previously learned), the semantic matcher handles it instantly. If it's new, the LLM proposes a shell command and asks for voice confirmation before saving and running.
 
-**Mute button.** There is no mute button. Say "pause dictation" to turn off text generation. It will keep listening to commands. Say, "Thank you", "resume dictation", or "Computer, type this out" to have it start typing again. Say "stop listening" or "stop dictation" to quit the program entirely. You could also configure a button to mute your mic. Something like `bash -c 'pactl set-source-mute $(pactl get-default-source) toggle'` if your system uses `pulseaudio`.
+**Learning new commands on the fly.** Say:
 
-These actions are defined in `commands_table.py`. See that file for the full list. Each entry pairs an intent phrase with a handler function — add your own commands or change existing ones freely. No regex or `eval()` involved.
+- *"Computer, record a 30 second video"* → LLM proposes `ffmpeg -f v4l2 -t 30 -i /dev/video0 ...`, asks *"Run this command?"*, you say *"Yes"* → saved as a permanent command, runs immediately. Next time, no LLM needed.
+- *"Computer, lock the screen"* → LLM proposes `xdg-screensaver lock` or `loginctl lock-session`, confirms, saves.
 
-Try saying:
+You can also say *"No"* to cancel or *"Never mind"* to dismiss. Rejected proposals are discarded. Approved ones persist in `~/.config/whisper_dictation/custom_commands.json` and load on every restart.
+
+**Direct commands** (no wake word needed) — the semantic matcher catches these: Say "open terminal", "copy that", "new paragraph", "search the web for pizza", "draw a picture of a cat", etc.
+
+**Built-in commands** include:
+
 - Computer, on screen. (or "start webcam"; opens a webcam window).
 - Computer, take a picture. (saves to webcam/image.jpg)
 - Computer, off screen. (or "stop webcam")
@@ -333,17 +356,23 @@ Try saying:
 - Pause dictation.
 - Resume dictation.
 - New paragraph. (also submits chat forms :)
-- Samantha, tell me about the benefits of relaxation.**
+- Samantha, tell me about the benefits of relaxation.
 - Peter, compose a Facebook post about the sunny weather we're having.
 - Stop dictation. (quits program).
 
+**Mute button.** There is no mute button. Say "pause dictation" to turn off text generation. It will keep listening to commands. Say "resume dictation" to have it start typing again. Say "stop listening" or "stop dictation" to quit the program entirely. You could also configure a button to mute your mic. Something like `bash -c 'pactl set-source-mute $(pactl get-default-source) toggle'` if your system uses `pulseaudio`.
+
+These actions are defined in `commands_table.py`. See that file for the full list. Each entry pairs an intent phrase with a handler function — add your own commands or change existing ones freely.
+
 # Files in this branch
 
-`whisper_cpp_client.py`: A small and efficient Python client that connects to a running [Whisper.cpp](https://github.com/ggerganov/whisper.cpp) server on the local machine or across the network. Routes voice commands through a semantic matcher — no regex, no `eval()`.
+`whisper_cpp_client.py`: Voice-controlled keyboard with semantic command matching, LLM chat, and voice-prompted agent learning. When an utterance doesn't match a known command, the LLM can propose, confirm, and save new commands on the fly.
 
 `commands_table.py`: User-editable command table. Each entry is `{intent, handler}` — add, remove, or reorder commands without touching the main program. Intents are matched by meaning, not exact phrasing.
 
-`matcher.py`: Semantic matching engine using `all-MiniLM-L6-v2` (via llama.cpp embeddings endpoint). Converts spoken text to an embedding and picks the closest command by cosine similarity. Caches intent embeddings to disk.
+`matcher.py`: Semantic matching engine using `all-MiniLM-L6-v2` (via llama.cpp embeddings endpoint). Converts spoken text to an embedding and picks the closest command by cosine similarity. Caches intent embeddings to disk. Supports `add_command()` for runtime command registration.
+
+`custom_commands.json`: Auto-generated file in `~/.config/whisper_dictation/`. Stores voice-learned commands created through the agent learning flow. Loaded on every startup; edit or delete to remove learned commands.
 
 `config.py`: First-run configuration with interactive prompts. Settings saved to `~/.config/whisper_dictation/config.json`. Environment variables override file values at runtime.
 

@@ -20,6 +20,7 @@
 ##
 import openai
 import os
+import json
 import subprocess
 import sys
 
@@ -54,6 +55,7 @@ chatting = False
 record_process = None
 running = True
 cam = None
+pending_cmd = None  # (handler_name, handler_code, proposal) for voice confirm
 
 logging.basicConfig(
     level=logging.INFO,
@@ -72,6 +74,12 @@ conversation_length = cfg["conversation_length"]
 whisper_cpp = cfg["whisper_url"]
 local_chat_url = cfg["chat_url"]
 debug = cfg.get("debug", False)
+
+# ── Persistent custom commands ────────────────────────────────────────
+CUSTOM_COMMANDS_FILE = os.path.expanduser(
+    "~/.config/whisper_dictation/custom_commands.json"
+)
+custom_command_entries = []  # populated at startup by load_custom_commands()
 
 gpt_key = cfg.get("openai_api_key") or os.getenv("OPENAI_API_KEY")
 gem_key = cfg.get("gemini_api_key") or os.getenv("GENAI_TOKEN")
@@ -439,6 +447,107 @@ def off_screen():
         cam = cam.stop_camera()
 
 
+# ── Custom command lifecycle ─────────────────────────────────────────
+def load_custom_commands():
+    """Load custom commands from JSON, exec handlers, register in HANDLER_MAP.
+
+    Returns the list of command entries that were loaded.
+    """
+    global custom_command_entries
+    try:
+        if not os.path.exists(CUSTOM_COMMANDS_FILE):
+            return []
+        with open(CUSTOM_COMMANDS_FILE) as f:
+            entries = json.load(f)
+        if not isinstance(entries, list):
+            return []
+        for entry in entries:
+            exec(entry["handler_code"], globals())
+            HANDLER_MAP[entry["command"]["handler"]] = globals()[
+                entry["command"]["handler"]
+            ]
+        custom_command_entries = [e["command"] for e in entries]
+        return custom_command_entries
+    except Exception as e:
+        logging.warning(f"Failed to load custom commands: {e}")
+    return []
+
+
+def propose_command(utterance):
+    """Ask the local LLM to turn an unrecognized utterance into a shell command.
+
+    Returns a dict with keys (intent, shell, desc) or None if the LLM
+    thinks it's just dictation text.
+    """
+    try:
+        # Use the same OpenAI-compatible endpoint as generate_text
+        client = openai.OpenAI(
+            base_url=local_chat_url, api_key="sk-no-key-required"
+        )
+        r = client.chat.completions.create(
+            model="gpt-3.5-turbo",
+            messages=[
+                {
+                    "role": "system",
+                    "content": (
+                        "You classify spoken utterances. Reply with JSON only.\n\n"
+                        "If the user wants a system action (run, open, record, "
+                        "create, adjust, take, play, search, send, etc.), respond:\n"
+                        '{"action": true, "intent": "short intent phrase", '
+                        '"shell": "shell command to run", '
+                        '"desc": "brief description of what it does"}\n\n'
+                        'If it is just dictation text to type, respond:\n'
+                        '{"action": false}\n\n'
+                        "Examples:\n"
+                        '"record a 30 second video"\n'
+                        '  → {"action": true, "intent": "record video for 30 seconds", '
+                        '"shell": "ffmpeg -f v4l2 -t 30 -i /dev/video0 '
+                        '\\\\"$(date +%%s)\\\\".mp4", '
+                        '"desc": "Record a 30-second video from webcam"}\n'
+                        '"how are you today"\n'
+                        '  → {"action": false}'
+                    ),
+                },
+                {"role": "user", "content": utterance},
+            ],
+            temperature=0.1,
+            max_tokens=200,
+        )
+        text = r.choices[0].message.content.strip()
+        # Extract JSON from response (the LLM may wrap it in markdown)
+        if "{" in text:
+            text = text[text.index("{") : text.rindex("}") + 1]
+        result = json.loads(text)
+        if result.get("action"):
+            return result
+    except Exception as e:
+        logging.debug(f"Command proposal failed: {e}")
+    return None
+
+
+def save_custom_command(intent, handler_name, handler_code, argument):
+    """Persist a custom command entry so it loads on next startup."""
+    entry = {
+        "command": {
+            "intent": intent,
+            "handler": handler_name,
+            "argument": argument,
+        },
+        "handler_code": handler_code,
+    }
+    try:
+        os.makedirs(os.path.dirname(CUSTOM_COMMANDS_FILE), exist_ok=True)
+        entries = []
+        if os.path.exists(CUSTOM_COMMANDS_FILE):
+            with open(CUSTOM_COMMANDS_FILE) as f:
+                entries = json.load(f)
+        entries.append(entry)
+        with open(CUSTOM_COMMANDS_FILE, "w") as f:
+            json.dump(entries, f, indent=2)
+    except Exception as e:
+        logging.warning(f"Failed to save custom command: {e}")
+
+
 def recognize_speech(f: str) -> str:
     result = [""]
     if f and os.path.isfile(f):
@@ -625,9 +734,12 @@ HANDLER_MAP = {
     "generate_text": generate_text,
 }
 
-# Initialize semantic command matcher
+# Load persisted custom commands (if any) into HANDLER_MAP
+load_custom_commands()
+
+# Initialize semantic command matcher (built-in + custom entries)
 matcher = Matcher(
-    COMMANDS,
+    COMMANDS + custom_command_entries,
     embed_url=cfg.get("embed_url", "http://127.0.0.1:8088/v1/embeddings"),
     threshold=cfg.get("threshold", 0.45),
 )
@@ -671,6 +783,35 @@ def transcribe():
                 if re.search(r"^stop.? (d.ctation|listening).?$", lower_case):
                     say("Shutting down.")
                     break
+
+                # — Voice confirmation for pending command ——————
+                if pending_cmd:
+                    handler_name, handler_code, proposal = pending_cmd
+                    if re.search(r"^(yes|yeah|yep|sure|okay?|do it|go ahead|confirm)\b",
+                                 lower_case):
+                        # Register handler
+                        exec(handler_code, globals())
+                        HANDLER_MAP[handler_name] = globals()[handler_name]
+                        save_custom_command(
+                            proposal["intent"], handler_name,
+                            handler_code, None,
+                        )
+                        matcher.add_command(proposal["intent"], handler_name)
+                        say("okay")
+                        HANDLER_MAP[handler_name]()
+                        pending_cmd = None
+                        continue
+                    elif re.search(
+                        r"^(no|nope|cancel|never mind|forget it|stop|quit|dismiss)\b",
+                        lower_case,
+                    ):
+                        say("Cancelled.")
+                        pending_cmd = None
+                        continue
+                    else:
+                        say("Please say yes or no.")
+                        continue
+
                 # — Semantic command matching —
                 result = matcher.match(lower_case)
                 if result:
@@ -682,6 +823,43 @@ def transcribe():
                         say("okay")
                         handler_fn(arg)
                         continue
+
+                # — LLM command proposal (unrecognized → ask LLM) —
+                # Only trigger when a wake word is used, so dictation
+                # text doesn't hit the LLM on every utterance.
+                has_wake = re.search(r"^(peter|samantha|computer)[,\s]",
+                                     lower_case)
+                if not chatting and has_wake:
+                    # Strip wake word before sending to LLM
+                    proposal = propose_command(
+                        re.sub(r"^(peter|samantha|computer)[,\s]+",
+                               "", lower_case, flags=re.I)
+                    )
+                    if proposal:
+                        handler_name = "custom_" + re.sub(
+                            r"\W+", "_", proposal["intent"]
+                        ).lower().strip("_")
+                        shell = proposal["shell"]
+                        handler_code = (
+                            f"def {handler_name}(q=None):\n"
+                            f'    subprocess.Popen({shell!r},\n'
+                            f"        shell=True, start_new_session=True,\n"
+                            f"        stdin=subprocess.DEVNULL,\n"
+                            f"        stdout=subprocess.DEVNULL,\n"
+                            f"        stderr=subprocess.DEVNULL)\n"
+                        )
+                        print(f"\n[{proposal['desc']}]")
+                        print(f"  Shell: {shell}")
+                        print(f"  Intent: {proposal['intent']}")
+                        pending_cmd = (handler_name, handler_code, proposal)
+                        say("Run this command?")
+                        continue
+
+                # If a wake word was spoken but the LLM didn't propose
+                # a command, don't type it as dictation.
+                if has_wake:
+                    continue
+
                 # — AI chat fallback —
                 if chatting:
                     generate_text(lower_case)
