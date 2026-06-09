@@ -5,13 +5,17 @@ import os
 app = Flask(__name__)
 
 # Set the path to your images
-IMAGE_FOLDER = 'webcam'
+IMAGE_FOLDER = "webcam"
 title = IMAGE_FOLDER + " gallery"
 
-@app.route('/')
+
+@app.route("/")
 def gallery():
-    image_files = [f for f in os.listdir(IMAGE_FOLDER) if f.endswith(('.png', '.jpg', '.jpeg'))]
-    return render_template_string('''
+    image_files = [
+        f for f in os.listdir(IMAGE_FOLDER) if f.endswith((".png", ".jpg", ".jpeg"))
+    ]
+    return render_template_string(
+        """
     <head>
         <title>{{ title }}</title>
         <style>
@@ -29,13 +33,18 @@ def gallery():
                 <figcaption>{{ image }}</figcaption>
             </figure>
         {% endfor %}
-    ''', images=image_files, title = title)
+    """,
+        images=image_files,
+        title=title,
+    )
 
-@app.route('/images/<filename>')
+
+@app.route("/images/<filename>")
 def image_file(filename):
     return send_from_directory(IMAGE_FOLDER, filename)
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     host = "http://localhost"
     port = 9165
     print(f"{host}:{port}")

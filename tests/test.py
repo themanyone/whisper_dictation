@@ -3,19 +3,21 @@
 import requests
 
 # Assuming `messages` is a list of message objects
-messages = [{ "role": "system", "content": "In this conversation between `user:` and `assistant:`, play the role of assistant. Reply as assistant." },
+messages = [
+    {
+        "role": "system",
+        "content": "In this conversation between `user:` and `assistant:`, play the role of assistant. Reply as assistant.",
+    },
     {"role": "user", "content": "Write a sentence about a rose."},
-    {"content":"A rose by any other name is still a rose.","role":"assistant"},
+    {"content": "A rose by any other name is still a rose.", "role": "assistant"},
     {"role": "user", "content": "Say hello to my little friend."},
-    {"content":"Hello, little friend.","role":"assistant"},
+    {"content": "Hello, little friend.", "role": "assistant"},
     {"role": "user", "content": "Describe a duck in one sentence."},
-    {"content":"A duck is an aquatic shore bird.","role":"assistant"},
+    {"content": "A duck is an aquatic shore bird.", "role": "assistant"},
     {"role": "user", "content": "OMG! Tell me everything you know about ducks."},
 ]
 
-payload = {
-    "messages": messages
-}
+payload = {"messages": messages}
 
 response = requests.post("http://localhost:5000", json=payload)
 # this works, but returns the list as a string

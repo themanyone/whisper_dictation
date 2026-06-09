@@ -23,8 +23,9 @@ import os
 import sys
 
 # Session detection for X11/Wayland compatibility
-if os.environ.get('XDG_SESSION_TYPE') == 'wayland':
+if os.environ.get("XDG_SESSION_TYPE") == "wayland":
     from input_backend import InputSimulator
+
     pyautogui = InputSimulator()
 else:
     import pyautogui
@@ -40,8 +41,11 @@ import threading
 import requests
 import logging
 from mimic3_client import say, shutup
-from on_screen import camera
+from on_screen import camera, show_pictures
 from record import delayRecord
+from commands_table import COMMANDS
+from matcher import Matcher
+
 audio_queue = queue.Queue()
 listening = True
 chatting = False
@@ -50,18 +54,18 @@ running = True
 cam = None
 
 logging.basicConfig(
-	level=logging.INFO,
-	format="[%(levelname)s] %(lineno)d %(message)s",
-	handlers=[
-#		logging.FileHandler('/tmp/whisper_cpp_client.log'),
-		logging.StreamHandler()
-	]
+    level=logging.INFO,
+    format="[%(levelname)s] %(lineno)d %(message)s",
+    handlers=[
+        # logging.FileHandler('/tmp/whisper_cpp_client.log'),
+        logging.StreamHandler()
+    ],
 )
 
 # Define some common string constants
 audio_format = ".wav"
 # try increasing conversation_length if AI model has a large ctx window
-conversation_length = 9 # interactions
+conversation_length = 9  # interactions
 # address of whisper.cpp server
 whisper_cpp = "http://127.0.0.1:7777/inference"
 # address of local chat server
@@ -78,112 +82,199 @@ if gpt_key:
     client = OpenAI(api_key=gpt_key)
 else:
     logging.debug("Export OPENAI_API_KEY if you prefer answers from ChatGPT.\n")
-if (gem_key):
+if gem_key:
     import google.generativeai as genai
+
     genai.configure(api_key=gem_key)
     model = genai.GenerativeModel("gemini-1.5-flash")
 else:
     logging.debug("Export GENAI_TOKEN if you prefer answers from Gemini.\n")
 
-# commands and hotkeys for various platforms
-commands = {
-"windows": {
-    "file manager":  "start explorer",
-    "terminal":     "start cmd",
-    "browser":      "start iexplore",
-    "web browser":  "start iexplore",
-    "webcam":       "on_screen.py",
-    },
+# ── Handler functions for the command table ──────────────────────────
+# These are looked up by name in HANDLER_MAP when a command matches.
 
-"linux": {
-    "file manager":  "nemo --no-desktop&",
-    "terminal":     "xterm -bg gray20 -fg gray80 -fa 'Liberation Sans Mono' -fs 12 -rightbar&",
-    "browser":      "htmlview&",
-    "web browser":   "htmlview&",
-    "webcam":       "./on_screen.py",
-    },
+# OS-specific app launch commands
+APPS_LINUX = {
+    "file manager": "nemo --no-desktop&",
+    "terminal": "xterm -bg gray20 -fg gray80 -fa 'Liberation Sans Mono' -fs 12 -rightbar&",
+    "browser": "htmlview&",
+    "web browser": "htmlview&",
+    "webcam": "./on_screen.py",
 }
-hotkeys = {
-    r"^new paragraph.?$": [['backspace'], ['enter'],['enter']],
-    r"^(new li[nm]e|press enter|submit).?$": [['backspace'],['enter']],
-    r"^back ?space.?$":   [['backspace']],
-    r"^space.?$":         [['space']],
-    r"^go up.?$":         [['up']],
-    r"^go down.?$":       [['down']],
-    r"^go right.?$":      [['right']],
-    r"^go left.?$":       [['left']],
-    r"^go home.?$":       [['home']],
-    r"^go (to the )?end.?$": [['end']],
-    r"^page up.?$":    	  [['pageup']],
-    r"^page down.?$":     [['pagedown']],
-    r"^select all.?$":    [['ctrl', 'a']],
-    r"^undo that.?$":     [['ctrl', 'z']],
-    r"^cut line.?$":      [['ctrl', 'l']],
-    r"^copy that.?$":     [['ctrl', 'c']],
-    r"^paste it.?$":      [['ctrl', 'v']],
-    }
-actions = {
-    r"^left click.?$": "pyautogui.click()",
-    r"^(click)( the)?( mouse).?": "pyautogui.click()",
-    r"^middle click.?$": "pyautogui.middleClick()",
-    r"^right click.?$": "pyautogui.rightClick()",
-    r"^directory listing.?$": "pyautogui.write('ls\n')",
-    r"^(peter|samantha|computer).?,? (run|open|start|launch)(up)?( a| the)? ": "os.system(commands[sys.platform][q])",
-    r"^(peter|samantha|computer).?,? closed? window": "pyautogui.hotkey('alt', 'F4')",
-    r"^(peter|samantha|computer).?,? search( the)?( you| web| google| bing| online)?(.com)? for ":
-       "webbrowser.open('https://you.com/search?q=' + re.sub(' ','%20',q))",
-    r"^(peter|samantha|computer).?,? (send|compose|write)( an| a) email to ": "os.popen('xdg-open \"mailto://' + q.replace(' at ', '@') + '\"')",
-    r"^(peter|samantha|computer).?,? (i need )?(let's )?(see |have |show )?(us |me )?(an? )?(image|picture|draw|create|imagine|paint)(ing| of)? ": "os.popen(f'./sdapi.py \"{q}\"')",
-    r"^(peter|samantha|computer)?.?,? ?(resume|zoom|continue|start|type|thank|got|whoa|that's) (typing|d.ctation|this|you|there|enough|it)" : "resume_dictation()",
-    r"^(peter|samantha|computer)?.?,? ?(record)( a| an| my)?( audio| sound| voice| file| clip)+" : "record_mp3()",
-    r"^(peter|samantha|computer)?.?,? ?(on|show|start|open) (the )?(webcam|camera|screen)" : "on_screen()",
-    r"^(peter|samantha|computer)?.?,? ?(off|stop|close) (the )?(webcam|camera|screen)" : "off_screen()",
-    r"^(peter|samantha|computer)?.?,? ?(take|snap) (a|the|another) (photo|picture)" : "take_picture()",
-    r"^(peter|samantha|computer)?.?,? ?(show|view) (the )?(photo|photos|pictures)( album| collection)?" : "show_pictures()",
-    r"^(peter|samantha|computer).?,? ": "generate_text(q)"
-    }
+APPS_WINDOWS = {
+    "file manager": "start explorer",
+    "terminal": "start cmd",
+    "browser": "start iexplore",
+    "web browser": "start iexplore",
+    "webcam": "on_screen.py",
+}
 
-def process_actions(tl:str) -> bool:
-    global chatting
-    for input, action in actions.items():
-        # look for action in list
-        if s:=re.search(input, tl):
-            q = tl[s.end():] # get q for action
-            say("okay")
-            eval(action)
-            if debug:
-                print(q)
-            return True # success
-    if chatting:
-        generate_text(tl)
-        return True
-    return False # no action
+
+def open_app(q):
+    """Launch an app by name, matched against OS-specific mappings."""
+    app_map = APPS_WINDOWS if sys.platform.startswith("win") else APPS_LINUX
+    ql = (q or "").strip().lower()
+    for name, cmd in app_map.items():
+        if name in ql or ql in name:
+            os.system(cmd)
+            return
+    if ql:
+        os.system(ql)
+
+
+def left_click(q=None):
+    pyautogui.click()
+
+
+def right_click(q=None):
+    pyautogui.rightClick()
+
+
+def middle_click(q=None):
+    pyautogui.middleClick()
+
+
+def close_window(q=None):
+    pyautogui.hotkey("alt", "F4")
+
+
+def search_web(q):
+    q = (q or "").strip()
+    webbrowser.open("https://you.com/search?q=" + q.replace(" ", "%20"))
+
+
+def go_to_website(q):
+    q = (q or "").strip()
+    # If it looks like a domain, prepend https://
+    if not q.startswith("http"):
+        q = "https://" + q
+    webbrowser.open(q)
+
+
+def send_email(q):
+    q = (q or "").strip().replace(" at ", "@")
+    os.popen(f'xdg-open "mailto://{q}"')
+
+
+def draw_picture(q):
+    os.popen(f'./sdapi.py "{q}"')
+
+
+def show_webcam(q=None):
+    global cam
+    if not cam:
+        cam = camera()
+    cam.pipeline.set_state(cam.on)
+    return cam
+
+
+def hide_webcam(q=None):
+    global cam
+    if cam:
+        cam = cam.stop_camera()
+
+
+# ── Hotkey handlers ──────────────────────────────────────────────────
+def hotkey_new_para(q=None):
+    pyautogui.hotkey("enter")
+    pyautogui.hotkey("enter")
+
+
+def hotkey_enter(q=None):
+    pyautogui.hotkey("enter")
+
+
+def hotkey_backspace(q=None):
+    pyautogui.hotkey("backspace")
+
+
+def hotkey_space(q=None):
+    pyautogui.hotkey("space")
+
+
+def hotkey_select_all(q=None):
+    pyautogui.hotkey("ctrl", "a")
+
+
+def hotkey_copy(q=None):
+    pyautogui.hotkey("ctrl", "c")
+
+
+def hotkey_cut(q=None):
+    pyautogui.hotkey("ctrl", "x")
+
+
+def hotkey_paste(q=None):
+    pyautogui.hotkey("ctrl", "v")
+
+
+def hotkey_undo(q=None):
+    pyautogui.hotkey("ctrl", "z")
+
+
+def hotkey_up(q=None):
+    pyautogui.hotkey("up")
+
+
+def hotkey_down(q=None):
+    pyautogui.hotkey("down")
+
+
+def hotkey_left(q=None):
+    pyautogui.hotkey("left")
+
+
+def hotkey_right(q=None):
+    pyautogui.hotkey("right")
+
+
+def hotkey_home(q=None):
+    pyautogui.hotkey("home")
+
+
+def hotkey_end(q=None):
+    pyautogui.hotkey("end")
+
+
+def hotkey_page_up(q=None):
+    pyautogui.hotkey("pageup")
+
+
+def hotkey_page_down(q=None):
+    pyautogui.hotkey("pagedown")
+
+
+def hotkey_ls(q=None):
+    pyautogui.write("ls\n")
+
 
 def ANSI_clear_line():
     """Check if the terminal supports ANSI escape codes."""
     # Get the TERM environment variable
-    term = os.environ.get('TERM', '')
+    term = os.environ.get("TERM", "")
 
     # Common terms that indicate a compatible terminal
     compatible_terms = {
-        'xterm',
-        'xterm-256color',
-        'rxvt',
-        'rxvt-unicode',
-        'rxvt-unicode-256color',
-        'screen',
-        'screen-256color',
-        'tmux',
-        'tmux-256color',
-        'linux',
-        'alacritty'
+        "xterm",
+        "xterm-256color",
+        "rxvt",
+        "rxvt-unicode",
+        "rxvt-unicode-256color",
+        "screen",
+        "screen-256color",
+        "tmux",
+        "tmux-256color",
+        "linux",
+        "alacritty",
     }
     ANSI_delete_line = "\033[1K\r"
 
     # Check if the TERM environment variable indicates a compatible terminal
     return ANSI_delete_line if term in compatible_terms else "\b" * 99
 
+
 bs = ANSI_clear_line()
+
 
 def on_screen():
     global cam
@@ -192,41 +283,31 @@ def on_screen():
     cam.pipeline.set_state(cam.on)
     return cam
 
+
 def take_picture():
     global cam
     on = cam
     cam = on_screen()
     time.sleep(0.5)
     cam.take_picture()
-    if not on: # don't leave camera on, unless already on
+    if not on:  # don't leave camera on, unless already on
         time.sleep(1.0)
         off_screen()
+
 
 def off_screen():
     global cam
     if cam:
         cam = cam.stop_camera()
 
-# search text for hotkeys
-def process_hotkeys(txt: str) -> bool:
-    for key,val in hotkeys.items():
-        # if hotkey command
-        if re.search(key, txt):
-            # unpack list of key combos such as ctrl-v
-            for x in val:
-                # press each key combo in turn
-                # The * unpacks x to separate args
-                pyautogui.hotkey(*x)
-            return True
-    return False
 
 def recognize_speech(f: str) -> str:
-    result = ['']
+    result = [""]
     if f and os.path.isfile(f):
         try:
-            with open(f, 'rb') as file:
-                files = {'file': (os.path.basename(f), file)}
-                data = {'temperature': 0.2, 'response_format': 'json'}
+            with open(f, "rb") as file:
+                files = {"file": (os.path.basename(f), file)}
+                data = {"temperature": 0.2, "response_format": "json"}
 
                 response = requests.post(whisper_cpp, files=files, data=data)
                 response.raise_for_status()  # Raise an exception for HTTP errors
@@ -247,12 +328,19 @@ def recognize_speech(f: str) -> str:
         logging.debug(f"{bs}File does not exist or is not a file: {f}")
         return ""
 
+
 print("Tab over to another window and start speaking.")
 print("Text should appear in the window you are working in.")
-print("Say \"Stop listening.\" or press CTRL-C to stop.")
+print('Say "Stop listening." or press CTRL-C to stop.')
 say("All systems ready.")
 
-messages = [{ "role": "system", "content": "In this conversation between `user:` and `assistant:`, play the role of assistant. Reply as a helpful assistant." },]
+messages = [
+    {
+        "role": "system",
+        "content": "In this conversation between `user:` and `assistant:`, play the role of assistant. Reply as a helpful assistant.",
+    },
+]
+
 
 def generate_text(prompt: str):
     logging.debug(f"{bs}Asking ChatGPT")
@@ -263,12 +351,13 @@ def generate_text(prompt: str):
     # Try chatGPT
     if gpt_key:
         try:
-            completion = client.chat.completions.create(model="gpt-3.5-turbo",
-            messages=messages)
+            completion = client.chat.completions.create(
+                model="gpt-3.5-turbo", messages=messages
+            )
             completion = completion.choices[0].message.content
         except Exception as e:
-                logging.warning("ChatGPT had a problem.")
-                logging.warning(e)
+            logging.warning("ChatGPT had a problem.")
+            logging.warning(e)
 
     # Fallback to Google Gemini
     elif gem_key and not completion:
@@ -276,14 +365,18 @@ def generate_text(prompt: str):
         try:
             chat = model.start_chat(
                 history=[
-                {"role": "user" if x["role"] == "user" else "model",
-                    "parts": x["content"]}for x in messages]
+                    {
+                        "role": "user" if x["role"] == "user" else "model",
+                        "parts": x["content"],
+                    }
+                    for x in messages
+                ]
             )
             response = chat.send_message(prompt)
             completion = response.text
         except Exception as e:
-                logging.warning("Gemini had a problem.")
-                logging.warning(e)
+            logging.warning("Gemini had a problem.")
+            logging.warning(e)
 
     # Fallback to localhost
     if not completion:
@@ -291,11 +384,10 @@ def generate_text(prompt: str):
         # ref. llama.cpp/examples/server/README.md
         try:
             client = openai.OpenAI(
-            base_url=local_chat_url,
-            api_key = "sk-no-key-required")
+                base_url=local_chat_url, api_key="sk-no-key-required"
+            )
             completion = client.chat.completions.create(
-                model="gpt-3.5-turbo",
-                messages=messages
+                model="gpt-3.5-turbo", messages=messages
             )
         except Exception as e:
             logging.warning(f"Local Server Warning: {e}")
@@ -304,20 +396,23 @@ def generate_text(prompt: str):
 
     if completion:
         # remove '<|...|>' tags from completion
-        completion = re.sub(r'<\|.*\|>', '', completion)
+        completion = re.sub(r"<\|.*\|>", "", completion)
         print(f"{bs}{completion}")
         # handle queries for more information
-        if "more information?" in completion or \
-            "It sounds like" in completion or \
-            "It seems like" in completion or \
-            "you tell me" in completion or \
-            "Could you please" in completion or \
-            "a large language model" in completion or \
-            completion == "< nooutput >":
+        if (
+            "more information?" in completion
+            or "It sounds like" in completion
+            or "It seems like" in completion
+            or "you tell me" in completion
+            or "Could you please" in completion
+            or "a large language model" in completion
+            or completion == "< nooutput >"
+        ):
             say("Sorry, I didn't catch that. Can you give me more information, please?")
-            chatting = False # allow dictation into the prompt box
-            response = pyautogui.prompt("More information, please.",
-            "Please clarify.", prompt)
+            chatting = False  # allow dictation into the prompt box
+            response = pyautogui.prompt(
+                "More information, please.", "Please clarify.", prompt
+            )
             # on user cancel, stop AI chat & resume dictation
             if not response:
                 return None
@@ -332,12 +427,68 @@ def generate_text(prompt: str):
         messages.append({"role": "assistant", "content": completion})
         if len(messages) > conversation_length:
             messages.remove(messages[1])
-            messages.remove(messages[1]) # remove oldest user & assistant messages
+            messages.remove(messages[1])  # remove oldest user & assistant messages
+
 
 def resume_dictation():
     global chatting, listening
     chatting = False
     listening = True
+
+
+def record_mp3():
+    global listening
+    listening = False
+    say("Recording audio clip...")
+    time.sleep(1)
+    rec = delayRecord("audio.mp3")
+    rec.start()
+    say(f"Recording saved to {rec.file_name}")
+    time.sleep(1)
+    listening = True
+
+
+# Map handler names from commands_table.py → actual functions
+HANDLER_MAP = {
+    "left_click": left_click,
+    "right_click": right_click,
+    "middle_click": middle_click,
+    "open_app": open_app,
+    "close_window": close_window,
+    "search_web": search_web,
+    "go_to_website": go_to_website,
+    "send_email": send_email,
+    "draw_picture": draw_picture,
+    "resume_dictation": resume_dictation,
+    "record_mp3": record_mp3,
+    "show_webcam": show_webcam,
+    "hide_webcam": hide_webcam,
+    "take_picture": take_picture,
+    "show_pictures": show_pictures,
+    "hotkey_new_para": hotkey_new_para,
+    "hotkey_enter": hotkey_enter,
+    "hotkey_backspace": hotkey_backspace,
+    "hotkey_space": hotkey_space,
+    "hotkey_select_all": hotkey_select_all,
+    "hotkey_copy": hotkey_copy,
+    "hotkey_cut": hotkey_cut,
+    "hotkey_paste": hotkey_paste,
+    "hotkey_undo": hotkey_undo,
+    "hotkey_up": hotkey_up,
+    "hotkey_down": hotkey_down,
+    "hotkey_left": hotkey_left,
+    "hotkey_right": hotkey_right,
+    "hotkey_home": hotkey_home,
+    "hotkey_end": hotkey_end,
+    "hotkey_page_up": hotkey_page_up,
+    "hotkey_page_down": hotkey_page_down,
+    "hotkey_ls": hotkey_ls,
+    "generate_text": generate_text,
+}
+
+# Initialize semantic command matcher
+matcher = Matcher(COMMANDS)
+
 
 def transcribe():
     global listening
@@ -359,64 +510,58 @@ def transcribe():
                 if re.search(r"[\(\[\*]", txt):
                     print(bs + txt.strip())
                     # filter it out
-                    txt = re.sub(r'[\*\[\(][^\]\)]*[\]\)\*]*\s*$', '', txt)
+                    txt = re.sub(r"[\*\[\(][^\]\)]*[\]\)\*]*\s*$", "", txt)
                 if txt == " " or txt == "you " or txt == "Thanks for watching! ":
-                    continue # ignoring you
+                    continue  # ignoring you
                 # get lower-case spoken command string
                 lower_case = txt.lower().strip()
                 if not lower_case:
                     continue
-                shutup() # stop bot from talking
+                shutup()  # stop bot from talking
                 if match := re.search(r"[^\w\s]$", lower_case):
-                    lower_case = lower_case[:match.start()] # remove punctuation
+                    lower_case = lower_case[: match.start()]  # remove punctuation
                 # strip txt unless we specifically say "new paragraph"
-                txt = txt.strip(' \n') + ' '
-                print(bs + txt) # print the text
+                txt = txt.strip(" \n") + " "
+                print(bs + txt)  # print the text
 
-                # see list of actions and hotkeys at top of file :)
-                # Go to Website.
-                if s:=re.search(r"^(peter|computer).? (go|open|browse|visit|navigate)( up| to| the| website)* [a-zA-Z0-9-]{1,63}(\.[a-zA-Z0-9-]{1,63})+$", lower_case):
-                    q = lower_case[s.end():] # get q for command
-                    webbrowser.open('https://' + q.strip())
-                    continue
-                # Stop dictation.
-                elif re.search(r"^stop.? (d.ctation|listening).?$", lower_case):
+                # Stop dictation (special case — breaks the loop).
+                if re.search(r"^stop.? (d.ctation|listening).?$", lower_case):
                     say("Shutting down.")
                     break
-                elif re.search(r"^paused? (d.ctation|positi.?i?cation).?$", lower_case):
-                    listening = False
-                    say("okay")
-                elif process_actions(lower_case):
+                # — Semantic command matching —
+                result = matcher.match(lower_case)
+                if result:
+                    handler_name, arg, score = result
+                    if debug:
+                        print(f"[DEBUG] matched '{handler_name}' (score={score:.3f})")
+                    handler_fn = HANDLER_MAP.get(handler_name)
+                    if handler_fn:
+                        say("okay")
+                        handler_fn(arg)
+                        continue
+                # — AI chat fallback —
+                if chatting:
+                    generate_text(lower_case)
                     continue
+                # — Dictation —
                 if not listening:
                     continue
-                elif process_hotkeys(lower_case):
-                    continue
-                elif len(txt) > 1:
+                if len(txt) > 1:
                     pyautogui.write(txt)
             # continue looping
         except KeyboardInterrupt:
             say("Goodbye.")
             break
 
-def record_mp3():
-    global listening
-    listening = False
-    say("Recording audio clip...")
-    time.sleep(1)
-    rec = delayRecord("audio.mp3")
-    rec.start()
-    say(f"Recording saved to {rec.file_name}")
-    time.sleep(1)
-    listening = True
 
 def record_to_queue():
     global record_process
     global running
     while running:
-        record_process = delayRecord(tempfile.mktemp()+ audio_format)
+        record_process = delayRecord(tempfile.mktemp() + audio_format)
         record_process.start()
         audio_queue.put(record_process.file_name)
+
 
 def discard_input():
     """Discard any pending terminal input without waiting for Enter.
@@ -425,6 +570,7 @@ def discard_input():
     try:
         if os.name == "nt":
             import msvcrt
+
             while msvcrt.kbhit():
                 msvcrt.getwch()  # consume wide char; use getch() for bytes
         else:  # POSIX
@@ -433,6 +579,7 @@ def discard_input():
                 # use termios.tcflush when available
                 try:
                     from termios import tcflush, TCIFLUSH
+
                     tcflush(fd, TCIFLUSH)
                     return
                 except Exception:
@@ -440,6 +587,7 @@ def discard_input():
             # fallback: nonblocking read to drain whatever is available
             import fcntl
             import errno
+
             orig_fl = fcntl.fcntl(fd, fcntl.F_GETFL)
             try:
                 fcntl.fcntl(fd, fcntl.F_SETFL, orig_fl | os.O_NONBLOCK)
@@ -463,6 +611,7 @@ def discard_input():
             pass
     print("Goodbye.")
 
+
 def quit():
     logging.debug("\nStopping...")
     global running
@@ -476,19 +625,20 @@ def quit():
     try:
         while f := audio_queue.get_nowait():
             logging.debug(f"{bs}Removing temporary file: {f}")
-            if f[:5] == "/tmp/": # safety check
+            if f[:5] == "/tmp/":  # safety check
                 os.remove(f)
     except Exception:
         pass
     logging.debug("\nFreeing system resources.\n")
-#    os.system("systemctl --user stop whisper")
+    #    os.system("systemctl --user stop whisper")
     discard_input()
     time.sleep(1.0)
     shutup()
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     record_thread = threading.Thread(target=record_to_queue)
-#    os.system("systemctl --user start whisper")
+    #    os.system("systemctl --user start whisper")
     record_thread.start()
     transcribe()
     quit()

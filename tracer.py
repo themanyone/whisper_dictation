@@ -2,6 +2,7 @@
 import traceback
 import sys
 
+
 def format_error_info(exc_type, exc_value, exc_traceback):
     """
     Format error information in GNU format (file:line:column).
@@ -13,12 +14,14 @@ def format_error_info(exc_type, exc_value, exc_traceback):
     error_message = f"{exc_type.__name__}: {exc_value}\n" + "\n".join(formatted_lines)
     return error_message
 
+
 def custom_error_handler(exc_type, exc_value, exc_traceback):
     """
     Custom error handler to print errors in GNU format.
     """
     error_message = format_error_info(exc_type, exc_value, exc_traceback)
     sys.stderr.write(error_message + "\n")
+
 
 # Set the custom error handler
 sys.excepthook = custom_error_handler

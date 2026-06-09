@@ -10,9 +10,7 @@ response = client.chat.completions.create(
             "content": [
                 {
                     "type": "image_url",
-                    "image_url": {
-                        "url": "http://localhost:9165/images/image.jpg"
-                    },
+                    "image_url": {"url": "http://localhost:9165/images/image.jpg"},
                 },
                 {"type": "text", "text": "Briefly caption this image."},
             ],

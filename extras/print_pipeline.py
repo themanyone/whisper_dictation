@@ -1,6 +1,8 @@
 import gi
 from gi.repository import Gst
-gi.require_version('Gst', '1.0')
+
+gi.require_version("Gst", "1.0")
+
 
 def print_gst_pipeline(pipeline_string):
     """
@@ -28,10 +30,14 @@ def print_gst_pipeline(pipeline_string):
                 print(f"    - Pad: {pad.get_name()}")
                 if pad.get_direction() == Gst.PadDirection.SRC:
                     for sink in pad.get_linked_pads():
-                        print(f"      -> {sink.get_parent().get_name()}.{sink.get_name()}")
+                        print(
+                            f"      -> {sink.get_parent().get_name()}.{sink.get_name()}"
+                        )
                 elif pad.get_direction() == Gst.PadDirection.SINK:
                     for source in pad.get_linked_pads():
-                        print(f"      -> {source.get_parent().get_name()}.{source.get_name()}")
+                        print(
+                            f"      -> {source.get_parent().get_name()}.{source.get_name()}"
+                        )
 
         # Free resources
         pipeline.unref()

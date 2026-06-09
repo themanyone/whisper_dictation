@@ -36,29 +36,29 @@ from PIL import Image
 
 url = "http://127.0.0.1:7860"
 
+
 def draw(prompt, output="output.png"):
-    payload = {
-        "prompt": prompt,
-        "steps": 1,
-        "cfg_scale": 1
-    }
+    payload = {"prompt": prompt, "steps": 1, "cfg_scale": 1}
     try:
-        response = requests.post(url=f'{url}/sdapi/v1/txt2img', json=payload)
+        response = requests.post(url=f"{url}/sdapi/v1/txt2img", json=payload)
 
         r = response.json()
 
-        image = Image.open(io.BytesIO(base64.b64decode(r['images'][0])))
+        image = Image.open(io.BytesIO(base64.b64decode(r["images"][0])))
         image.save(output)
         image.show()
     except Exception as e:
         sys.stderr.write("SD API had a problem. Here's the error message.")
         sys.stderr.write(str(e))
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     #  Draw an image from a prompt supplied on the command line.
     if len(sys.argv) == 2:
         draw(sys.argv[1])
-    if len(sys.argv) == 3: # Provide a name for the image.
+    if len(sys.argv) == 3:  # Provide a name for the image.
         draw(sys.argv[1], sys.argv[2])
     else:
-        sys.stderr.write(f"Usage: {sys.argv[0]} \"a horse riding an elephant\" horse_phant.png")
+        sys.stderr.write(
+            f'Usage: {sys.argv[0]} "a horse riding an elephant" horse_phant.png'
+        )

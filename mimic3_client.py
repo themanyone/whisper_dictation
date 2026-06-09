@@ -24,24 +24,30 @@ import logging
 import urllib.parse
 import sys
 import gi
-gi.require_version('Gst', '1.0')
-from gi.repository import Gst
+
+gi.require_version("Gst", "1.0")
+from gi.repository import Gst  # noqa: E402
+
 pipeline = None
 Gst.init(None)
 talk_process = None
 logging.basicConfig(
-	level=logging.INFO,
-	format="%(asctime)s [%(levelname)s] %(lineno)d %(message)s",
-	handlers=[
-#		logging.FileHandler('/tmp/mimic_client.log'),
-		logging.StreamHandler()
-	]
+    level=logging.INFO,
+    format="%(asctime)s [%(levelname)s] %(lineno)d %(message)s",
+    handlers=[
+        # logging.FileHandler('/tmp/mimic_client.log'),
+        logging.StreamHandler()
+    ],
 )
+
+
 def say(text, base_url="http://localhost:59125/api/tts"):
     global pipeline
     # Define the parameters for the TTS request
-    params = {'text': text, "voice": "en_US/vctk_low"}
-    query_string = "&".join(f"{k}={urllib.parse.quote_plus(v)}" for k, v in params.items())
+    params = {"text": text, "voice": "en_US/vctk_low"}
+    query_string = "&".join(
+        f"{k}={urllib.parse.quote_plus(v)}" for k, v in params.items()
+    )
     # Define the GStreamer pipeline
     pipeline_description = (
         f" souphttpsrc name=soup location={base_url}?{query_string} "
@@ -61,7 +67,10 @@ def say(text, base_url="http://localhost:59125/api/tts"):
             pipeline.set_state(Gst.State.NULL)
         elif mtype == Gst.MessageType.ERROR:
             err, debug = message.parse_error()
-            logging.debug(f"Error received from element {message.src.get_name()}: {err.message}", file=sys.stderr)
+            logging.debug(
+                f"Error received from element {message.src.get_name()}: {err.message}",
+                file=sys.stderr,
+            )
             if debug:
                 logging.debug(f"Debugging information: {debug}", file=sys.stderr)
         return True
@@ -74,6 +83,7 @@ def say(text, base_url="http://localhost:59125/api/tts"):
     # Start the pipeline
     pipeline.set_state(Gst.State.PLAYING)
 
+
 def shutup():
     global pipeline
     for element in pipeline.children:
@@ -82,6 +92,7 @@ def shutup():
     if pipeline is not None:
         pipeline.send_event(Gst.Event.new_eos())
         pipeline.set_state(Gst.State.NULL)
+
 
 # Example usage
 if __name__ == "__main__":

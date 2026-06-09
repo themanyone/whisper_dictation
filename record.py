@@ -29,20 +29,23 @@ import time
 import math
 import logging
 import gi
+
 gi.require_version("Gst", "1.0")
-from gi.repository import Gst, GLib
+from gi.repository import Gst, GLib  # noqa: E402
 
 # Initialize GStreamer
 Gst.init(None)
 
 logging.basicConfig(
-	level=logging.INFO,
-	format="%(asctime)s [%(levelname)s] %(lineno)d %(message)s",
-	handlers=[
-#		logging.FileHandler('/tmp/rec.log'),
-		logging.StreamHandler()
-	]
+    level=logging.INFO,
+    format="%(asctime)s [%(levelname)s] %(lineno)d %(message)s",
+    handlers=[
+        # logging.FileHandler('/tmp/rec.log'),
+        logging.StreamHandler()
+    ],
 )
+
+
 def unique_file_name(file_name):
     """
     Generates a unique file name by appending numbers if the file already exists.
@@ -65,11 +68,12 @@ def unique_file_name(file_name):
         logging.debug(f"Recording to '{file_name}'")
     return file_name
 
+
 class delayRecord:
-    def __init__(self, file_name = ""):
+    def __init__(self, file_name=""):
         # set default options
-        self.recording   = False
-        self.quiet_timer = self.sound_timer = time.time() # start timers
+        self.recording = False
+        self.quiet_timer = self.sound_timer = time.time()  # start timers
         from_options = self.process_options()
         if not file_name:
             file_name = from_options
@@ -94,27 +98,27 @@ class delayRecord:
             ".m4a": "avenc_aac ! mp4mux",
             ".wma": "wmav2enc ! asfmuxtype=Audio",
         }
-        enc = encodings.get(ext) or 'wavenc'
+        enc = encodings.get(ext) or "wavenc"
         # vorbisenc doesn't support 16-bit rates
         rate = "" if "vorbis" in enc else self.rate
         logging.debug(f"format {rate}")
         logging.debug(f"using {enc} encoder")
-        src = "autoaudiosrc" # alsasrc | pulsesrc
+        src = "autoaudiosrc"  # alsasrc | pulsesrc
         delay = "ladspa-delay-1898-so-delay-l"  # Arch Linux: linear interpolation delay
         # valve-type elements require async=off downstream
         self.pipeline = Gst.parse_launch(
-        f"{src} ! tee name=t ! {delay} name=d ! valve name=v ! {self.gstreamer} audioconvert ! queue ! audioresample ! {rate} {enc} ! filesink name=fs location={file_name} async=false t. ! queue ! level ! fakesink"
+            f"{src} ! tee name=t ! {delay} name=d ! valve name=v ! {self.gstreamer} audioconvert ! queue ! audioresample ! {rate} {enc} ! filesink name=fs location={file_name} async=false t. ! queue ! level ! fakesink"
         )
-        self.filesink = self.pipeline.get_by_name('fs')
-        self.delay = self.pipeline.get_by_name('d')
+        self.filesink = self.pipeline.get_by_name("fs")
+        self.delay = self.pipeline.get_by_name("d")
         self.delay.set_property("delay-time", self.preroll)
         self.delay.set_property("max-delay", 5.0)  # Max 5 seconds
-        self.valve = self.pipeline.get_by_name('v')
+        self.valve = self.pipeline.get_by_name("v")
         self.valve.set_property("drop", True)
 
     # handle sound-level messages 10 per second
     def monitor_levels(self, bus, message):
-        rms = message.get_structure().get_value('rms')[0]
+        rms = message.get_structure().get_value("rms")[0]
         # peak = message.get_structure().get_value('peak')[0]
         if math.isnan(rms):
             return True
@@ -126,7 +130,7 @@ class delayRecord:
         if rms > self.threshold:
             # Stop recording if recording time exceeded
             if seconds_of_sound / 60 > self.minutes:
-                logging.critical('Recording time exceeded. Quitting.')
+                logging.critical("Recording time exceeded. Quitting.")
                 self.pipeline.send_event(Gst.Event.new_eos())
 
             # Start recording when there are sustained sound levels
@@ -134,12 +138,12 @@ class delayRecord:
                 logging.debug("Recording started")
                 self.valve.set_property("drop", False)
                 self.recording = True
-            self.quiet_timer = reset # reset quiet timer
+            self.quiet_timer = reset  # reset quiet timer
         else:
             if self.recording and self.stop_after < seconds_of_quiet:
                 self.pipeline.send_event(Gst.Event.new_eos())
             elif not self.recording:
-                self.sound_timer = reset # wait for sounds
+                self.sound_timer = reset  # wait for sounds
                 # never stops listening, since nothing is being saved
 
     # If loaded as a module, the parent process can call this
@@ -162,7 +166,7 @@ class delayRecord:
         self.bus.add_signal_watch()
         # Connect to the 'level' signal
         self.bus.connect("message", self.on_bus_message)
-        self.bus.connect('message::element', self.monitor_levels)
+        self.bus.connect("message::element", self.monitor_levels)
 
         # Start playing the pipeline
         self.pipeline.set_state(Gst.State.PLAYING)
@@ -180,7 +184,7 @@ class delayRecord:
         self.pipeline.set_state(Gst.State.NULL)
 
     # Draw a VU meter in the terminal
-    def draw_meter(self, level:float):
+    def draw_meter(self, level: float):
         terminal_size = os.get_terminal_size()
         mw = int(self.meter_w)
         sw = mw + 3
@@ -188,15 +192,15 @@ class delayRecord:
             level = 1 - (level / -sw)
             num_chars = max(int(level * mw), 0)
             if terminal_size.columns < sw + 28:
-                meter_chars = 'Terminal too small'
+                meter_chars = "Terminal too small"
             else:
-                meter_chars = '=' * num_chars + '-' * (mw - num_chars)
+                meter_chars = "=" * num_chars + "-" * (mw - num_chars)
             meterString = f"[{meter_chars}] {(1 - level) * -sw:.1f} dB"
-            print("\r", end='')
+            print("\r", end="")
             leftToDelete = terminal_size.columns - 2
             for x in range(leftToDelete):
-                print(' ' * (leftToDelete - x), x, end='\x1b[1K\r')
-            print(f"\r{meterString}", end='')
+                print(" " * (leftToDelete - x), x, end="\x1b[1K\r")
+            print(f"\r{meterString}", end="")
         except Exception:
             logging.exception("Failed writing volume meter to terminal!")
 
@@ -215,16 +219,16 @@ class delayRecord:
         sys.exit(2)
 
     def process_options(self):
-        file_name  = "audio.wav"
-        self.quality    = False
-        self.gstreamer  = ""
-        self.minutes    = 10
-        self.ignore     = 0.3
-        self.preroll    = 1.0
-        self.meter_w   = 25.0
+        file_name = "audio.wav"
+        self.quality = False
+        self.gstreamer = ""
+        self.minutes = 10
+        self.ignore = 0.3
+        self.preroll = 1.0
+        self.meter_w = 25.0
         self.stop_after = 1.2
-        self.threshold  = -20
-        self.rate       = "audio/x-raw,rate=16000,channels=1,format=S16LE ! "
+        self.threshold = -20
+        self.rate = "audio/x-raw,rate=16000,channels=1,format=S16LE ! "
         lsa = len(sys.argv)
         if lsa == 1:
             return file_name
@@ -241,12 +245,12 @@ class delayRecord:
         }
         for i in range(1, lsa):
             try:
-                next_str = sys.argv[i+1] if i < lsa -1 else None
-                next_float = float(sys.argv[i+1]) if i < lsa -1 else 0.0
+                next_str = sys.argv[i + 1] if i < lsa - 1 else None
+                next_float = float(sys.argv[i + 1]) if i < lsa - 1 else 0.0
             except ValueError:
                 continue
             arg = sys.argv[i]
-            if arg[0]=='-':
+            if arg[0] == "-":
                 for j in arg[1:]:
                     oj = options.get(j)
                     if oj:
@@ -259,16 +263,17 @@ class delayRecord:
                         self.print_help(options)
             else:
                 ext = os.path.splitext(arg)[1]
-                if (len(ext) == 4 or len(ext) == 5) and ext[1] > '9':
+                if (len(ext) == 4 or len(ext) == 5) and ext[1] > "9":
                     file_name = arg
         if self.quality:
             self.rate = ""
         # connect plugin to pipeline
-        if self.gstreamer and self.gstreamer[-1] != '!':
-            self.gstreamer += ' !'
+        if self.gstreamer and self.gstreamer[-1] != "!":
+            self.gstreamer += " !"
             logging.debug(f"Custom gstreamer options '{self.gstreamer}'")
         return file_name
 
+
 if __name__ == "__main__":
-    rec     = delayRecord()
+    rec = delayRecord()
     rec.start()

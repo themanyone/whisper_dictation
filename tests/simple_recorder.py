@@ -2,19 +2,21 @@
 from gi.repository import Gst, GLib
 import logging
 import gi
+
 gi.require_version("Gst", "1.0")
 
 # Initialize GStreamer
 Gst.init(None)
 
 logging.basicConfig(
-	level=logging.DEBUG,
-	format="%(asctime)s [%(levelname)s] %(lineno)d %(message)s",
-	handlers=[
-#		logging.FileHandler('/tmp/rec.log'),
-		logging.StreamHandler()
-	]
+    level=logging.DEBUG,
+    format="%(asctime)s [%(levelname)s] %(lineno)d %(message)s",
+    handlers=[
+        # logging.FileHandler('/tmp/rec.log'),
+        logging.StreamHandler()
+    ],
 )
+
 
 class delayRecord:
     def __init__(self):
@@ -62,10 +64,10 @@ class delayRecord:
 
         bus = self.pipeline.get_bus()
         bus.add_signal_watch()
-        bus.connect('message::element', self.on_sound_level)
+        bus.connect("message::element", self.on_sound_level)
 
     def on_sound_level(self, bus, message):
-        rms = message.get_structure().get_value('rms')[0]
+        rms = message.get_structure().get_value("rms")[0]
         print(f"RMS {rms}")
 
     def run(self):
@@ -80,8 +82,9 @@ class delayRecord:
         # Clean up
         self.pipeline.set_state(Gst.State.NULL)
 
+
 if __name__ == "__main__":
-    rec     = delayRecord()
+    rec = delayRecord()
     try:
         rec.run()
     except KeyboardInterrupt:
