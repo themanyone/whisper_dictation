@@ -97,14 +97,20 @@ def _first_run_setup():
     return config
 
 
+# Track whether get_config() triggered first-run setup this session.
+first_run = False
+
+
 def _load_from_file():
     """Load config from file, or run first-run setup if missing."""
+    global first_run
     if os.path.exists(CONFIG_PATH):
         with open(CONFIG_PATH) as f:
             data = json.load(f)
         config = dict(DEFAULT_CONFIG)
         config.update(data)
         return config
+    first_run = True
     return _first_run_setup()
 
 

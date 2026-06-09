@@ -95,7 +95,7 @@ export C_INCLUDE_PATH="${CUDA_HOME}/include"
 export GGML_CUDA_ENABLE_UNIFIED_MEMORY=1
 export CMAKE_CXX_COMPILER_LAUNCHER=ccache
 # export TORCH_CUDA_ARCH_LIST=8.6 # card-specific compute capability
-export CUDA_VERSION=130
+export CUDA_VERSION=132
 export BNB_CUDA_VERSION=130 #python3.10 -m bitsandbytes
 export CUB_HOME=/opt/nvidia/cub-2.1.0
 
@@ -166,20 +166,21 @@ If issues persist, you can fall back to X11 by running under XWayland or switchi
 
 ## Quick start
 
+Test whisper server for compatibility.
+
 ```shell
 whisper-server -l en -m "$MODELS_DIR/ggml-tiny.en.bin" --port 7777
-./whisper_cpp_client.py
 ```
 
-On first run you'll be prompted for server URLs and API keys. Press Enter to accept defaults. Settings are stored in `~/.config/whisper_dictation/config.json`.
+Then run `./whisper_cpp_client.py` and you'll be prompted for server URLs and API keys. Press Enter to accept defaults. Settings are stored in `~/.config/whisper_dictation/config.json`.
 
-A sound level meter appears. Adjust ambient (quiet) volume to about 33% (-33dB).  On Windows, use a modern Terminal or Powershell if ANSI escape sequences are cluttering up the output. 
+A sound level meter appears. Adjust ambient (quiet) volume to about 33% (-33dB).  On Windows, use a modern Terminal or Powershell if ANSI escape sequences are cluttering up the output.
 
 ## Server setup
 
-There are many ways to start and stop `whisper-server`. There is `/etc/profile.d`, `~/.config/autostart` or launching it with a hotkey. The preferred method is to set up a user service or systemwide service. Users may save the following file as `$HOME/.config/systemd/user/whisper.service`
+The client can optionally manage `whisper-server` as a systemd user service. On first run it will detect whether the service is installed and offer to create it automatically for you (requires above test to work, e.g. `whisper-server` on `PATH` and `$MODELS_DIR` set). Once installed, the service starts and stops with the client.
 
-Update: We added the `--convert` flag to this service file. If `whisper-server` was compiled with ffmpeg, it needs --convert or no output will be generated. Logs will reporet "error: failed to ffmpeg decode".
+If you prefer to set it up manually, save the following as `$HOME/.config/systemd/user/whisper.service`, then run `systemctl --user daemon-reload`:
 
 ```shell
 [Unit]
@@ -194,11 +195,8 @@ ExecStart=whisper-server -l en -m \
 [Install]
 WantedBy=default.target
 ```
-Run `export $MODELS_DIR=/path/to/models` (wherever the models reside). Don't forget to add that export to `.bashrc` too.
 
-Then run `systemctl --user daemon-reload` to update the configuration. Start the service with `systemctl --user start whisper`. If you want it to start automatically at login, use `systemctl --user enable whisper`. Check status with `systemctl --user status whisper`.
-
-If the server and client are on the same machine, the client will automatically start and stop the server when it launches and exits, saving resources when not in use.
+Run `systemctl --user enable whisper` only if you want to make it run continuously. Otherwise, `whisper_cpp_client.py` will start and stop it as needed. Set `$MODELS_DIR` in your `.bashrc`.
 
 If your server is on another machine, and if `whisper-server` is compiled with `ffmpeg`, you may change `audio_format` from `.wav` to `.ogg` in `~/.config/whisper_dictation/config.json` to save some network bandwidth.
 
@@ -206,11 +204,13 @@ If your server is on another machine, and if `whisper-server` is compiled with `
 
 If `whisper-server` is slow or refuses to use VRAM when it is supposed to, reboot. Or try and reload the crashed NVIDIA uvm module `sudo modprobe -r nvidia_uvm && sudo modprobe nvidia_uvm`.
 
-If whisper-server was compiled with ffmpeg, it needs to be restarted with --convert flag or no output will be generated. This might be a whisper.cpp bug. If started as a service: After editing `~/.config/systemd/user/whisper.service` to add the `--convert` flag, run `systemctl --user daemon-reload`.
+The whisper-server should be compiled with ffmpeg. If already running, it needs to be restarted with --convert flag or no output will be generated from our .mp3 files.
+
+(If you don't want to use .mp3 and --convert it should be a simple code modification to send .wav files instead. Then optionally edit `~/.config/systemd/user/whisper.service` to remove the `--convert` flag & run `systemctl --user daemon-reload`.)
 
 If VRAM is scarce, quantize `ggml-tiny.en.bin` according to whisper.cpp docs. Or use `-ng` option to avoid using VRAM altogether. It might be half as fast. But delays are not that noticeable with a modern CPU.
 
-Edit `~/.config/whisper_dictation/config.json` to change server locations from localhost to wherever they reside on the network. You can also change the port numbers. Just make sure servers and clients are in agreement on which port to use. Environment variables (`WHISPER_URL`, `CHAT_URL`) override the config file at runtime.
+Edit `~/.config/whisper_dictation/config.json` to change server locations from localhost to wherever they reside on the network. You can also change the port numbers. Just make sure servers and clients are in agreement. Environment variables (`WHISPER_URL`, `CHAT_URL`) override the config file at runtime.
 
 Test clients and servers.
 
@@ -234,17 +234,17 @@ git clone https://github.com/ggerganov/llama.cpp
 cd llama.cpp
 ```
 
-Compilation steps are the same as for whisper.cpp, but read the docs just in case. 
+Compilation steps are the same as for whisper.cpp, but read the docs just in case.
 
 ### Download language models
 
-**Finding free models.** Save hundreds on annual subscriptions by running your own AI servers for every task. Look at the [leaderboard](https://huggingface.co/open-llm-leaderboard) to see which models perform best in the categories you want. As a rule of thumb, quantized 7B models are about the maximum our 4GiB VRAM can handle. Search for quantized models in .gguf format, or try [the ones on our page](https://huggingface.co/hellork).
+**Finding free models.** Save hundreds on annual subscriptions by running your own AI servers for every task. Search for an online leaderboard (locations vary) to see which models perform best in the categories you want. As a rule of thumb, quantized 7B models are about the maximum our 4GiB VRAM can handle. Search for quantized models in .gguf format, or try [the ones on our page](https://huggingface.co/hellork).
 
 **AI Safety.** Monitor children's activities. Be aware that these models, made by the community, are under active development. They are *not guaranteed safe* for all ages.
 
-**High VRAM usage.** Use a tool like [nvtop](https://github.com/Syllo/nvtop) (availabl from package managers) to keep an eye on available VRAM.
+**High VRAM usage.** Use a tool like [nvtop](https://github.com/Syllo/nvtop) or `btop` (availabl from package managers) to keep an eye on available VRAM.
 
-*Context window.* The context window is the size of input plus output. Running large models with a large context window (`-ctx` 8192), while sending graphics layers to the GPU for speed, uses lots of VRAM. They might even crash. With small models, `llama-server` now defaults to using VRAM. With large (> 3GiB) models, use `-ngl` and `-c` options with lower values, such as `-ngl 17` and `-c 512.
+*Context window.* The context window is the size of input plus output. Running large models with a large context window (`-ctx` 8192), while sending graphics layers to the GPU for speed, uses lots of VRAM. They might even crash. With small models, `llama-server` now defaults to using VRAM. With large (> 3GiB) models, use `-ngl` and `-c` options with lower values, such as `-ngl 17`.
 
 Help! [Get this project off the ground with some better hardware](https://www.paypal.com/donate/?hosted_button_id=A37BWMFG3XXFG) (PayPal donation link). Thanks to supporters, we have better laptops now, with 8GiB VRAM, and many software improvements, so keep those donations coming!
 
@@ -254,13 +254,13 @@ Help! [Get this project off the ground with some better hardware](https://www.pa
 ./llama-server -m models/gemma-2-2b-it-q4_k_m.gguf -c 2048 -ngl 33 --port 8888
 ```
 
-Use the above API endpoint by simply saying "Computer... What is the capital of France!" etc. Or navigate to the `llama.cpp` web interface at http://127.0.0.1:8888 and dictate into that. From there you can adjust settings like `temperature` to make it more creative, or more deterministic in its responses. 
+Use the above API endpoint by simply saying "Computer... What is the capital of France!" etc. Or navigate to the `llama.cpp` web interface at http://127.0.0.1:8888 and dictate into that. From there you can adjust settings like `temperature` to make it more creative, or more deterministic in its responses.
 
 ## Give it a voice
 
-If AI is speaking, it used to be necessary to turn volume down or relocate the mic to keep it from interacting with itself. Now it is more selective about what it hears.
+If AI is speaking, it may be necessary to turn volume down or relocate the mic to keep it from interacting with itself.
 
-**Mimic3.** If you follow the instructions to configure [mimic3](https://github.com/MycroftAI/mimic3) as a service on any `linux` computer or `Raspberry Pi` on the network, Speech Dispatcher will speak answers out loud. It has an open port that other network users can use to enable speech on their devices. But they can also make it speak remotely. So it is essentially a Star Trek communicator that works over wifi. Follow the [instructions for setting up mimic3 as a Systemd Service](https://mycroft-ai.gitbook.io/docs/mycroft-technologies/mimic-tts/mimic-3#web-server). 
+**Mimic3.** If you follow the instructions to configure [mimic3](https://github.com/MycroftAI/mimic3) as a service on any `linux` computer or `Raspberry Pi` on the network, Speech Dispatcher will speak answers out loud. It has an open port that other network users can use to enable speech on their devices. But they can also make it speak remotely. So it is essentially a Star Trek communicator that works over wifi. Follow the [instructions for setting up mimic3 as a Systemd Service](https://mycroft-ai.gitbook.io/docs/mycroft-technologies/mimic-tts/mimic-3#web-server).
 
 Compile our updated version for python 3.13+ on Fedora.
 
@@ -273,14 +273,14 @@ pip install .
 
 *Developer notes.* The `mimic3-server` is already lightening-fast on CPU. Do not bother compiling it with --cuda flag, which requires old `onnxruntime-gpu` that is not compatible with CUDA 12+ and won't compile with nvcc12... We got it working! And it just hogs all of VRAM and provides no noticeable speedup. If you still want to try GPU acceleration, get onnxruntime-rocm or similar via your distro's package manager.
 
-**Female voice.** For a pleasant, female voice, use  `mimic3-download` to obtain `en_US/vctk_low` To accommodate this change, we already edited the `params` line in our `mimic3_client.py`, and commented the other line out, like so.
+**Female voice.** For a pleasant, female voice, run  `mimic3-download en_US/vctk_low` To accommodate this change, we already edited the `params` line in our `mimic3_client.py`, and commented the other line out, like so.
 
 ```
     # params = { 'text': text, "lengthScale": "0.6" }
     params = { 'text': text, "voice": "en_US/vctk_low" }
 ```
 
-So just change it back if you want the default male voice, other languages, or to adjust speech characteristics to taste.
+So just change it back if you want the default male voice, other languages, etc.
 
 ## Optional ChatGPT from OpenAI
 
@@ -365,13 +365,13 @@ Various test files, including:
 
 ### Improvements
 
-**Stable-Diffusion.** Stable-Diffusion normally requires upwards of 16 GiB of VRAM. But we were able to get it running with a mere 2 GiB using the `--medvram` or `--lowvram` option with [Stable Diffusion Web UI](https://techtactician.com/stable-diffusion-low-vram-memory-errors-fix/). 
+**Stable-Diffusion.** Stable-Diffusion normally requires upwards of 16 GiB of VRAM. But we were able to get it running with a mere 2 GiB using the `--medvram` or `--lowvram` option with [Stable Diffusion Web UI](https://techtactician.com/stable-diffusion-low-vram-memory-errors-fix/).
 
 **I want it to type slowly.** We would love to have it type text slowly, but typing has become unbearably-slow on sites like Twitter and Facebook. The theory is they are using JavaScript to restrict input from bots. But it is annoying for fast typists too. If occasional slow typing doesn't bother you, change the code to use `pyautogui.typewrite(t, typing_interval)` for everything, and set a `typing_interval` to whatever speed you want.
 
 ## Other Projects
 
-Whisper Dictation is not optimized for making captions or transcripts of pre-recorded material. Use [Whisper.cpp](https://github.com/ggerganov/whisper.cpp) or [whisper-jax](https://github.com/sanchit-gandhi/whisper-jax) for that. They too have a [server with a web interface that makes transcripts for voice recordings and videos](https://github.com/sanchit-gandhi/whisper-jax/blob/main/app/app.py). 
+Whisper Dictation is not optimized for making captions or transcripts of pre-recorded material. Use [Whisper.cpp](https://github.com/ggerganov/whisper.cpp) or [whisper-jax](https://github.com/sanchit-gandhi/whisper-jax) for that. They too have a [server with a web interface that makes transcripts for voice recordings and videos](https://github.com/sanchit-gandhi/whisper-jax/blob/main/app/app.py).
 
 If you want real-time AI captions translating everyone's conversations in the room into English. If you want to watch videos with accents that are difficult to understand. Or if you just don't want to miss what the job interviewer asked you during that zoom call... WHAT???, check out my other project, [Caption Anything](https://github.com/themanyone/caption_anything). And generate captions as you record live "what you hear" from the audio monitor device (any sounds that are playing through the computer).
 

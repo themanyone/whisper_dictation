@@ -46,7 +46,7 @@ from on_screen import camera, show_pictures
 from record import delayRecord
 from commands_table import COMMANDS
 from matcher import Matcher
-from config import get_config
+from config import get_config, first_run, CONFIG_PATH
 
 audio_queue = queue.Queue()
 listening = True
@@ -298,22 +298,115 @@ bs = ANSI_clear_line()
 
 
 def manage_whisper_service(action: str):
-    """Start or stop the whisper systemd service if it exists.
+    """Start, stop, check, or install the whisper systemd user service.
 
-    Checks whether ``systemctl --user`` is available and the ``whisper``
-    unit is installed before running the requested action.  Silent no-op
-    when the service isn't present.
+    * ``start`` / ``stop`` — start or stop the service (no-op if absent).
+    * ``check`` — return ``True`` if the ``whisper`` unit exists, else ``False``.
+    * ``install`` — create the service file under
+      ``~/.config/systemd/user/whisper.service`` and run ``daemon-reload``.
+      No-op if the service is already installed.
     """
-    if action not in ("start", "stop"):
+    if action not in ("start", "stop", "check", "install"):
         return
+
+    # Is systemctl available at all?
     try:
-        # Is systemctl on PATH and does ``--user`` work?
         subprocess.run(
-            ["systemctl", "--user", "status", "whisper"],
+            ["systemctl", "--user", "--version"],
             capture_output=True, timeout=5,
         )
     except (FileNotFoundError, subprocess.TimeoutExpired):
-        return  # systemctl or service not available
+        return
+
+    # ── check ────────────────────────────────────────────────────────
+    if action == "check":
+        try:
+            r = subprocess.run(
+                ["systemctl", "--user", "cat", "whisper"],
+                capture_output=True, timeout=5,
+            )
+            return r.returncode == 0
+        except (FileNotFoundError, subprocess.TimeoutExpired):
+            return False
+
+    # ── install ──────────────────────────────────────────────────────
+    if action == "install":
+        # Already installed?
+        try:
+            r = subprocess.run(
+                ["systemctl", "--user", "cat", "whisper"],
+                capture_output=True, timeout=5,
+            )
+            if r.returncode == 0:
+                return
+        except (FileNotFoundError, subprocess.TimeoutExpired):
+            return
+
+        models_dir = os.environ.get("MODELS_DIR", "")
+        model = "ggml-tiny.en.bin"
+        model_path = os.path.join(models_dir, model) if models_dir else model
+
+        if not models_dir or not os.path.isfile(model_path):
+            print()
+            print("  [whisper service] Could not install systemd unit.")
+            print(f"  Set MODELS_DIR (currently {models_dir!r}) and make sure")
+            print(f"  {model} is present before installing.")
+            print()
+            return
+
+        unit_dir = os.path.expanduser("~/.config/systemd/user")
+        os.makedirs(unit_dir, exist_ok=True)
+        unit_path = os.path.join(unit_dir, "whisper.service")
+
+        unit_content = f"""\
+[Unit]
+Description=Run Whisper server
+Documentation=https://github.com/openai/whisper
+
+[Service]
+ExecStart=whisper-server -l en -m \\
+ "{model_path}" \\
+ --convert --port 7777
+
+[Install]
+WantedBy=default.target
+"""
+        with open(unit_path, "w") as f:
+            f.write(unit_content)
+        print(f"  Created {unit_path}")
+
+        subprocess.run(
+            ["systemctl", "--user", "daemon-reload"],
+            capture_output=True, timeout=10,
+        )
+        print(" This app will run 'systemctl --user start whisper' as needed.")
+        print(" To keep it always running type 'systemctl --user enable whisper'")
+        return
+
+    # ── start / stop ─────────────────────────────────────────────────
+    # Only proceed if the unit actually exists.
+    try:
+        r = subprocess.run(
+            ["systemctl", "--user", "cat", "whisper"],
+            capture_output=True, timeout=5,
+        )
+        if r.returncode != 0:
+            return
+    except (FileNotFoundError, subprocess.TimeoutExpired):
+        return
+
+    # Don't stop a service the user explicitly wants always running.
+    if action == "stop":
+        try:
+            r = subprocess.run(
+                ["systemctl", "--user", "is-enabled", "whisper"],
+                capture_output=True, timeout=5,
+            )
+            is_enabled = r.stdout.decode().strip() == "enabled"
+        except (FileNotFoundError, subprocess.TimeoutExpired):
+            is_enabled = False
+        if is_enabled:
+            return
 
     subprocess.run(
         ["systemctl", "--user", action, "whisper"],
@@ -687,6 +780,15 @@ def quit():
 
 
 if __name__ == "__main__":
+    # ── First-run: offer to install the whisper systemd service ──────
+    if first_run and sys.stdin.isatty():
+        if not manage_whisper_service("check"):
+            print()
+            print("  It looks like the whisper-server systemd service is not installed.")
+            resp = input("  Install it now? [Y/n] ").strip().lower()
+            if resp in ("", "y", "yes"):
+                manage_whisper_service("install")
+
     record_thread = threading.Thread(target=record_to_queue)
     manage_whisper_service("start")
     record_thread.start()
