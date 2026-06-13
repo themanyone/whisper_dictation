@@ -47,7 +47,7 @@ from record import delayRecord
 from commands_table import COMMANDS
 from matcher import Matcher
 from config import (get_config, first_run, CONFIG_PATH, CUSTOM_COMMANDS_PATH,
-                    update_config, get_chat_api_key,
+                    update_config, update_provider_model, get_chat_api_key,
                     query_models, match_dialog_response,
                     resolve_provider_url, detect_provider_type)
 
@@ -938,7 +938,8 @@ def switch_provider(q=None):
     chat_model = model
     chat_api_key = api_key
     cfg["provider"] = provider["name"]
-    update_config({"chat_url": resolved, "chat_model": model, "provider": provider["name"]})
+    update_config({"chat_url": resolved, "provider": provider["name"]})
+    update_provider_model(provider["name"], model)
     say(f"Switched to {model} on {provider['name']}.")
     say(f"Switched to {model} on {provider['name']}.")
 
@@ -962,7 +963,7 @@ def switch_model(q=None):
     model = models[int(response) - 1]
     global chat_model
     chat_model = model
-    update_config({"chat_model": model})
+    update_provider_model(cfg["provider"], model)
     say(f"Switched to {model}.")
 
 

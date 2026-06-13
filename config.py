@@ -44,7 +44,6 @@ DEFAULT_CONFIG_PATH = os.path.join(os.path.dirname(__file__), "default_config.js
 
 DEFAULT_CONFIG = {
     "whisper_url": "http://127.0.0.1:7777/inference",
-    "chat_url": "http://127.0.0.1:8080/v1",
     "embed_url": "http://127.0.0.1:8080/v1/embeddings",
     "conversation_length": 9,
     "audio_format": ".wav",
@@ -54,7 +53,6 @@ DEFAULT_CONFIG = {
     "piper_binary": "",
     "piper_voice": "en_US-libritts_r-medium",
     "embed_model": "",
-    "chat_model": "gpt-3.5-turbo",
     "provider": "llama.cpp",
     "providers": [
         {
@@ -67,6 +65,7 @@ DEFAULT_CONFIG = {
             "name": "OpenAI",
             "base_url": "https://api.openai.com/v1",
             "api_key": "",
+            "model": "gpt-3.5-turbo",
             "provider_type": "openai",
         },
         {
@@ -177,16 +176,13 @@ def _first_run_setup():
     print()
 
     config["whisper_url"] = _prompt("  Whisper.cpp server URL", config["whisper_url"])
-    config["chat_url"] = _prompt(
-        "  Local chat server URL (llama.cpp)", config["chat_url"]
-    )
     # ── Embeddings server ────────────────────────────────────────────
     config["embed_url"] = _prompt(
         "  Embeddings server URL (semantic matching)", config["embed_url"]
     )
 
     # Same port as chat? Then we need a model name for router-mode.
-    chat_port = urlparse(config["chat_url"]).port
+    chat_port = urlparse("http://127.0.0.1:8080/v1").port
     embed_port = urlparse(config["embed_url"]).port
     if chat_port and embed_port and chat_port == embed_port:
         config["embed_model"] = _prompt(
@@ -234,7 +230,13 @@ def _first_run_setup():
     with open(CONFIG_PATH, "w") as f:
         json.dump(config, f, indent=2)
     print(f"  Configuration saved to {CONFIG_PATH}")
-    print("  You can edit this file directly to change settings.")
+    print()
+    print("  ── Enable AI Agent Chat ──────────────────────────────")
+    print(f"  Edit providers in {DEFAULT_CONFIG_PATH}")
+    print("  or in your config file above. Each provider needs a")
+    print("  base_url (including port) and api_key. Switch providers")
+    print("  at runtime by saying 'switch provider'.")
+    print("  ─────────────────────────────────────────────────────")
     print()
 
     return config
@@ -311,10 +313,8 @@ def get_config():
     env_overrides = {
         "provider": os.getenv("PROVIDER"),
         "whisper_url": os.getenv("WHISPER_URL"),
-        "chat_url": os.getenv("CHAT_URL"),
         "embed_url": os.getenv("EMBED_URL"),
         "embed_model": os.getenv("EMBED_MODEL"),
-        "chat_model": os.getenv("CHAT_MODEL"),
         "piper_model": os.getenv("PIPER_MODEL"),
         "piper_binary": os.getenv("PIPER_BINARY"),
         "piper_voice": os.getenv("PIPER_VOICE"),
@@ -330,22 +330,17 @@ def get_config():
         if key == "debug" and val == "":
             pass  # env not set, keep file value
 
-    # Resolve the active provider's base_url into chat_url (if not overridden by env)
+    # Derive chat_url and chat_model from the active provider
     active = get_active_provider(config)
     if active and active.get("base_url"):
-        # Only apply if CHAT_URL env var wasn't set
-        if os.getenv("CHAT_URL") is None:
-            ptype = active.get("provider_type") or detect_provider_type(
-                active["base_url"]
-            )
-            config["chat_url"] = resolve_provider_url(
-                active["base_url"], ptype
-            )
-        # Pull model from provider entry if present
+        ptype = active.get("provider_type") or detect_provider_type(
+            active["base_url"]
+        )
+        config["chat_url"] = resolve_provider_url(
+            active["base_url"], ptype
+        )
         if active.get("model"):
             config["chat_model"] = active["model"]
-        # Pull api_key into the provider's own entry (used by get_chat_api_key)
-        # Already part of the provider entry
 
     return config
 
@@ -526,10 +521,32 @@ def query_models(base_url, api_key=None):
 
 
 def update_config(updates):
-    config.update(updates)
     os.makedirs(CONFIG_DIR, exist_ok=True)
+    if os.path.exists(CONFIG_PATH):
+        with open(CONFIG_PATH) as f:
+            cfg = json.load(f)
+    else:
+        cfg = _load_defaults()
+    cfg.update(updates)
     with open(CONFIG_PATH, "w") as f:
-        json.dump(config, f, indent=2)
+        json.dump(cfg, f, indent=2)
+    print(f"  Updated configuration: {CONFIG_PATH}")
+
+
+def update_provider_model(provider_name, model):
+    """Store model name under the specified provider entry in config."""
+    os.makedirs(CONFIG_DIR, exist_ok=True)
+    if os.path.exists(CONFIG_PATH):
+        with open(CONFIG_PATH) as f:
+            cfg = json.load(f)
+    else:
+        cfg = _load_defaults()
+    for p in cfg.get("providers", []):
+        if p.get("name") == provider_name:
+            p["model"] = model
+            break
+    with open(CONFIG_PATH, "w") as f:
+        json.dump(cfg, f, indent=2)
     print(f"  Updated configuration: {CONFIG_PATH}")
 
 

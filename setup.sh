@@ -200,7 +200,6 @@ fi
 cat > "$CONFIG_DIR/config.json" <<-CONFIG
 {
     "whisper_url": "http://${LLAMA_HOST}:${WHISPER_PORT}/inference",
-    "chat_url": "http://${LLAMA_HOST}:${LLAMA_PORT}/v1",
     "embed_url": "http://${LLAMA_HOST}:${LLAMA_PORT}/v1/embeddings",
     "conversation_length": 9,
     "audio_format": ".wav",
@@ -209,8 +208,7 @@ cat > "$CONFIG_DIR/config.json" <<-CONFIG
     "piper_model": "",
     "piper_binary": "",
     "piper_voice": "en_US-libritts_r-medium",
-    "embed_model": "$([ "$EMBED_MODE" == "router" ] && echo "$EMBED_MODEL" || echo "")",
-    "chat_model": ""
+    "embed_model": "$([ "$EMBED_MODE" == "router" ] && echo "$EMBED_MODEL" || echo "")"
 }
 CONFIG
 echo "  → $CONFIG_DIR/config.json"
