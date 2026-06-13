@@ -26,7 +26,9 @@ Say, "Computer, on screen." A window opens up showing the webcam. Say "Computer,
 
 ## Try our "next level" voice-operated agent with easy setup.
 
-Future development is progressing here.
+Future development is progressing here: `git checkout nl`.
+
+Or to check out only that branch.
 
 ```shell
 git clone -b nl --single-branch https://github.com/themanyone/whisper_dictation.git
@@ -34,7 +36,7 @@ cd whisper_dictation
 ./setup.sh
 ```
 
-## Or use this non-agent branch
+## Or continue with this deprecated, non-agentic branch
 
 `git clone -b main --single-branch https://github.com/themanyone/whisper_dictation.git`
 
