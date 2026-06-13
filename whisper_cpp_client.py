@@ -1050,49 +1050,11 @@ def switch_model(q=None):
     say(f"Switched to {model}.")
 
 
-# Map handler names from commands_table.py → actual functions
-HANDLER_MAP = {
-    "left_click": left_click,
-    "right_click": right_click,
-    "middle_click": middle_click,
-    "open_app": open_app,
-    "open_terminal": open_terminal,
-    "close_window": close_window,
-    "search_web": search_web,
-    "go_to_website": go_to_website,
-    "send_email": send_email,
-    "draw_picture": draw_picture,
-    "resume_dictation": resume_dictation,
-    "pause_dictation": pause_dictation,
-    "stop_dictation": stop_dictation,
-    "record_mp3": record_mp3,
-    "show_webcam": show_webcam,
-    "hide_webcam": hide_webcam,
-    "take_picture": take_picture,
-    "show_pictures": show_pictures,
-    "hotkey_new_para": hotkey_new_para,
-    "hotkey_new_line": hotkey_new_line,
-    "hotkey_enter": hotkey_enter,
-    "hotkey_backspace": hotkey_backspace,
-    "hotkey_space": hotkey_space,
-    "hotkey_select_all": hotkey_select_all,
-    "hotkey_copy": hotkey_copy,
-    "hotkey_cut": hotkey_cut,
-    "hotkey_paste": hotkey_paste,
-    "hotkey_undo": hotkey_undo,
-    "hotkey_up": hotkey_up,
-    "hotkey_down": hotkey_down,
-    "hotkey_left": hotkey_left,
-    "hotkey_right": hotkey_right,
-    "hotkey_home": hotkey_home,
-    "hotkey_end": hotkey_end,
-    "hotkey_page_up": hotkey_page_up,
-    "hotkey_page_down": hotkey_page_down,
-    "hotkey_ls": hotkey_ls,
-    "generate_text": generate_text,
-    "switch_provider": switch_provider,
-    "switch_model": switch_model,
-}
+# Auto-built from command tables — resolves handler names to functions
+HANDLER_MAP = {h: globals()[h] for h in set(
+    cmd["handler"] for cmd in COMMANDS
+    if cmd["handler"] in globals()
+)}
 
 # Load persisted custom commands (if any) into HANDLER_MAP
 load_custom_commands()
