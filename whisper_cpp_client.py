@@ -742,7 +742,6 @@ def generate_text(prompt: str):
     global listening
     messages.append({"role": "user", "content": prompt})
     completion = ""
-
     try:
         local_client = openai.OpenAI(
             base_url=local_chat_url, api_key=chat_api_key, max_retries=0
@@ -754,38 +753,14 @@ def generate_text(prompt: str):
     except Exception as e:
         logging.warning(f"Server Warning: {e}")
         return "Sorry. I'm having some trouble accessing that."
-
     if completion:
         # remove '<|...|>' tags from completion
         completion = re.sub(r"<\|.*\|>", "", completion)
-        print(f"{bs}{completion}")
-        # handle queries for more information
-        if (
-            "more information?" in completion
-            or "It sounds like" in completion
-            or "It seems like" in completion
-            or "you tell me" in completion
-            or "Could you please" in completion
-            or "a large language model" in completion
-            or completion == "< nooutput >"
-        ):
-            say("Sorry, I didn't catch that. Can you give me more information, please?")
-            chatting = False  # allow dictation into the prompt box
-            response = pyautogui.prompt(
-                "More information, please.", "Please clarify.", prompt
-            )
-            # on user cancel, stop AI chat & resume dictation
-            if not response:
-                return None
-            # otherwise, process the new query
-            chatting = True
-            return generate_text(response)
-        pyautogui.write(completion)
+        print(f"{bs}{completion} ")
+        pyautogui.write(completion + ' ')
         listening = False
         chatting = True
         say(completion, chunked=True)
-        chatting = False
-        listening = True
         # add to conversation
         messages.append({"role": "assistant", "content": completion})
         if len(messages) > conversation_length:

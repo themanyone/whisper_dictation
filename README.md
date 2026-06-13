@@ -51,6 +51,17 @@ to text (STT) server for decoding.
 The required `ladspa-delay-so-delay-5s` may be found in the
 `gstreamer1-plugins-bad-free-extras` package.
 
+## Wayland
+
+Some distros default to using Wayland now. The app auto-detects `XDG_SESSION_TYPE` and the voice keyboard uses `python-evdev` on Wayland or `PyAutoGUI` on X11. If you are curious about what your system uses, enter `echo $XDG_SESSION_TYPE` into a terminal.
+
+For Wayland, install `python-evdev` to handle the keyboard and set up uinput permissions:
+```shell
+echo 'KERNEL=="uinput", MODE="0660", GROUP="input", OPTIONS+="static_node=uinput"' | sudo tee /etc/udev/rules.d/99-input.rules
+sudo usermod -aG input $USER
+```
+Then **logout and login** for group membership to take effect.
+
 ## Quick start
 
 ```shell
@@ -61,18 +72,29 @@ cd whisper_dictation
 
 The script downloads pre-built `whisper-server` and `llama-server` binaries, the Whisper tiny model (74 MB), and the recommended **Qwen2.5-7B-Instruct Q4_K_S** (4 GB). It also installs Python deps and offers to create a systemd user service.
 
-Then start both servers and the client:
+## Building from source (GPU acceleration)
 
+The pre-built binaries are CPU-only. For GPU acceleration (recommended), compile from source. Here we are using CUDA. Your options may vary. Review project's build docs.
+
+**whisper.cpp:**
 ```shell
-# Terminal 1 — speech-to-text
-whisper-server -l en -m ~/models/ggml-tiny.en.bin --convert --port 7777
-
-# Terminal 2 — LLM agent with embeddings for semantic commands
-llama-server -m ~/models/qwen2.5-7b-q4_k_s.gguf -ngl 99 -c 4096 --port 8080 --embeddings
-
-# Terminal 3 — dictation client
-./whisper_cpp_client.py
+git clone https://github.com/ggerganov/whisper.cpp
+cd whisper.cpp
+cmake -B build -DGGML_CUDA=1
+cmake --build build -j$(nproc) --config Release
+cp build/bin/whisper-server build/bin/whisper-cli ~/.local/bin/
 ```
+
+**llama.cpp:**
+```shell
+git clone https://github.com/ggml-org/llama.cpp
+cd llama.cpp
+cmake -B build -DGGML_CUDA=1
+cmake --build build -j$(nproc) --config Release
+cp build/bin/llama-server build/bin/llama-cli ~/.local/bin/
+```
+
+For Vulkan backend, replace `-DGGML_CUDA=1` with `-DGGML_VULKAN=1`. See the [llama.cpp README](https://github.com/ggml-org/llama.cpp) for other backends.
 
 ## Sentence Transformer (semantic command matching)
 
@@ -113,48 +135,44 @@ ctx-size = 16384
 ub = 16384
 ```
 
-Before blaming us, test your embeddings endpoint like so.
+**Testing** Manually start servers
+
+```shell
+# Terminal 1 — speech-to-text
+whisper-server -l en -m ~/models/ggml-tiny.en.bin --convert --port 7777
+
+# Terminal 2 — any model can test embeddings for semantic commands
+llama-server -m ~/models/qwen2.5-7b-q4_k_s.gguf -ngl 99 -c 4096 --port 8080 --embeddings
+
+# Terminal 3 — test dictation client
+./whisper_cpp_client.py
+```
+
+Before blaming us, test embeddings, chat endpoints like so.
 
 ```shell
 curl -X POST "http://localhost:8080/v1/embeddings" -H "Content-Type: application/json" -d '{
   "model": "all-MiniLM-L6-v2.Q8_0",
   "input": "This is some text to embed."
 }'
+
+curl -X POST "http://127.0.0.1:8080/v1/chat/completions" -H "Content-Type: application/json" -d '{
+   "model": "gpt-3.5-turbo",
+   "messages": [{
+      "role":"user",
+      "content":"What is the capital of France?"
+   }],
+   "temperature":0.1,"max_tokens":200
+}'
 ```
-
-## Building from source (GPU acceleration)
-
-The pre-built binaries are CPU-only. For GPU acceleration (recommended), compile from source. Here we are using CUDA. Your options may vary. Review project's build docs.
-
-**whisper.cpp:**
-```shell
-git clone https://github.com/ggerganov/whisper.cpp
-cd whisper.cpp
-cmake -B build -DGGML_CUDA=1
-cmake --build build -j$(nproc) --config Release
-cp build/bin/whisper-server build/bin/whisper-cli ~/.local/bin/
-```
-
-**llama.cpp:**
-```shell
-git clone https://github.com/ggml-org/llama.cpp
-cd llama.cpp
-cmake -B build -DGGML_CUDA=1
-cmake --build build -j$(nproc) --config Release
-cp build/bin/llama-server build/bin/llama-cli ~/.local/bin/
-```
-
-For Vulkan backend, replace `-DGGML_CUDA=1` with `-DGGML_VULKAN=1`. See the [llama.cpp README](https://github.com/ggml-org/llama.cpp) for other backends.
 
 ## Provider configuration
 
-The `providers` list in `~/.config/whisper_dictation/config.json` stores available LLM backends and their API keys. The active provider is selected by the `provider` key (name match). Defaults: Look in `default_config.json` (auto generated at first run). You can edit it and keep it as a backup. It sits outside the git repo so you don't accidentally `git push` API keys.
+The config file, `~/.config/whisper_dictation/config.json` stores available LLM backends and their API keys, embeddings endpoint, etc. You can edit `~/.config/whisper_dictation/config.json` or delete it and be prompted for new configurations. Switch providers anyt time by saying **"Switch provider"** — you'll be prompted to select one by number, then pick a model from that provider. You can also say, **"Switch model"**. This will modify your config.json for you.
 
-Populate API keys in the `api_key` field of each provider entry. The active provider's `base_url` is used as `chat_url` on startup; if the entry has a `model` key it overrides `chat_model` automatically. Switch providers at runtime by saying **"Switch provider"** — you'll be prompted to select one by number, then pick a model from that provider.
+Override the active provider with environment: `export PROVIDER=OpenAI`.
 
-Override the active provider at runtime: `export PROVIDER=OpenAI`.
-
-> **Editing defaults:** The provider list above ships as `default_config.json` in the repo root. Edit it freely to add your API keys — it's in `.gitignore` so you can't accidentally `git push` secrets. If the file doesn't exist it's auto-created from the built-in defaults on first run.
+> **Editing defaults:** The provider list above ships as `default_config.json` in the repo root. Edit it freely to add your API keys — it's in `.gitignore` so you can't accidentally `git push` secrets. If the file doesn't exist it's auto-created from built-in defaults on first run.
 
 The client auto-detects provider type from the URL and fixes the API path automatically. For example, `https://generativelanguage.googleapis.com` is corrected to `https://generativelanguage.googleapis.com/v1beta/openai/` (Gemini's OpenAI-compatible endpoint). When switching providers at runtime, the client probes the `/v1/models` endpoint to discover available models and sniffs the provider type from model IDs.
 
@@ -167,7 +185,7 @@ Settings are saved to `~/.config/whisper_dictation/config.json`. Environment var
 | `whisper_url` | `WHISPER_URL` | `http://127.0.0.1:7777/inference` | whisper.cpp STT endpoint |
 | `provider` | `PROVIDER` | `llama.cpp` | Active provider name (must match `providers[].name`) |
 | `chat_url` | `CHAT_URL` | *(from active provider)* | LLM server URL |
-| `chat_model` | `CHAT_MODEL` | `gpt-3.5-turbo` | Model name for LLM |
+| `model` | `CHAT_MODEL` | `gpt-3.5-turbo` | Model name for LLM |
 | `embed_url` | `EMBED_URL` | `http://127.0.0.1:8080/v1/embeddings` | Embeddings endpoint |
 | `embed_model` | `EMBED_MODEL` | *(empty)* | Required only in router mode |
 | `threshold` | — | `0.45` | Semantic match confidence (0.0–1.0) |
@@ -179,18 +197,7 @@ Settings are saved to `~/.config/whisper_dictation/config.json`. Environment var
 
 Edit or delete `~/.config/whisper_dictation/config.json` to reset.
 
-**Layout is subject to change** as development progresses. After updating, look in `config.py` for `DEFAULT_CONFIG` to see what your config file should look like.
-
-## Wayland
-
-Some distros default to using Wayland now. The app auto-detects `XDG_SESSION_TYPE` and uses `python-evdev` on Wayland or `PyAutoGUI` on X11. If you are curious about what your system uses, enter `echo $XDG_SESSION_TYPE` into a terminal.
-
-For Wayland, install `python-evdev` to handle the keyboard and set up uinput permissions:
-```shell
-echo 'KERNEL=="uinput", MODE="0660", GROUP="input", OPTIONS+="static_node=uinput"' | sudo tee /etc/udev/rules.d/99-input.rules
-sudo usermod -aG input $USER
-```
-Then **logout and login** for group membership to take effect.
+**Layout is subject to change** as development progresses. After updating, look to in `config.py` for `DEFAULT_CONFIG` or delete (regenerate) `default_config.json` from it to see what your `~/.config/whisper_dictation/config.json` should look like. Or delete `~/.config/whisper_dictation/config.json` and be prompted from the defaults.
 
 ## Spoken commands
 
