@@ -900,11 +900,14 @@ def switch_provider(q=None):
         say("No providers configured.")
         return
     print("\nAvailable providers:")
+    n = len(providers)
     for i, p in enumerate(providers, 1):
         print(f"  {i}. {p['name']}  ({p['base_url']})")
-    options = [str(i) for i in range(1, len(providers) + 1)]
+    cancel_num = n + 1
+    print(f"  {cancel_num}. Cancel / never mind")
+    options = [str(i) for i in range(1, cancel_num + 1)]
     response = voice_dialog("Say a number to select a provider.", options=options)
-    if not response:
+    if not response or response == str(cancel_num):
         return
     provider = providers[int(response) - 1]
     # Auto-resolve URL and detect provider type
@@ -944,11 +947,14 @@ def switch_model(q=None):
         say("No models found on current provider.")
         return
     print("\nAvailable models:")
+    n = len(models)
     for i, m in enumerate(models, 1):
         print(f"  {i}. {m}")
-    options = [str(i) for i in range(1, len(models) + 1)]
+    cancel_num = n + 1
+    print(f"  {cancel_num}. Cancel / never mind")
+    options = [str(i) for i in range(1, cancel_num + 1)]
     response = voice_dialog("Say a number to select a model.", options=options)
-    if not response:
+    if not response or response == str(cancel_num):
         return
     model = models[int(response) - 1]
     global chat_model

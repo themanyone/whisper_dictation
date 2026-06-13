@@ -40,6 +40,7 @@ from urllib.parse import urlparse
 CONFIG_DIR = os.path.expanduser("~/.config/whisper_dictation")
 CONFIG_PATH = os.path.join(CONFIG_DIR, "config.json")
 CUSTOM_COMMANDS_PATH = os.path.join(CONFIG_DIR, "custom_commands.json")
+DEFAULT_CONFIG_PATH = os.path.join(os.path.dirname(__file__), "default_config.json")
 
 DEFAULT_CONFIG = {
     "whisper_url": "http://127.0.0.1:7777/inference",
@@ -255,14 +256,53 @@ def _first_run_setup():
 first_run = False
 
 
+def _load_defaults():
+    """Return the defaults dict, sourced from default_config.json.
+
+    Creates the file from DEFAULT_CONFIG if it doesn't exist, so users
+    can edit default_config.json freely without touching Python code.
+    """
+    if not os.path.exists(DEFAULT_CONFIG_PATH):
+        os.makedirs(os.path.dirname(DEFAULT_CONFIG_PATH) or ".", exist_ok=True)
+        with open(DEFAULT_CONFIG_PATH, "w") as f:
+            json.dump(DEFAULT_CONFIG, f, indent=2)
+        print(f"  Created {DEFAULT_CONFIG_PATH}")
+    try:
+        with open(DEFAULT_CONFIG_PATH) as f:
+            data = json.load(f)
+        merged = dict(DEFAULT_CONFIG)
+        merged.update(data)
+        return merged
+    except Exception as e:
+        logging.warning(f"Failed to read {DEFAULT_CONFIG_PATH}: {e}")
+        return dict(DEFAULT_CONFIG)
+
+
 def _load_from_file():
-    """Load config from file, or run first-run setup if missing."""
+    """Load config from file, or run first-run setup if missing.
+
+    Uses default_config.json (editable, outside git) as the base,
+    then overlays ~/.config/whisper_dictation/config.json on top.
+
+    Merges providers list by name — new default providers appear even
+    when an old config.json has a smaller providers list.
+    """
     global first_run
+    defaults = _load_defaults()
     if os.path.exists(CONFIG_PATH):
         with open(CONFIG_PATH) as f:
             data = json.load(f)
-        config = dict(DEFAULT_CONFIG)
+        config = dict(defaults)
         config.update(data)
+        # Merge providers by name: file providers override defaults,
+        # but new default providers not in the file are preserved.
+        if "providers" in data and isinstance(data["providers"], list):
+            file_names = {p["name"] for p in data["providers"] if "name" in p}
+            merged = list(data["providers"])
+            for dp in defaults.get("providers", []):
+                if dp["name"] not in file_names:
+                    merged.append(dp)
+            config["providers"] = merged
         return config
     first_run = True
     return _first_run_setup()

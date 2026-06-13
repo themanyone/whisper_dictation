@@ -148,111 +148,13 @@ For Vulkan backend, replace `-DGGML_CUDA=1` with `-DGGML_VULKAN=1`. See the [lla
 
 ## Provider configuration
 
-The `providers` list in `~/.config/whisper_dictation/config.json` stores available LLM backends and their API keys. The active provider is selected by the `provider` key (name match). Defaults:
+The `providers` list in `~/.config/whisper_dictation/config.json` stores available LLM backends and their API keys. The active provider is selected by the `provider` key (name match). Defaults: Look in `default_config.json` (auto generated at first run). You can edit it and keep it as a backup. It sits outside the git repo so you don't accidentally `git push` API keys.
 
-```json
-{
-  "provider": "llama.cpp",
-  "providers": [
-    {
-      "name": "llama.cpp",
-      "base_url": "http://127.0.0.1:8080/v1",
-      "api_key": "sk-no-key-required",
-      "provider_type": "llamacpp"
-    },
-    {
-      "name": "OpenAI",
-      "base_url": "https://api.openai.com/v1",
-      "api_key": "",
-      "provider_type": "openai"
-    },
-    {
-      "name": "xAI Grok",
-      "base_url": "https://api.x.ai/v1",
-      "api_key": "",
-      "provider_type": "openai"
-    },
-    {
-      "name": "OpenRouter",
-      "base_url": "https://openrouter.ai/api/v1",
-      "api_key": "",
-      "provider_type": "openai"
-    },
-    {
-      "name": "Google Gemini",
-      "base_url": "https://generativelanguage.googleapis.com/v1beta/openai/",
-      "api_key": "",
-      "model": "gemini-2.0-flash",
-      "provider_type": "gemini"
-    },
-    {
-      "name": "Anthropic Claude",
-      "base_url": "https://api.anthropic.com/v1",
-      "api_key": "",
-      "model": "claude-sonnet-4-20250514",
-      "provider_type": "anthropic"
-    },
-    {
-      "name": "Groq",
-      "base_url": "https://api.groq.com/openai/v1",
-      "api_key": "",
-      "provider_type": "openai"
-    },
-    {
-      "name": "Together AI",
-      "base_url": "https://api.together.ai/v1",
-      "api_key": "",
-      "provider_type": "openai"
-    },
-    {
-      "name": "DeepInfra",
-      "base_url": "https://api.deepinfra.com/v1/openai",
-      "api_key": "",
-      "provider_type": "openai"
-    },
-    {
-      "name": "DeepSeek",
-      "base_url": "https://api.deepseek.com/v1",
-      "api_key": "",
-      "provider_type": "openai"
-    },
-    {
-      "name": "Mistral AI",
-      "base_url": "https://api.mistral.ai/v1",
-      "api_key": "",
-      "provider_type": "openai"
-    },
-    {
-      "name": "Perplexity",
-      "base_url": "https://api.perplexity.ai",
-      "api_key": "",
-      "provider_type": "openai"
-    },
-    {
-      "name": "Fireworks AI",
-      "base_url": "https://api.fireworks.ai/inference/v1",
-      "api_key": "",
-      "provider_type": "openai"
-    },
-    {
-      "name": "AIHubMix",
-      "base_url": "https://aihubmix.com/v1",
-      "api_key": "",
-      "provider_type": "openai"
-    },
-    {
-      "name": "Ollama",
-      "base_url": "http://127.0.0.1:11434/v1",
-      "api_key": "sk-no-key-required",
-      "provider_type": "ollama"
-    }
-  ]
-}
-```
-
-Populate API keys in the `api_key` field of each provider entry. The active provider's `base_url` is used as `chat_url` on startup; if the entry has a `model` key it overrides `chat_model` automatically. Switch providers at runtime by saying **"Computer, switch provider"** — you'll be prompted to select one by number, then pick a model from that provider.
+Populate API keys in the `api_key` field of each provider entry. The active provider's `base_url` is used as `chat_url` on startup; if the entry has a `model` key it overrides `chat_model` automatically. Switch providers at runtime by saying **"Switch provider"** — you'll be prompted to select one by number, then pick a model from that provider.
 
 Override the active provider at runtime: `export PROVIDER=OpenAI`.
+
+> **Editing defaults:** The provider list above ships as `default_config.json` in the repo root. Edit it freely to add your API keys — it's in `.gitignore` so you can't accidentally `git push` secrets. If the file doesn't exist it's auto-created from the built-in defaults on first run.
 
 The client auto-detects provider type from the URL and fixes the API path automatically. For example, `https://generativelanguage.googleapis.com` is corrected to `https://generativelanguage.googleapis.com/v1beta/openai/` (Gemini's OpenAI-compatible endpoint). When switching providers at runtime, the client probes the `/v1/models` endpoint to discover available models and sniffs the provider type from model IDs.
 
