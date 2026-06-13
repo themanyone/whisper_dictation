@@ -46,9 +46,6 @@ DEFAULT_CONFIG = {
     "whisper_url": "http://127.0.0.1:7777/inference",
     "chat_url": "http://127.0.0.1:8080/v1",
     "embed_url": "http://127.0.0.1:8080/v1/embeddings",
-    "openai_api_key": "",
-    "openai_base_url": "",
-    "gemini_api_key": "",
     "conversation_length": 9,
     "audio_format": ".wav",
     "debug": False,
@@ -183,15 +180,6 @@ def _first_run_setup():
     config["chat_url"] = _prompt(
         "  Local chat server URL (llama.cpp)", config["chat_url"]
     )
-    config["openai_api_key"] = _prompt("  OpenAI API key (leave blank to skip)", "")
-    if config["openai_api_key"]:
-        config["openai_base_url"] = _prompt(
-            "  OpenAI base URL (leave blank for default)", ""
-        )
-    config["gemini_api_key"] = _prompt(
-        "  Google Gemini API key (leave blank to skip)", ""
-    )
-
     # ── Embeddings server ────────────────────────────────────────────
     config["embed_url"] = _prompt(
         "  Embeddings server URL (semantic matching)", config["embed_url"]
@@ -322,8 +310,6 @@ def get_config():
     # Environment variable overrides (highest priority)
     env_overrides = {
         "provider": os.getenv("PROVIDER"),
-        "openai_api_key": os.getenv("OPENAI_API_KEY"),
-        "gemini_api_key": os.getenv("GENAI_TOKEN"),
         "whisper_url": os.getenv("WHISPER_URL"),
         "chat_url": os.getenv("CHAT_URL"),
         "embed_url": os.getenv("EMBED_URL"),

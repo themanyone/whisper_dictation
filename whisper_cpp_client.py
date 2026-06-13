@@ -745,7 +745,7 @@ def generate_text(prompt: str):
 
     try:
         local_client = openai.OpenAI(
-            base_url=local_chat_url, api_key=chat_api_key
+            base_url=local_chat_url, api_key=chat_api_key, max_retries=0
         )
         resp = local_client.chat.completions.create(
             model=chat_model, messages=messages
@@ -922,11 +922,14 @@ def switch_provider(q=None):
         say("No models found on that provider.")
         return
     print("\nAvailable models:")
+    n = len(models)
     for i, m in enumerate(models, 1):
         print(f"  {i}. {m}")
-    options = [str(i) for i in range(1, len(models) + 1)]
+    cancel_num = n + 1
+    print(f"  {cancel_num}. Cancel / never mind")
+    options = [str(i) for i in range(1, cancel_num + 1)]
     response = voice_dialog("Say a number to select a model.", options=options)
-    if not response:
+    if not response or response == str(cancel_num):
         return
     model = models[int(response) - 1]
     global local_chat_url, chat_model, chat_api_key
