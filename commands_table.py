@@ -89,8 +89,10 @@ COMMANDS = [
     {"intent": "view photo album", "handler": "show_pictures", "argument": None},
     # ── Keyboard shortcuts ─────────────────────────────────────────────────
     {"intent": "new paragraph", "handler": "hotkey_new_para", "argument": None},
-    {"intent": "new line", "handler": "hotkey_enter", "argument": None},
+    {"intent": "new line", "handler": "hotkey_new_line", "argument": None},
     {"intent": "press enter", "handler": "hotkey_enter", "argument": None},
+    {"intent": "submit post", "handler": "hotkey_enter", "argument": None},
+    {"intent": "submit", "handler": "hotkey_enter", "argument": None},
     {"intent": "press backspace", "handler": "hotkey_backspace", "argument": None},
     {"intent": "press space", "handler": "hotkey_space", "argument": None},
     {"intent": "select all", "handler": "hotkey_select_all", "argument": None},

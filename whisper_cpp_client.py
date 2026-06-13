@@ -206,8 +206,12 @@ def hide_webcam(q=None):
 
 # ── Hotkey handlers ──────────────────────────────────────────────────
 def hotkey_new_para(q=None):
-    pyautogui.hotkey("enter")
-    pyautogui.hotkey("enter")
+    pyautogui.hotkey("shift", "enter")
+    pyautogui.hotkey("shift", "enter")
+
+
+def hotkey_new_line(q=None):
+    pyautogui.hotkey("shift", "enter")
 
 
 def hotkey_enter(q=None):
@@ -843,6 +847,7 @@ HANDLER_MAP = {
     "take_picture": take_picture,
     "show_pictures": show_pictures,
     "hotkey_new_para": hotkey_new_para,
+    "hotkey_new_line": hotkey_new_line,
     "hotkey_enter": hotkey_enter,
     "hotkey_backspace": hotkey_backspace,
     "hotkey_space": hotkey_space,
@@ -996,7 +1001,7 @@ def transcribe():
                 if not listening:
                     continue
                 if len(txt) > 1:
-                    pyautogui.write(txt)
+                    pyautogui.write(txt.replace("\n", " "))
             # continue looping
         except KeyboardInterrupt:
             say("Goodbye.")
