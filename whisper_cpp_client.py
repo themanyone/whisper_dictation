@@ -923,6 +923,7 @@ def voice_dialog(prompt, options=None, timeout=30):
     """
     global listening
     was_listening = listening
+    # Drain any lingering audio (TTS echo, previous utterance)
     listening = False
     time.sleep(1.5)
     while True:
@@ -937,6 +938,19 @@ def voice_dialog(prompt, options=None, timeout=30):
     listening = was_listening
     shutup()
     say(prompt)
+    # Drain the echo of the prompt itself before listening for a response
+    listening = False
+    time.sleep(1.5)
+    while True:
+        try:
+            f = audio_queue.get_nowait()
+            try:
+                os.remove(f)
+            except Exception:
+                pass
+        except queue.Empty:
+            break
+    listening = was_listening
     start = time.time()
     while time.time() - start < timeout:
         try:
@@ -963,6 +977,19 @@ def voice_dialog(prompt, options=None, timeout=30):
         if matched:
             return matched
         say("I didn't understand. Please try again.")
+        # Drain the echo of that message before re-listening
+        listening = False
+        time.sleep(1.5)
+        while True:
+            try:
+                f = audio_queue.get_nowait()
+                try:
+                    os.remove(f)
+                except Exception:
+                    pass
+            except queue.Empty:
+                break
+        listening = True
     return None
 
 
