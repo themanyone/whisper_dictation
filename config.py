@@ -497,12 +497,9 @@ def query_models(base_url, api_key=None):
             pass
 
     return []
-    """
-    Merge `updates` into the saved config and write it back.
 
-    Prints the config file path so the user knows where it lives.
-    """
-    config = _load_from_file()
+
+def update_config(updates):
     config.update(updates)
     os.makedirs(CONFIG_DIR, exist_ok=True)
     with open(CONFIG_PATH, "w") as f:
@@ -557,24 +554,6 @@ def spoken_to_number(phrase):
         if n:
             return n
     return 0
-
-
-def query_models(base_url):
-    """Fetch model list from an OpenAI-compatible /v1/models endpoint."""
-    try:
-        r = requests.get(
-            base_url.rstrip("/") + "/models",
-            timeout=10,
-        )
-        r.raise_for_status()
-        data = r.json()
-        # OpenAI returns {"data": [{"id": "..."}, ...]}
-        # llama.cpp returns same format
-        models = [m["id"] for m in data.get("data", []) if "id" in m]
-        return sorted(models)
-    except Exception as e:
-        logging.warning(f"Failed to fetch models from {base_url}: {e}")
-        return []
 
 
 def match_dialog_response(spoken, options):
