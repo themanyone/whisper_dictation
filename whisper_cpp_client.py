@@ -430,8 +430,11 @@ def say(text, chunked=False):
                 )
                 if response == "yes":
                     _speak_text(remaining)
-            else:
-                _speak_text(remaining)
+                    _drain_audio()
+                else:
+                    resume_dictation()
+                return
+            _speak_text(remaining)
             _drain_audio()
             return
     _speak_text(clean)
@@ -782,7 +785,6 @@ def generate_text(prompt: str):
         listening = False
         chatting = True
         say(completion, chunked=True)
-        _drain_audio(0.3)
         chatting = False
         listening = True
         # add to conversation
@@ -792,7 +794,7 @@ def generate_text(prompt: str):
             messages.remove(messages[1])  # remove oldest user & assistant messages
 
 
-def resume_dictation():
+def resume_dictation(q=None):
     global chatting, listening
     chatting = False
     listening = True
@@ -848,13 +850,13 @@ def voice_dialog(prompt, options=None, timeout=30):
     # Drain any lingering audio (TTS echo, previous utterance)
     listening = False
     _drain_audio(1.5, remove_files=True)
-    listening = was_listening
+    listening = True  # record during the wait loop
     shutup()
     say(prompt)
     # Drain the echo of the prompt itself before listening for a response
     listening = False
     _drain_audio(1.5, remove_files=True)
-    listening = was_listening
+    listening = True  # record during the wait loop
     start = time.time()
     while time.time() - start < timeout:
         try:
@@ -877,14 +879,17 @@ def voice_dialog(prompt, options=None, timeout=30):
             continue
         matched = match_dialog_response(lower_case, options)
         if matched == "__CANCEL__":
+            listening = was_listening
             return None
         if matched:
+            listening = was_listening
             return matched
         say("I didn't understand. Please try again.")
         # Drain the echo of that message before re-listening
         listening = False
         _drain_audio(1.5, remove_files=True)
         listening = True
+    listening = was_listening
     return None
 
 
