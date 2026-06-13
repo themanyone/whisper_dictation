@@ -29,7 +29,10 @@ Config file path is printed whenever it is created or modified.
 """
 
 import json
+import logging
 import os
+import re
+import requests
 import sys
 import urllib.request
 from urllib.parse import urlparse
@@ -231,3 +234,88 @@ def get_chat_api_key(config, chat_url):
         if p.get("base_url", "").rstrip("/") == chat_url.rstrip("/"):
             return p.get("api_key", "sk-no-key-required")
     return "sk-no-key-required"
+
+
+_SPOKEN_NUMBERS = {
+    "one": 1, "two": 2, "three": 3, "four": 4, "five": 5,
+    "six": 6, "seven": 7, "eight": 8, "nine": 9, "ten": 10,
+    "first": 1, "second": 2, "third": 3, "fourth": 4, "fifth": 5,
+    "1": 1, "2": 2, "3": 3, "4": 4, "5": 5,
+    "6": 6, "7": 7, "8": 8, "9": 9, "10": 10,
+}
+
+
+def spoken_to_number(phrase):
+    """Return an int 1-10 if *phrase* contains a number word/digit, else 0.
+
+    Handles full phrases like "oh one" or "number two" by extracting the
+    first recognized number token from the text.
+    """
+    phrase = phrase.strip().lower()
+    # Fast path: exact match
+    n = _SPOKEN_NUMBERS.get(phrase)
+    if n:
+        return n
+    # Slow path: split on non-alphanumeric and check each token
+    for word in re.split(r"[^a-z0-9]+", phrase):
+        if not word:
+            continue
+        # "oh" is "zero" — only match if it's the sole number word
+        if word == "oh":
+            continue  # not useful as a 1-10 selection
+        n = _SPOKEN_NUMBERS.get(word)
+        if n:
+            return n
+    return 0
+
+
+def query_models(base_url):
+    """Fetch model list from an OpenAI-compatible /v1/models endpoint."""
+    try:
+        r = requests.get(
+            base_url.rstrip("/") + "/models",
+            timeout=10,
+        )
+        r.raise_for_status()
+        data = r.json()
+        # OpenAI returns {"data": [{"id": "..."}, ...]}
+        # llama.cpp returns same format
+        models = [m["id"] for m in data.get("data", []) if "id" in m]
+        return sorted(models)
+    except Exception as e:
+        logging.warning(f"Failed to fetch models from {base_url}: {e}")
+        return []
+
+
+def match_dialog_response(spoken, options):
+    """Fuzzy-match spoken text against a list of options.
+
+    Returns the matched option string, None if no match, or '__CANCEL__'
+    if the user said a cancel/stop keyword.
+    """
+    spoken = spoken.strip().lower()
+    if not spoken:
+        return None
+    if re.search(r"^(cancel|never mind|forget it|stop|quit|dismiss|abort)\b", spoken):
+        return "__CANCEL__"
+    if not options:
+        return spoken
+    for opt in options:
+        if spoken == opt.lower():
+            return opt
+        if spoken.rstrip(",.!?") == opt.lower():
+            return opt
+    num = spoken_to_number(spoken)
+    if num > 0:
+        num_str = str(num)
+        if num_str in options:
+            return num_str
+    if re.search(r"^(yes|yeah|yep|sure|okay?|do it|go ahead|confirm)\b", spoken):
+        for opt in options:
+            if opt.lower() in ("yes", "y", "yeah", "sure"):
+                return opt
+    if re.search(r"^(no|nope|cancel|never mind|forget it|stop|quit|dismiss)\b", spoken):
+        for opt in options:
+            if opt.lower() in ("no", "n", "nope"):
+                return opt
+    return None
