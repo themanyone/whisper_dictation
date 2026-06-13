@@ -396,6 +396,23 @@ def _speak_text(text):
             _piper_player = None
 
 
+def _drain_audio(delay=1.0, remove_files=False):
+    """Stop any echo recording, let TTS echo land, and drain the audio queue."""
+    if record_process:
+        record_process.stop_recording()
+    time.sleep(delay)
+    while True:
+        try:
+            f = audio_queue.get_nowait()
+            if remove_files:
+                try:
+                    os.remove(f)
+                except Exception:
+                    pass
+        except queue.Empty:
+            break
+
+
 def say(text, chunked=False):
     """Speak text via piper-tts.
 
@@ -419,8 +436,10 @@ def say(text, chunked=False):
             )
             if response == "yes":
                 _speak_text(remaining)
+            _drain_audio()
             return
     _speak_text(clean)
+    _drain_audio()
 
 
 def shutup():
@@ -767,16 +786,7 @@ def generate_text(prompt: str):
         listening = False
         chatting = True
         say(completion, chunked=True)
-        # Kill any still-running echo recording, drain it, then return to
-        # dictation mode so remaining echo can't re-trigger the LLM.
-        if record_process:
-            record_process.stop_recording()
-        time.sleep(0.3)  # let the file land in the queue
-        while not audio_queue.empty():
-            try:
-                audio_queue.get_nowait()
-            except queue.Empty:
-                break
+        _drain_audio(0.3)
         chatting = False
         listening = True
         # add to conversation
@@ -925,31 +935,13 @@ def voice_dialog(prompt, options=None, timeout=30):
     was_listening = listening
     # Drain any lingering audio (TTS echo, previous utterance)
     listening = False
-    time.sleep(1.5)
-    while True:
-        try:
-            f = audio_queue.get_nowait()
-            try:
-                os.remove(f)
-            except Exception:
-                pass
-        except queue.Empty:
-            break
+    _drain_audio(1.5, remove_files=True)
     listening = was_listening
     shutup()
     say(prompt)
     # Drain the echo of the prompt itself before listening for a response
     listening = False
-    time.sleep(1.5)
-    while True:
-        try:
-            f = audio_queue.get_nowait()
-            try:
-                os.remove(f)
-            except Exception:
-                pass
-        except queue.Empty:
-            break
+    _drain_audio(1.5, remove_files=True)
     listening = was_listening
     start = time.time()
     while time.time() - start < timeout:
@@ -979,16 +971,7 @@ def voice_dialog(prompt, options=None, timeout=30):
         say("I didn't understand. Please try again.")
         # Drain the echo of that message before re-listening
         listening = False
-        time.sleep(1.5)
-        while True:
-            try:
-                f = audio_queue.get_nowait()
-                try:
-                    os.remove(f)
-                except Exception:
-                    pass
-            except queue.Empty:
-                break
+        _drain_audio(1.5, remove_files=True)
         listening = True
     return None
 
