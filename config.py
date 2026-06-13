@@ -57,8 +57,23 @@ DEFAULT_CONFIG = {
     "piper_voice": "en_US-libritts_r-medium",
     "embed_model": "",
     "chat_model": "gpt-3.5-turbo",
+    "provider": "llama.cpp",
     "providers": [
-        {"name": "llama.cpp", "base_url": "http://127.0.0.1:8080/v1", "api_key": "sk-no-key-required"},
+        {
+            "name": "llama.cpp",
+            "base_url": "http://127.0.0.1:8080/v1",
+            "api_key": "sk-no-key-required",
+        },
+        {
+            "name": "OpenAI",
+            "base_url": "https://api.openai.com/v1",
+            "api_key": "",
+        },
+        {
+            "name": "Ollama",
+            "base_url": "http://127.0.0.1:11434/v1",
+            "api_key": "sk-no-key-required",
+        },
     ],
 }
 
@@ -189,6 +204,7 @@ def get_config():
 
     # Environment variable overrides (highest priority)
     env_overrides = {
+        "provider": os.getenv("PROVIDER"),
         "openai_api_key": os.getenv("OPENAI_API_KEY"),
         "gemini_api_key": os.getenv("GENAI_TOKEN"),
         "whisper_url": os.getenv("WHISPER_URL"),
@@ -211,7 +227,30 @@ def get_config():
         if key == "debug" and val == "":
             pass  # env not set, keep file value
 
+    # Resolve the active provider's base_url into chat_url (if not overridden by env)
+    active = get_active_provider(config)
+    if active and active.get("base_url"):
+        # Only apply if CHAT_URL env var wasn't set
+        if os.getenv("CHAT_URL") is None:
+            config["chat_url"] = active["base_url"].rstrip("/")
+        # Pull model from provider entry if present
+        if active.get("model"):
+            config["chat_model"] = active["model"]
+        # Pull api_key into the provider's own entry (used by get_chat_api_key)
+        # Already part of the provider entry
+
     return config
+
+
+def get_active_provider(config):
+    """Return the provider dict matching config['provider'], or None."""
+    name = config.get("provider", "")
+    if not name:
+        return None
+    for p in config.get("providers", []):
+        if p.get("name") == name:
+            return p
+    return None
 
 
 def update_config(updates):

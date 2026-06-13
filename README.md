@@ -122,20 +122,6 @@ curl -X POST "http://localhost:8080/v1/embeddings" -H "Content-Type: application
 }'
 ```
 
-## Default configuration
-
-On first run, the client prompts for server URLs model names, and API keys — press Enter to accept defaults. Settings are saved to `~/.config/whisper_dictation/config.json`. Environment variables override file values at runtime:
-
-- `WHISPER_URL` — whisper.cpp server (default `http://127.0.0.1:7777/inference`)
-- `CHAT_MODEL` — model name sent to LLM (default `gpt-3.5-turbo`)
-- `CHAT_URL` — LLM server (default `http://127.0.0.1:8080/v1`)
-- `EMBED_URL` — embeddings endpoint (default `http://127.0.0.1:8080/v1/embeddings`)
-- `EMBED_MODEL` — embedding model name (required only in router mode)
-- `OPENAI_API_KEY` — optional OpenAI ChatGPT
-- `GENAI_TOKEN` — optional Google Gemini
-
-Edit or delete `~/.config/whisper_dictation/config.json` to reset.
-
 ## Building from source (GPU acceleration)
 
 The pre-built binaries are CPU-only. For GPU acceleration (recommended), compile from source. Here we are using CUDA. Your options may vary. Review project's build docs.
@@ -159,6 +145,60 @@ cp build/bin/llama-server build/bin/llama-cli ~/.local/bin/
 ```
 
 For Vulkan backend, replace `-DGGML_CUDA=1` with `-DGGML_VULKAN=1`. See the [llama.cpp README](https://github.com/ggml-org/llama.cpp) for other backends.
+
+## Provider configuration
+
+The `providers` list in `~/.config/whisper_dictation/config.json` stores available LLM backends and their API keys. The active provider is selected by the `provider` key (name match). Defaults:
+
+```json
+{
+  "provider": "llama.cpp",
+  "providers": [
+    {
+      "name": "llama.cpp",
+      "base_url": "http://127.0.0.1:8080/v1",
+      "api_key": "sk-no-key-required"
+    },
+    {
+      "name": "OpenAI",
+      "base_url": "https://api.openai.com/v1",
+      "api_key": ""
+    },
+    {
+      "name": "Ollama",
+      "base_url": "http://127.0.0.1:11434/v1",
+      "api_key": "sk-no-key-required"
+    }
+  ]
+}
+```
+
+Populate API keys in the `api_key` field of each provider entry. The active provider's `base_url` is used as `chat_url` on startup. Switch providers at runtime by saying **"Computer, switch provider"** — you'll be prompted to select one by number, then pick a model from that provider.
+
+Override the active provider at runtime: `export PROVIDER=OpenAI`.
+
+### Full config reference
+
+Settings are saved to `~/.config/whisper_dictation/config.json`. Environment variables override file values at runtime:
+
+| Key | Env var | Default | Description |
+|---|---|---|---|
+| `whisper_url` | `WHISPER_URL` | `http://127.0.0.1:7777/inference` | whisper.cpp STT endpoint |
+| `provider` | `PROVIDER` | `llama.cpp` | Active provider name (must match `providers[].name`) |
+| `chat_url` | `CHAT_URL` | *(from active provider)* | LLM server URL |
+| `chat_model` | `CHAT_MODEL` | `gpt-3.5-turbo` | Model name for LLM |
+| `embed_url` | `EMBED_URL` | `http://127.0.0.1:8080/v1/embeddings` | Embeddings endpoint |
+| `embed_model` | `EMBED_MODEL` | *(empty)* | Required only in router mode |
+| `threshold` | — | `0.45` | Semantic match confidence (0.0–1.0) |
+| `conversation_length` | — | `9` | Max user/assistant pairs in chat history |
+| `audio_format` | — | `.wav` | Recording format (`.wav` or `.ogg`) |
+| `debug` | `DEBUG` | `false` | Verbose debug logging |
+| `piper_model` | `PIPER_MODEL` | *(auto-detect)* | Path to piper `.onnx` voice file |
+| `piper_voice` | `PIPER_VOICE` | `en_US-libritts_r-medium` | Piper voice name |
+
+Edit or delete `~/.config/whisper_dictation/config.json` to reset.
+
+**Layout is subject to change** as development progresses. After updating, look in `config.py` for `DEFAULT_CONFIG` to see what your config file should look like.
 
 ## Wayland
 

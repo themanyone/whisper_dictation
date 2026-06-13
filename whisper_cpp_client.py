@@ -924,7 +924,8 @@ def switch_provider(q=None):
     local_chat_url = base_url
     chat_model = model
     chat_api_key = api_key
-    update_config({"chat_url": base_url, "chat_model": model})
+    cfg["provider"] = provider["name"]
+    update_config({"chat_url": base_url, "chat_model": model, "provider": provider["name"]})
     say(f"Switched to {model} on {provider['name']}.")
 
 
