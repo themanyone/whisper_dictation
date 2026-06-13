@@ -1,13 +1,13 @@
 # Whisper Dictation
 
-Private voice keyboard, AI chat, images, webcam, recordings, voice control in >= 4 GiB VRAM.
+**The Ship's Computer** - Private voice keyboard, AI agent, images, webcam, recordings, voice control in >= 4 GiB VRAM.
 
 <img src="img/ss.png" alt="Dictation anywhere, even social media." width="300" align="right">
 
 - **Dictation mode** — transcribed speech goes straight to text output (fast, no LLM)
 - **Agent mode** — speech routed through the LLM for chat, tool calling, or learning new commands
 - **Semantic fast-path** — embedding-based matcher (`all-MiniLM-L6-v2`) recognizes common commands in ~50ms with no LLM round trip
-- **Voice-prompted agent learning** — say *"Computer, record a 30 second video"* and the LLM proposes a shell command, asks for confirmation, then remembers it so next time it can run directly (with permission).
+- **Updatesitself** — example; say *"Computer, record a 30 second video"* and the LLM proposes a shell command, asks for confirmation, then learns it. So next time you can just run it (with permission).
 
 ```
 Transcript → semantic matcher → matched? → run tool (fast path)
@@ -37,6 +37,36 @@ llama-server -m ~/models/qwen2.5-7b-q4_k_s.gguf -ngl 99 -c 4096 --port 8888
 # Terminal 3 — dictation client
 ./whisper_cpp_client.py
 ```
+
+## Sentence Transformer (semantic command matching)
+
+Voice commands are matched semantically using `all-MiniLM-L6-v2` embeddings served by
+`llama-server`'s OpenAI-compatible `/v1/embeddings` endpoint. No separate server needed.
+
+**Option A — enable embeddings on the existing LLM server** (works with any model):
+
+```shell
+llama-server -m ~/models/qwen2.5-7b-q4_k_s.gguf -ngl 99 -c 4096 --port 8888 --embeddings
+```
+
+Simply add `--embeddings` to your `llama-server` command. The embedding endpoint is
+available at `http://127.0.0.1:8888/v1/embeddings` alongside the chat endpoint.
+
+**Option B — dedicated embedding server** (lighter, no LLM context overhead):
+
+```shell
+# Download a lightweight embedding model (~25 MB)
+wget -P ~/models https://huggingface.co/ChristianAzinn/sentence-transformers_all-MiniLM-L6-v2-gguf/resolve/main/all-MiniLM-L6-v2-ggml-model-f16.gguf
+
+# Start a minimal llama-server with just the embedding model
+llama-server -m ~/models/all-MiniLM-L6-v2-ggml-model-f16.gguf --embeddings --port 8088 -c 256 -ngl 99
+```
+
+Then set `embed_url` to `http://127.0.0.1:8088/v1/embeddings` in
+`~/.config/whisper_dictation/config.json` or export `EMBED_URL`.
+
+The matcher pre-computes intent embeddings at startup and caches them to
+`~/.config/whisper_dictation/embeddings_cache.json` — no round-trip cost on subsequent runs.
 
 ## Default configuration
 
@@ -109,7 +139,6 @@ Commands are defined in `commands_table.py` — add your own or change existing 
 | `config.py` | First-run configuration prompts |
 | `record.py` | Sound-activated GStreamer audio recorder |
 | `on_screen.py` | Webcam viewer and capture |
-| `mimic3_client.py` | Text-to-speech client for Mimic3 |
 | `sdapi.py` | Stable Diffusion image generation client |
 | `input_backend.py` | Wayland input simulation (evdev) |
 
@@ -117,8 +146,16 @@ Commands are defined in `commands_table.py` — add your own or change existing 
 
 - **ChatGPT** — `export OPENAI_API_KEY=<key>`
 - **Google Gemini** — `export GENAI_TOKEN=<key>`; `pip install google-generativeai`
-- **Mimic3 TTS** — run `mimic3-server` on the network for spoken answers
 - **Stable Diffusion** — start `webui.sh --api --medvram` on the server for image generation
+
+## Voice responses
+
+The client speaks answers using **Piper TTS** (`pip install piper-tts`). On first run you'll be prompted to download a voice (~15 MB). Configure in `~/.config/whisper_dictation/config.json`:
+
+- `piper_model` — explicit path to a `.onnx` voice file (takes priority)
+- `piper_voice` — voice name to look up in `$XDG_CACHE_HOME/piper/{voice}.onnx` (default `en_US-libritts_r-medium`)
+
+Or override at runtime: `export PIPER_VOICE=en_US-amy-medium`.
 
 ## Troubleshooting
 

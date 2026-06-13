@@ -31,6 +31,7 @@ Config file path is printed whenever it is created or modified.
 import json
 import os
 import sys
+import urllib.request
 
 CONFIG_DIR = os.path.expanduser("~/.config/whisper_dictation")
 CONFIG_PATH = os.path.join(CONFIG_DIR, "config.json")
@@ -46,6 +47,9 @@ DEFAULT_CONFIG = {
     "audio_format": ".wav",
     "debug": False,
     "threshold": 0.45,
+    "piper_model": "",
+    "piper_binary": "",
+    "piper_voice": "en_US-libritts_r-medium",
 }
 
 
@@ -84,6 +88,40 @@ def _first_run_setup():
     config["gemini_api_key"] = _prompt(
         "  Google Gemini API key (leave blank to skip)", ""
     )
+
+    # ── Piper TTS voice ──────────────────────────────────────────────
+    pip_cache = os.path.join(
+        os.environ.get("XDG_CACHE_HOME", os.path.expanduser("~/.cache")),
+        "piper",
+    )
+    voice = config.get("piper_voice", "en_US-libritts_r-medium") or "en_US-libritts_r-medium"
+    onnx_path = os.path.join(pip_cache, f"{voice}.onnx")
+    json_path = os.path.join(pip_cache, f"{voice}.onnx.json")
+    if not os.path.isfile(onnx_path) or not os.path.isfile(json_path):
+        print()
+        print(f"  Piper TTS voice '{voice}' not found in {pip_cache}.")
+        ans = input("  Download it now from HuggingFace? [Y/n] ").strip().lower()
+        if ans in ("", "y", "yes"):
+            os.makedirs(pip_cache, exist_ok=True)
+            base = "https://huggingface.co/rhasspy/piper-voices/resolve/main"
+            # Derive HF path from voice name (e.g. en_US-libritts_r-medium)
+            lang_region = voice.split("-", 1)[0]  # en_US
+            lang = lang_region[:2]  # en
+            size = voice.rsplit("-", 1)[-1]  # medium
+            name = voice[len(lang_region) + 1 : -(len(size) + 1)]  # libritts_r
+            model_dir = f"{lang}/{lang_region}/{name}/{size}"
+            print(f"  Downloading {voice}.onnx (may take a minute)...")
+            try:
+                urllib.request.urlretrieve(
+                    f"{base}/{model_dir}/{voice}.onnx", onnx_path
+                )
+                print(f"  Downloaded ({os.path.getsize(onnx_path)} bytes)")
+                urllib.request.urlretrieve(
+                    f"{base}/{model_dir}/{voice}.onnx.json", json_path
+                )
+                print(f"  Voice saved to {pip_cache}/")
+            except Exception as e:
+                print(f"  Download failed: {e}")
 
     print()
 
@@ -132,6 +170,9 @@ def get_config():
         "whisper_url": os.getenv("WHISPER_URL"),
         "chat_url": os.getenv("CHAT_URL"),
         "embed_url": os.getenv("EMBED_URL"),
+        "piper_model": os.getenv("PIPER_MODEL"),
+        "piper_binary": os.getenv("PIPER_BINARY"),
+        "piper_voice": os.getenv("PIPER_VOICE"),
         "debug": (os.getenv("DEBUG", "").lower() in ("1", "true", "yes")),
     }
     for key, val in env_overrides.items():

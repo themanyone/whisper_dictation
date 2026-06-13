@@ -71,6 +71,10 @@ COMMANDS = [
     # ── Dictation control ──────────────────────────────────────────────────
     {"intent": "resume dictation", "handler": "resume_dictation", "argument": None},
     {"intent": "continue typing", "handler": "resume_dictation", "argument": None},
+    {"intent": "pause dictation", "handler": "pause_dictation", "argument": None},
+    {"intent": "pause listening", "handler": "pause_dictation", "argument": None},
+    {"intent": "stop dictation", "handler": "stop_dictation", "argument": None},
+    {"intent": "stop listening", "handler": "stop_dictation", "argument": None},
     # ── Recording ──────────────────────────────────────────────────────────
     {"intent": "record audio", "handler": "record_mp3", "argument": None},
     {"intent": "start recording", "handler": "record_mp3", "argument": None},

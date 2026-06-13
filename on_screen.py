@@ -18,7 +18,6 @@
 ## Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
 ## MA 02110-1301, USA.
 ##
-from gi.repository import Gst
 import gi
 import os
 import time
@@ -26,6 +25,7 @@ from PIL import Image
 from record import unique_file_name
 
 gi.require_version("Gst", "1.0")
+from gi.repository import Gst
 
 
 # don't need an instance of camera to show pictures

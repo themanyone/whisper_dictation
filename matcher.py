@@ -123,7 +123,12 @@ def _embed_texts(texts: list, embed_url: str) -> list:
             embeddings[item["index"]] = item["embedding"]
         return embeddings
     except Exception as e:
-        logging.warning(f"Embedding request failed: {e}")
+        logging.info(
+            f"To enable voice commands, launch a sentence transformer:\n"
+            f"  llama-server --embeddings -m /path/to/all-MiniLM-L6-v2-GGUF.bin "
+            f"-c 8192 --port 8088\n"
+            f"(Connection to {embed_url} failed: {e})"
+        )
         return []
 
 
@@ -193,7 +198,7 @@ class Matcher:
                 _save_cache(cache)
                 logging.debug(f"Pre-computed and cached {len(self.embeddings)} intent embeddings.")
             else:
-                logging.warning("Failed to compute embeddings; commands won't match.")
+                logging.info("Sentence transformer not available; voice commands disabled.")
                 self.embeddings = [None] * len(self.intent_texts)
 
     def match(self, text: str, threshold=None):

@@ -42,7 +42,7 @@ import tempfile
 import threading
 import requests
 import logging
-from mimic3_client import say, shutup
+import shutil
 from on_screen import camera, show_pictures
 from record import delayRecord
 from commands_table import COMMANDS
@@ -60,6 +60,7 @@ pending_cmd = None  # (handler_name, handler_code, proposal) for voice confirm
 logging.basicConfig(
     level=logging.INFO,
     format="[%(levelname)s] %(lineno)d %(message)s",
+    force=True,
     handlers=[
         # logging.FileHandler('/tmp/whisper_cpp_client.log'),
         logging.StreamHandler()
@@ -304,6 +305,119 @@ def ANSI_clear_line():
 
 bs = ANSI_clear_line()
 
+# ── Piper TTS ────────────────────────────────────────────────────────
+# Uses piper-tts Python API (piper-tts package, pip install piper-tts).
+_piper_voice = None
+_piper_player = None
+
+
+def _find_piper_model():
+    """Return path to a piper voice model, or None."""
+    # 1. Explicit piper_model path in config
+    path = cfg.get("piper_model", "")
+    if path and os.path.isfile(path):
+        return path
+    # 2. Configured voice name → XDG_CACHE_HOME/piper/{voice}.onnx
+    voice = cfg.get("piper_voice", "")
+    if voice:
+        pip_cache = os.path.join(
+            os.environ.get("XDG_CACHE_HOME", os.path.expanduser("~/.cache")),
+            "piper",
+        )
+        path = os.path.join(pip_cache, f"{voice}.onnx")
+        if os.path.isfile(path):
+            return path
+    # 3. Common default locations
+    candidates = [
+        os.path.expanduser("~/piper-tts/voices/en_US-lessac-medium.onnx"),
+        os.path.expanduser("~/piper-tts/voices/en_US-amy-medium.onnx"),
+        os.path.expanduser("~/piper-tts/voices/en_US-ryan-medium.onnx"),
+        "/usr/share/piper-tts/voices/en_US-lessac-medium.onnx",
+        "/usr/local/share/piper-tts/voices/en_US-lessac-medium.onnx",
+    ]
+    for c in candidates:
+        if os.path.isfile(c):
+            return c
+    return None
+
+
+def _find_player():
+    """Return (path, name) for an audio playback binary, or (None, None)."""
+    for name in ("paplay", "aplay", "pw-play"):
+        path = shutil.which(name)
+        if path:
+            return (path, name)
+    return (None, None)
+
+
+def _load_piper_voice():
+    """Lazy-load PiperVoice model, return True on success."""
+    global _piper_voice
+    if _piper_voice is not None:
+        return True
+    model = _find_piper_model()
+    if not model:
+        logging.warning("No piper voice model found. Set piper_model in config.")
+        return False
+    try:
+        from piper import PiperVoice
+        _piper_voice = PiperVoice.load(model)
+        return True
+    except Exception as e:
+        logging.warning(f"Failed to load Piper voice: {e}")
+        return False
+
+
+def say(text):
+    """Speak *text* via piper-tts Python API, killing any utterance still playing."""
+    global _piper_player
+    shutup()
+    if not _load_piper_voice():
+        return
+    player_bin, player_name = _find_player()
+    if not player_bin:
+        logging.warning("No audio player found (paplay/aplay/pw-play).")
+        return
+    # Stream synthesized audio chunks to player subprocess
+    gen = _piper_voice.synthesize(text)
+    try:
+        first = next(gen)
+    except StopIteration:
+        return
+    # aplay uses short flags (-t raw); paplay/pw-play use --raw (no -t)
+    if player_name == "aplay":
+        args = [player_bin, "-r", str(first.sample_rate), "-f", "S16_LE",
+                "-c", str(first.sample_channels), "-t", "raw"]
+    else:
+        args = [player_bin, "--raw", "--rate", str(first.sample_rate),
+                "--format", "s16le", "--channels", str(first.sample_channels)]
+    try:
+        player = subprocess.Popen(
+            args, stdin=subprocess.PIPE, stderr=subprocess.DEVNULL,
+        )
+        _piper_player = player
+        player.stdin.write(first.audio_int16_bytes)
+        for chunk in gen:
+            player.stdin.write(chunk.audio_int16_bytes)
+        player.stdin.close()
+        player.wait()
+    except BrokenPipeError:
+        pass  # killed by shutup()
+    finally:
+        _piper_player = None
+
+
+def shutup():
+    """Kill any currently playing piper utterance."""
+    global _piper_player
+    if _piper_player and _piper_player.poll() is None:
+        _piper_player.terminate()
+        try:
+            _piper_player.wait(timeout=2)
+        except subprocess.TimeoutExpired:
+            _piper_player.kill()
+    _piper_player = None
+
 
 def manage_whisper_service(action: str):
     """Start, stop, check, or install the whisper systemd user service.
@@ -388,7 +502,7 @@ WantedBy=default.target
             capture_output=True, timeout=10,
         )
         print(" This app will run 'systemctl --user start whisper' as needed.")
-        print(" To keep it always running type 'systemctl --user enable whisper'")
+        print(" To optionally keep it running 24/7 type 'systemctl --user enable whisper'")
         return
 
     # ── start / stop ─────────────────────────────────────────────────
@@ -683,6 +797,19 @@ def resume_dictation():
     listening = True
 
 
+def pause_dictation(q=None):
+    """Echo text but don't simulate keystrokes."""
+    global listening
+    listening = False
+
+
+def stop_dictation(q=None):
+    """Shut down the dictation system."""
+    global running
+    say("Shutting down.")
+    running = False
+
+
 def record_mp3():
     global listening
     listening = False
@@ -708,6 +835,8 @@ HANDLER_MAP = {
     "send_email": send_email,
     "draw_picture": draw_picture,
     "resume_dictation": resume_dictation,
+    "pause_dictation": pause_dictation,
+    "stop_dictation": stop_dictation,
     "record_mp3": record_mp3,
     "show_webcam": show_webcam,
     "hide_webcam": hide_webcam,
@@ -746,7 +875,7 @@ matcher = Matcher(
 
 
 def transcribe():
-    global listening
+    global listening, pending_cmd
     while True:
         try:
             # transcribe audio from queue
@@ -778,11 +907,6 @@ def transcribe():
                 # strip txt unless we specifically say "new paragraph"
                 txt = txt.strip(" \n") + " "
                 print(bs + txt)  # print the text
-
-                # Stop dictation (special case — breaks the loop).
-                if re.search(r"^stop.? (d.ctation|listening).?$", lower_case):
-                    say("Shutting down.")
-                    break
 
                 # — Voice confirmation for pending command ——————
                 if pending_cmd:
@@ -820,8 +944,11 @@ def transcribe():
                         print(f"[DEBUG] matched '{handler_name}' (score={score:.3f})")
                     handler_fn = HANDLER_MAP.get(handler_name)
                     if handler_fn:
-                        say("okay")
+                        if handler_name != "stop_dictation":
+                            say("okay")
                         handler_fn(arg)
+                        if not running:
+                            break
                         continue
 
                 # — LLM command proposal (unrecognized → ask LLM) —
@@ -955,6 +1082,7 @@ def quit():
     discard_input()
     time.sleep(1.0)
     shutup()
+    print()
 
 
 if __name__ == "__main__":
