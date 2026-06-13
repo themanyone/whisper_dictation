@@ -17,6 +17,20 @@ Transcript → semantic matcher → matched? → run tool (fast path)
 
 ## Preparation
 
+**Ubuntu / Debian** Install GStreamer and required plugins:
+
+```shell
+sudo apt install gstreamer1.0-tools gstreamer1.0-plugins-base \
+  gstreamer1.0-plugins-good gstreamer1.0-plugins-bad \
+  swh-plugins python3-gi python3-pip \
+  gir1.2-gstreamer-1.0 gir1.2-gst-plugins-base-1.0
+```
+
+The `gst-plugins-good` package provides `souphttpsrc` required for mimic3 voice output.
+The `gst-plugins-bad` package provides LADSPA plugin support for audio effects.
+The `swh-plugins` package provides LADSPA delay plugins (`delay_1898.so`) for audio
+recording.
+
 **Arch Linux** Install GStreamer and required plugins:
 
 ```shell
@@ -29,7 +43,7 @@ The `swh-plugins` package provides LADSPA delay plugins (`delay_1898.so`) for au
 recording.
 
 **Fedora** Get the [Rpmfusion repos]( http://rpmfusion.org) and install
-[GStreamer](https://gstreamer.freedesktop.org/) using the system's package manager. It is
+[GStreamer](https://gstreamer.freedesktop.org/) using `dnf`. It is
 necessary for recording temporary audio clips to send to your local `whisper.cpp` speech
 to text (STT) server for decoding.
 The required `ladspa-delay-so-delay-5s` may be found in the
