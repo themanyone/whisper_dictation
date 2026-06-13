@@ -79,19 +79,17 @@ echo ""
 # ── 1. Install system dependencies ───────────────────────────────────
 echo "── [1/5] Installing system dependencies ──"
 
-# Detect distro
+# Detect distro and show install hint (actual check at end of script)
 if command -v pacman &>/dev/null; then
-    echo "(Arch) Run: sudo pacman -S --needed gstreamer gst-plugins-base gst-plugins-good gst-plugins-bad swh-plugins python-pip"
-    echo "  You may need to run this manually."
+    echo "  (Arch)  sudo pacman -S --needed gstreamer gst-plugins-base gst-plugins-good gst-plugins-bad swh-plugins python-pip"
 elif command -v dnf &>/dev/null; then
-    echo "(Fedora) Run: sudo dnf install gstreamer1 gstreamer1-plugins-base gstreamer1-plugins-good gstreamer1-plugins-bad-free-extras python3-pip"
-    echo "  You may need to run this manually."
+    echo "  (Fedora)  sudo dnf install gstreamer1 gstreamer1-plugins-base gstreamer1-plugins-good gstreamer1-plugins-bad-free-extras"
 elif command -v apt &>/dev/null; then
-    echo "(Debian/Ubuntu) Run: sudo apt install gstreamer1.0-tools gstreamer1.0-plugins-base gstreamer1.0-plugins-good gstreamer1.0-plugins-bad swh-plugins python3-pip"
-    echo "  You may need to run this manually."
+    echo "  (Debian/Ubuntu)  sudo apt install gstreamer1.0-tools gstreamer1.0-plugins-base gstreamer1.0-plugins-good gstreamer1.0-plugins-bad swh-plugins python3-gi python3-pip gir1.2-gstreamer-1.0 gir1.2-gst-plugins-base-1.0"
 else
-    echo "  Please install GStreamer and the LADSPA delay plugin via your package manager."
+    echo "  Please install GStreamer and LADSPA delay plugin via your package manager."
 fi
+echo "  (Verified at the end of this script.)"
 
 # ── 2. Install Python dependencies ───────────────────────────────────
 echo ""
@@ -293,3 +291,57 @@ echo "  Done! Add this to your ~/.bashrc:"
 echo "    export MODELS_DIR=\"$MODELS_DIR\""
 echo "    export PATH=\"\$PATH:$BIN_DIR\""
 echo ""
+
+# ── GStreamer check ───────────────────────────────────────────────────
+echo "── Checking GStreamer installation ──"
+
+GSTREAMER_OK=true
+
+if ! command -v gst-launch-1.0 &>/dev/null; then
+    GSTREAMER_OK=false
+    echo "  gst-launch-1.0 not found."
+fi
+
+# Check for LADSPA delay plugin used by the pre-recording buffer
+LADSPA_FOUND=false
+for dir in /usr/lib/ladspa /usr/lib64/ladspa /usr/lib/x86_64-linux-gnu/ladspa; do
+    if [ -f "$dir/delay_1898.so" ]; then
+        LADSPA_FOUND=true
+        break
+    fi
+done
+
+if ! $LADSPA_FOUND; then
+    GSTREAMER_OK=false
+    echo "  LADSPA delay plugin (delay_1898.so) not found."
+fi
+
+if ! $GSTREAMER_OK; then
+    echo ""
+    echo "  GStreamer components are missing. See README Preparation:"
+    echo ""
+
+    if command -v apt &>/dev/null; then
+        echo "  ** Ubuntu / Debian **"
+        echo "  sudo apt install gstreamer1.0-tools gstreamer1.0-plugins-base \\"
+        echo "    gstreamer1.0-plugins-good gstreamer1.0-plugins-bad \\"
+        echo "    swh-plugins python3-gi python3-pip \\"
+        echo "    gir1.2-gstreamer-1.0 gir1.2-gst-plugins-base-1.0"
+    elif command -v pacman &>/dev/null; then
+        echo "  ** Arch Linux **"
+        echo "  sudo pacman -S gstreamer gst-plugins-base gst-plugins-good \\"
+        echo "    gst-plugins-bad swh-plugins"
+    elif command -v dnf &>/dev/null; then
+        echo "  ** Fedora **"
+        echo "  Get the Rpmfusion repos (http://rpmfusion.org) then:"
+        echo "  sudo dnf install gstreamer1 gstreamer1-plugins-base \\"
+        echo "    gstreamer1-plugins-good gstreamer1-plugins-bad-free-extras"
+    else
+        echo "  Please install GStreamer and the LADSPA delay plugin"
+        echo "  via your package manager. See README.md for details."
+    fi
+    echo ""
+    echo "  Recording will not work until these are installed."
+else
+    echo "  GStreamer components found."
+fi

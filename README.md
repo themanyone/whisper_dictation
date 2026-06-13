@@ -17,6 +17,8 @@ Transcript → semantic matcher → matched? → run tool (fast path)
 
 ## Preparation
 
+If setting up manually, run `pip install -r requirements.txt`
+
 **Ubuntu / Debian** Install GStreamer and required plugins:
 
 ```shell
