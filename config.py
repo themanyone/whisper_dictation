@@ -63,16 +63,93 @@ DEFAULT_CONFIG = {
             "name": "llama.cpp",
             "base_url": "http://127.0.0.1:8080/v1",
             "api_key": "sk-no-key-required",
+            "provider_type": "llamacpp",
         },
         {
             "name": "OpenAI",
             "base_url": "https://api.openai.com/v1",
             "api_key": "",
+            "provider_type": "openai",
+        },
+        {
+            "name": "OpenRouter",
+            "base_url": "https://openrouter.ai/api/v1",
+            "api_key": "",
+            "provider_type": "openai",
+        },
+        {
+            "name": "xAI Grok",
+            "base_url": "https://api.x.ai/v1",
+            "api_key": "",
+            "provider_type": "openai",
+        },
+        {
+            "name": "Google Gemini",
+            "base_url": "https://generativelanguage.googleapis.com/v1beta/openai/",
+            "api_key": "",
+            "model": "gemini-2.0-flash",
+            "provider_type": "gemini",
+        },
+        {
+            "name": "Anthropic Claude",
+            "base_url": "https://api.anthropic.com/v1",
+            "api_key": "",
+            "model": "claude-sonnet-4-20250514",
+            "provider_type": "anthropic",
+        },
+        {
+            "name": "Groq",
+            "base_url": "https://api.groq.com/openai/v1",
+            "api_key": "",
+            "provider_type": "openai",
+        },
+        {
+            "name": "Together AI",
+            "base_url": "https://api.together.ai/v1",
+            "api_key": "",
+            "provider_type": "openai",
+        },
+        {
+            "name": "DeepInfra",
+            "base_url": "https://api.deepinfra.com/v1/openai",
+            "api_key": "",
+            "provider_type": "openai",
+        },
+        {
+            "name": "DeepSeek",
+            "base_url": "https://api.deepseek.com/v1",
+            "api_key": "",
+            "provider_type": "openai",
+        },
+        {
+            "name": "Mistral AI",
+            "base_url": "https://api.mistral.ai/v1",
+            "api_key": "",
+            "provider_type": "openai",
+        },
+        {
+            "name": "Perplexity",
+            "base_url": "https://api.perplexity.ai",
+            "api_key": "",
+            "provider_type": "openai",
+        },
+        {
+            "name": "Fireworks AI",
+            "base_url": "https://api.fireworks.ai/inference/v1",
+            "api_key": "",
+            "provider_type": "openai",
+        },
+        {
+            "name": "AIHubMix",
+            "base_url": "https://aihubmix.com/v1",
+            "api_key": "",
+            "provider_type": "openai",
         },
         {
             "name": "Ollama",
             "base_url": "http://127.0.0.1:11434/v1",
             "api_key": "sk-no-key-required",
+            "provider_type": "ollama",
         },
     ],
 }
@@ -232,7 +309,12 @@ def get_config():
     if active and active.get("base_url"):
         # Only apply if CHAT_URL env var wasn't set
         if os.getenv("CHAT_URL") is None:
-            config["chat_url"] = active["base_url"].rstrip("/")
+            ptype = active.get("provider_type") or detect_provider_type(
+                active["base_url"]
+            )
+            config["chat_url"] = resolve_provider_url(
+                active["base_url"], ptype
+            )
         # Pull model from provider entry if present
         if active.get("model"):
             config["chat_model"] = active["model"]
@@ -253,7 +335,168 @@ def get_active_provider(config):
     return None
 
 
-def update_config(updates):
+# ── Provider auto-detection & URL resolution ────────────────────────
+
+_PROBE_PATHS = {
+    "openai": "/v1",
+    "llamacpp": "/v1",
+    "ollama": "/v1",
+    "gemini": "/v1beta/openai",
+    "anthropic": "/v1",
+}
+
+_KNOWN_PROVIDER_PATTERNS = [
+    (re.compile(r"generativelanguage\.googleapis\.com", re.I), "gemini"),
+    (re.compile(r"anthropic\.com", re.I), "anthropic"),
+    (re.compile(r"openai\.com", re.I), "openai"),
+    (re.compile(r"x\.ai", re.I), "openai"),
+    (re.compile(r"openrouter\.ai", re.I), "openai"),
+    (re.compile(r"aihubmix\.com", re.I), "openai"),
+    (re.compile(r"api\.groq\.com", re.I), "openai"),
+    (re.compile(r"api\.together\.xyz|together\.ai", re.I), "openai"),
+    (re.compile(r"deepinfra\.com", re.I), "openai"),
+    (re.compile(r"deepseek\.com", re.I), "openai"),
+    (re.compile(r"mistral\.ai", re.I), "openai"),
+    (re.compile(r"perplexity\.ai", re.I), "openai"),
+    (re.compile(r"fireworks\.ai", re.I), "openai"),
+    (re.compile(r"127\.0\.0\.1:[89]\d{3}", re.I), "llamacpp"),
+    (re.compile(r"localhost:[89]\d{3}", re.I), "llamacpp"),
+    (re.compile(r"ollama", re.I), "ollama"),
+    (re.compile(r":11434", re.I), "ollama"),
+]
+
+
+def detect_provider_type(base_url):
+    """Return a provider_type string guessed from the base_url, or 'openai'."""
+    for pattern, ptype in _KNOWN_PROVIDER_PATTERNS:
+        if pattern.search(base_url):
+            return ptype
+    return "openai"
+
+
+def resolve_provider_url(base_url, provider_type=None):
+    """Auto-correct a base URL for the given provider_type.
+
+    Ensures the URL ends with the correct API path suffix for the provider.
+    """
+    if not provider_type:
+        provider_type = detect_provider_type(base_url)
+
+    base = base_url.rstrip("/")
+
+    # Strip known API path segments so we can re-add the correct one
+    strip_suffixes = ["/v1", "/v1beta/openai", "/v1/openai",
+                      "/openai", "/api"]
+    for suf in strip_suffixes:
+        if base.endswith(suf):
+            base = base[: -len(suf)]
+            break
+
+    if provider_type == "gemini":
+        # Gemini needs /v1beta/openai/ (trailing slash matters for some)
+        resolved = base + "/v1beta/openai/"
+    elif provider_type == "anthropic":
+        # Anthropic native API isn't OpenAI-compatible; point at /v1
+        # (user needs an OpenAI-compatible proxy for this to work)
+        resolved = base + "/v1"
+    else:
+        resolved = base + "/v1"
+
+    return resolved
+
+
+def probe_endpoint(base_url, api_key=None, timeout=5):
+    """Try to reach an OpenAI-compatible /models endpoint on *base_url*.
+
+    Probes multiple path patterns and returns (resolved_url, provider_type)
+    on success, or (None, None).
+    """
+    base = base_url.rstrip("/")
+    # Strip any existing path segment so we can probe fresh
+    for suf in ["/v1beta/openai", "/v1/openai", "/v1", "/openai", "/api"]:
+        if base.endswith(suf):
+            base = base[: -len(suf)]
+            break
+
+    candidates = [
+        base + "/v1/models",
+        base + "/v1beta/openai/models",
+        base + "/openai/v1/models",
+    ]
+    headers = {}
+    if api_key:
+        headers["Authorization"] = f"Bearer {api_key}"
+
+    for url in candidates:
+        try:
+            r = requests.get(url, headers=headers, timeout=timeout)
+            if r.status_code == 200:
+                data = r.json()
+                models = data.get("data", [])
+                if models and isinstance(models, list) and "id" in models[0]:
+                    # Sniff provider from model IDs
+                    ids = [m["id"] for m in models]
+                    joined = " ".join(ids).lower()
+                    if any("gemini" in m for m in ids):
+                        ptype = "gemini"
+                    elif any("claude" in m for m in ids):
+                        ptype = "anthropic"
+                    elif any("gpt" in m or "o1" in m or "o3" in m for m in ids):
+                        ptype = "openai"
+                    elif any("llama" in m or "qwen" in m or "mistral" in m for m in ids):
+                        ptype = "llamacpp"
+                    else:
+                        ptype = detect_provider_type(url)
+                    # Strip /models from the URL path
+                    resolved = url[: -len("/models")]
+                    return resolved, ptype
+        except requests.RequestException:
+            continue
+    return None, None
+
+
+def query_models(base_url, api_key=None):
+    """Fetch model list from an OpenAI-compatible /v1/models endpoint.
+
+    Tries the base_url as-is, then probes common path variations.
+    Returns sorted list of model IDs (empty on failure).
+    """
+    # Try the URL as-is first
+    for url in [base_url.rstrip("/") + "/models",
+                base_url.rstrip("/") + "models"]:
+        try:
+            headers = {}
+            if api_key:
+                headers["Authorization"] = f"Bearer {api_key}"
+            r = requests.get(url, headers=headers, timeout=10)
+            r.raise_for_status()
+            data = r.json()
+            models = [m["id"] for m in data.get("data", []) if "id" in m]
+            if models:
+                return sorted(models)
+        except requests.RequestException:
+            continue
+
+    # Probe known path patterns
+    resolved, _ = probe_endpoint(base_url, api_key=api_key)
+    if resolved and resolved.rstrip("/") != base_url.rstrip("/"):
+        try:
+            headers = {}
+            if api_key:
+                headers["Authorization"] = f"Bearer {api_key}"
+            r = requests.get(
+                resolved.rstrip("/") + "/models",
+                headers=headers, timeout=10,
+            )
+            r.raise_for_status()
+            data = r.json()
+            models = [m["id"] for m in data.get("data", []) if "id" in m]
+            if models:
+                return sorted(models)
+        except requests.RequestException:
+            pass
+
+    return []
     """
     Merge `updates` into the saved config and write it back.
 
@@ -269,8 +512,16 @@ def update_config(updates):
 
 def get_chat_api_key(config, chat_url):
     """Return the API key for the provider matching chat_url, or the default."""
+    # First try matching by active provider name
+    active_name = config.get("provider", "")
+    if active_name:
+        for p in config.get("providers", []):
+            if p.get("name") == active_name:
+                return p.get("api_key", "sk-no-key-required")
+    # Fall back to URL match
+    normalized = chat_url.rstrip("/")
     for p in config.get("providers", []):
-        if p.get("base_url", "").rstrip("/") == chat_url.rstrip("/"):
+        if p.get("base_url", "").rstrip("/") == normalized:
             return p.get("api_key", "sk-no-key-required")
     return "sk-no-key-required"
 

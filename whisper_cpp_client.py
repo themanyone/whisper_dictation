@@ -48,7 +48,8 @@ from commands_table import COMMANDS
 from matcher import Matcher
 from config import (get_config, first_run, CONFIG_PATH, CUSTOM_COMMANDS_PATH,
                     update_config, get_chat_api_key,
-                    query_models, match_dialog_response)
+                    query_models, match_dialog_response,
+                    resolve_provider_url, detect_provider_type)
 
 audio_queue = queue.Queue()
 listening = True
@@ -906,7 +907,14 @@ def switch_provider(q=None):
     if not response:
         return
     provider = providers[int(response) - 1]
-    models = query_models(provider["base_url"])
+    # Auto-resolve URL and detect provider type
+    base_url = provider.get("base_url", "")
+    ptype = provider.get("provider_type") or detect_provider_type(base_url)
+    resolved = resolve_provider_url(base_url, ptype)
+    models = query_models(resolved, api_key=provider.get("api_key"))
+    if not models:
+        # Probe the unresolved URL as a fallback
+        models = query_models(base_url, api_key=provider.get("api_key"))
     if not models:
         say("No models found on that provider.")
         return
@@ -919,13 +927,13 @@ def switch_provider(q=None):
         return
     model = models[int(response) - 1]
     global local_chat_url, chat_model, chat_api_key
-    base_url = provider["base_url"]
     api_key = provider.get("api_key", "sk-no-key-required")
-    local_chat_url = base_url
+    local_chat_url = resolved
     chat_model = model
     chat_api_key = api_key
     cfg["provider"] = provider["name"]
-    update_config({"chat_url": base_url, "chat_model": model, "provider": provider["name"]})
+    update_config({"chat_url": resolved, "chat_model": model, "provider": provider["name"]})
+    say(f"Switched to {model} on {provider['name']}.")
     say(f"Switched to {model} on {provider['name']}.")
 
 
