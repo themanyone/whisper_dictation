@@ -46,7 +46,7 @@ from on_screen import camera, show_pictures
 from record import delayRecord
 from commands_table import COMMANDS
 from matcher import Matcher
-from config import get_config, first_run, CONFIG_PATH, update_config
+from config import get_config, first_run, CONFIG_PATH, CUSTOM_COMMANDS_PATH, update_config, get_chat_api_key
 
 audio_queue = queue.Queue()
 listening = True
@@ -76,18 +76,9 @@ local_chat_url = cfg["chat_url"]
 chat_model = cfg.get("chat_model", "gpt-3.5-turbo")
 debug = cfg.get("debug", False)
 
-# ── Persistent custom commands ────────────────────────────────────────
-CUSTOM_COMMANDS_FILE = os.path.expanduser(
-    "~/.config/whisper_dictation/custom_commands.json"
-)
-custom_command_entries = []  # populated at startup by load_custom_commands()
-
 # Derive api_key from the provider matching chat_url
-chat_api_key = "sk-no-key-required"
-for p in cfg.get("providers", []):
-    if p.get("base_url", "").rstrip("/") == local_chat_url.rstrip("/"):
-        chat_api_key = p.get("api_key", "sk-no-key-required")
-        break
+chat_api_key = get_chat_api_key(cfg, local_chat_url)
+custom_command_entries = []  # populated at startup by load_custom_commands()
 
 # ── Handler functions for the command table ──────────────────────────
 # These are looked up by name in HANDLER_MAP when a command matches.
@@ -604,9 +595,9 @@ def load_custom_commands():
     """
     global custom_command_entries
     try:
-        if not os.path.exists(CUSTOM_COMMANDS_FILE):
+        if not os.path.exists(CUSTOM_COMMANDS_PATH):
             return []
-        with open(CUSTOM_COMMANDS_FILE) as f:
+        with open(CUSTOM_COMMANDS_PATH) as f:
             entries = json.load(f)
         if not isinstance(entries, list):
             return []
@@ -685,13 +676,13 @@ def save_custom_command(intent, handler_name, handler_code, argument):
         "handler_code": handler_code,
     }
     try:
-        os.makedirs(os.path.dirname(CUSTOM_COMMANDS_FILE), exist_ok=True)
+        os.makedirs(os.path.dirname(CUSTOM_COMMANDS_PATH), exist_ok=True)
         entries = []
-        if os.path.exists(CUSTOM_COMMANDS_FILE):
-            with open(CUSTOM_COMMANDS_FILE) as f:
+        if os.path.exists(CUSTOM_COMMANDS_PATH):
+            with open(CUSTOM_COMMANDS_PATH) as f:
                 entries = json.load(f)
         entries.append(entry)
-        with open(CUSTOM_COMMANDS_FILE, "w") as f:
+        with open(CUSTOM_COMMANDS_PATH, "w") as f:
             json.dump(entries, f, indent=2)
     except Exception as e:
         logging.warning(f"Failed to save custom command: {e}")

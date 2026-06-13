@@ -36,6 +36,7 @@ from urllib.parse import urlparse
 
 CONFIG_DIR = os.path.expanduser("~/.config/whisper_dictation")
 CONFIG_PATH = os.path.join(CONFIG_DIR, "config.json")
+CUSTOM_COMMANDS_PATH = os.path.join(CONFIG_DIR, "custom_commands.json")
 
 DEFAULT_CONFIG = {
     "whisper_url": "http://127.0.0.1:7777/inference",
@@ -222,3 +223,11 @@ def update_config(updates):
     with open(CONFIG_PATH, "w") as f:
         json.dump(config, f, indent=2)
     print(f"  Updated configuration: {CONFIG_PATH}")
+
+
+def get_chat_api_key(config, chat_url):
+    """Return the API key for the provider matching chat_url, or the default."""
+    for p in config.get("providers", []):
+        if p.get("base_url", "").rstrip("/") == chat_url.rstrip("/"):
+            return p.get("api_key", "sk-no-key-required")
+    return "sk-no-key-required"
