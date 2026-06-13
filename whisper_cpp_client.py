@@ -431,8 +431,6 @@ def say(text, chunked=False):
                 if response == "yes":
                     _speak_text(remaining)
                     _drain_audio()
-                else:
-                    resume_dictation()
                 return
             _speak_text(remaining)
             _drain_audio()
