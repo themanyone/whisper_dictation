@@ -31,8 +31,8 @@ Then start both servers and the client:
 # Terminal 1 — speech-to-text
 whisper-server -l en -m ~/models/ggml-tiny.en.bin --convert --port 7777
 
-# Terminal 2 — LLM agent
-llama-server -m ~/models/qwen2.5-7b-q4_k_s.gguf -ngl 99 -c 4096 --port 8888
+# Terminal 2 — LLM agent with embeddings for semantic commands
+llama-server -m ~/models/qwen2.5-7b-q4_k_s.gguf -ngl 99 -c 4096 --port 8888 --embeddings
 
 # Terminal 3 — dictation client
 ./whisper_cpp_client.py
@@ -43,7 +43,7 @@ llama-server -m ~/models/qwen2.5-7b-q4_k_s.gguf -ngl 99 -c 4096 --port 8888
 Voice commands are matched semantically using `all-MiniLM-L6-v2` embeddings served by
 `llama-server`'s OpenAI-compatible `/v1/embeddings` endpoint. No separate server needed.
 
-**Option A — enable embeddings on the existing LLM server** (works with any model):
+**Option A — enable embeddings with llama.cpp** (works with any model):
 
 ```shell
 llama-server -m ~/models/qwen2.5-7b-q4_k_s.gguf -ngl 99 -c 4096 --port 8888 --embeddings
@@ -52,28 +52,48 @@ llama-server -m ~/models/qwen2.5-7b-q4_k_s.gguf -ngl 99 -c 4096 --port 8888 --em
 Simply add `--embeddings` to your `llama-server` command. The embedding endpoint is
 available at `http://127.0.0.1:8888/v1/embeddings` alongside the chat endpoint.
 
-**Option B — dedicated embedding server** (lighter, no LLM context overhead):
-
-```shell
-# Download a lightweight embedding model (~25 MB)
-wget -P ~/models https://huggingface.co/ChristianAzinn/sentence-transformers_all-MiniLM-L6-v2-gguf/resolve/main/all-MiniLM-L6-v2-ggml-model-f16.gguf
-
-# Start a minimal llama-server with just the embedding model
-llama-server -m ~/models/all-MiniLM-L6-v2-ggml-model-f16.gguf --embeddings --port 8088 -c 256 -ngl 99
-```
-
-Then set `embed_url` to `http://127.0.0.1:8088/v1/embeddings` in
+Then set `embed_url` to `http://127.0.0.1:8888/v1/embeddings` in
 `~/.config/whisper_dictation/config.json` or export `EMBED_URL`.
 
 The matcher pre-computes intent embeddings at startup and caches them to
 `~/.config/whisper_dictation/embeddings_cache.json` — no round-trip cost on subsequent runs.
 
+**Option B — router mode** (One server handles multiple LLM(s) + embeddings):
+
+No need to add the `--embeddings` flag. The llama-server's router mode can launch the `/v1/embeddings` endpoint alongside other models by defining them in the `models.ini` file with `embedding=true`. Example `models.ini`:
+
+```shell
+[*]
+jinja = true
+
+[all-MiniLM-L6-v2.Q8_0]
+embedding = true
+load-on-startup = true
+sleep-idle-seconds = -1
+
+[Qwen2.5-Omni-7B-IQ4_XS]
+fa = off
+ctx-size = 16384
+ub = 16384
+```
+
+Before blaming us, test your embeddings endpoint like so.
+
+```shell
+curl -X POST "http://localhost:8888/v1/embeddings" -H "Content-Type: application/json" -d '{
+  "model": "all-MiniLM-L6-v2.Q8_0",
+  "input": "This is some text to embed."
+}'
+```
+
 ## Default configuration
 
-On first run, the client prompts for server URLs and API keys — press Enter to accept defaults. Settings are saved to `~/.config/whisper_dictation/config.json`. Environment variables override file values at runtime:
+On first run, the client prompts for server URLs model names, and API keys — press Enter to accept defaults. Settings are saved to `~/.config/whisper_dictation/config.json`. Environment variables override file values at runtime:
 
-- `WHISPER_URL` — whisper.cpp server (default `http://127.0.0.1:7777`)
-- `CHAT_URL` — LLM server (default `http://127.0.0.1:8888/v1`)
+- `WHISPER_URL` — whisper.cpp server (default `http://127.0.0.1:7777/inference`)
+- `CHAT_URL` — LLM server (default `http://127.0.0.1:8888/v1/chat`)
+- `EMBED_URL` — embeddings endpoint (default `http://127.0.0.1:8888/v1/embeddings`)
+- `EMBED_MODEL` — embedding model name (required only in router mode)
 - `OPENAI_API_KEY` — optional OpenAI ChatGPT
 - `GENAI_TOKEN` — optional Google Gemini
 
@@ -81,7 +101,7 @@ Edit or delete `~/.config/whisper_dictation/config.json` to reset.
 
 ## Building from source (GPU acceleration)
 
-The pre-built binaries are CPU-only. For GPU acceleration (recommended), compile from source. Here we are using CUDA. Your options may vary. See below:
+The pre-built binaries are CPU-only. For GPU acceleration (recommended), compile from source. Here we are using CUDA. Your options may vary. Review project's build docs.
 
 **whisper.cpp:**
 ```shell
@@ -105,9 +125,9 @@ For Vulkan backend, replace `-DGGML_CUDA=1` with `-DGGML_VULKAN=1`. See the [lla
 
 ## Wayland
 
-The app auto-detects `XDG_SESSION_TYPE` and uses `python-evdev` on Wayland or `PyAutoGUI` on X11.
+Some distros default to using Wayland now. The app auto-detects `XDG_SESSION_TYPE` and uses `python-evdev` on Wayland or `PyAutoGUI` on X11. If you are curious about what your system uses, enter `echo $XDG_SESSION_TYPE` into a terminal.
 
-For Wayland, install `python-evdev` and set up uinput permissions:
+For Wayland, install `python-evdev` to handle the keyboard and set up uinput permissions:
 ```shell
 echo 'KERNEL=="uinput", MODE="0660", GROUP="input", OPTIONS+="static_node=uinput"' | sudo tee /etc/udev/rules.d/99-input.rules
 sudo usermod -aG input $USER
@@ -150,7 +170,7 @@ Commands are defined in `commands_table.py` — add your own or change existing 
 
 ## Voice responses
 
-The client speaks answers using **Piper TTS** (`pip install piper-tts`). On first run you'll be prompted to download a voice (~15 MB). Configure in `~/.config/whisper_dictation/config.json`:
+Samantha speaks answers using **Piper TTS** (`pip install piper-tts`). On first run you'll be prompted to download a voice (~15 MB). Configure in `~/.config/whisper_dictation/config.json`:
 
 - `piper_model` — explicit path to a `.onnx` voice file (takes priority)
 - `piper_voice` — voice name to look up in `$XDG_CACHE_HOME/piper/{voice}.onnx` (default `en_US-libritts_r-medium`)
@@ -159,7 +179,7 @@ Or override at runtime: `export PIPER_VOICE=en_US-amy-medium`.
 
 ## Troubleshooting
 
-- If whisper-server is slow or refuses VRAM, try `sudo modprobe -r nvidia_uvm && sudo modprobe nvidia_uvm`
+- If whisper-server is slow or refuses to use VRAM, try `sudo modprobe -r nvidia_uvm && sudo modprobe nvidia_uvm`
 - The whisper-server must be started with `--convert` for .mp3 input support
 - Edit `~/.config/whisper_dictation/config.json` to change server addresses/ports
 - Test the pipeline: `curl http://localhost:7777/inference -F "file=@test.wav;type=audio/wav"`

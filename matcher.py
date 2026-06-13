@@ -98,21 +98,29 @@ def _cosine_similarity(a: list, b: list) -> float:
     return dot / (norm_a * norm_b)
 
 
-def _embed_texts(texts: list, embed_url: str) -> list:
+def _embed_texts(texts: list, embed_url: str, model: str = "") -> list:
     """
     Embed a list of texts via the llama.cpp embeddings endpoint.
 
     Uses the OpenAI-compatible /v1/embeddings API.
+    If *model* is non-empty it is sent in the request body so the
+    router-mode llama-server can route to the correct embedding model.
     Returns a list of embedding vectors (each a list of floats),
     or an empty list on failure.
     """
     if not texts:
         return []
 
+    request_body = {"input": texts}
+    if model:
+        request_body["model"] = model
+    else:
+        request_body["model"] = "gpt-3.5-turbo"
+
     try:
         response = requests.post(
             embed_url,
-            json={"input": texts, "model": "gpt-3.5-turbo"},
+            json=request_body,
             timeout=30,
         )
         response.raise_for_status()
@@ -124,9 +132,8 @@ def _embed_texts(texts: list, embed_url: str) -> list:
         return embeddings
     except Exception as e:
         logging.info(
-            f"To enable voice commands, launch a sentence transformer:\n"
-            f"  llama-server --embeddings -m /path/to/all-MiniLM-L6-v2-GGUF.bin "
-            f"-c 8192 --port 8088\n"
+            f"To enable voice commands, add --embeddings to your llama-server:\n"
+            f"  llama-server -m /path/to/model.gguf -c 8192 --port 8888 --embeddings\n"
             f"(Connection to {embed_url} failed: {e})"
         )
         return []
@@ -168,7 +175,7 @@ class Matcher:
     to disk to avoid redundant API calls.
     """
 
-    def __init__(self, commands, embed_url="http://127.0.0.1:8888/v1/embeddings", threshold=0.45):
+    def __init__(self, commands, embed_url="http://127.0.0.1:8888/v1/embeddings", threshold=0.45, embed_model=""):
         """
         Initialize the matcher with a command list.
 
@@ -176,10 +183,14 @@ class Matcher:
             commands: List of dicts with "intent", "handler", and "argument" keys.
             embed_url: llama.cpp embeddings endpoint URL.
             threshold: Default cosine similarity threshold for match().
+            embed_model: Model name sent in the request body (needed when
+                         chat and embeddings share the same llama-server port
+                         in router mode; empty string uses the default).
         """
         self.commands = commands
         self.default_threshold = threshold
         self.embed_url = embed_url
+        self.embed_model = embed_model
         self.intent_texts = [c["intent"] for c in commands]
 
         # Try to load from cache
@@ -192,7 +203,7 @@ class Matcher:
             logging.debug(f"Loaded {len(self.embeddings)} intent embeddings from cache.")
         else:
             logging.debug(f"Embedding {len(self.intent_texts)} intent phrases via {embed_url}...")
-            self.embeddings = _embed_texts(self.intent_texts, embed_url)
+            self.embeddings = _embed_texts(self.intent_texts, embed_url, self.embed_model)
             if self.embeddings and all(e is not None for e in self.embeddings):
                 cache[key] = self.embeddings
                 _save_cache(cache)
@@ -221,7 +232,7 @@ class Matcher:
             return None
 
         # Embed the spoken text
-        emb_list = _embed_texts([cleaned], self.embed_url)
+        emb_list = _embed_texts([cleaned], self.embed_url, self.embed_model)
         if not emb_list or emb_list[0] is None:
             return None
         emb = emb_list[0]
@@ -265,7 +276,7 @@ class Matcher:
         self.commands.append(entry)
         self.intent_texts.append(intent)
 
-        emb = _embed_texts([intent], self.embed_url)
+        emb = _embed_texts([intent], self.embed_url, self.embed_model)
         if emb and emb[0]:
             self.embeddings.append(emb[0])
             return entry

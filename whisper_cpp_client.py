@@ -869,8 +869,9 @@ load_custom_commands()
 # Initialize semantic command matcher (built-in + custom entries)
 matcher = Matcher(
     COMMANDS + custom_command_entries,
-    embed_url=cfg.get("embed_url", "http://127.0.0.1:8088/v1/embeddings"),
+    embed_url=cfg.get("embed_url", "http://127.0.0.1:8888/v1/embeddings"),
     threshold=cfg.get("threshold", 0.45),
+    embed_model=cfg.get("embed_model", ""),
 )
 
 

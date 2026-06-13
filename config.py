@@ -32,6 +32,7 @@ import json
 import os
 import sys
 import urllib.request
+from urllib.parse import urlparse
 
 CONFIG_DIR = os.path.expanduser("~/.config/whisper_dictation")
 CONFIG_PATH = os.path.join(CONFIG_DIR, "config.json")
@@ -50,6 +51,7 @@ DEFAULT_CONFIG = {
     "piper_model": "",
     "piper_binary": "",
     "piper_voice": "en_US-libritts_r-medium",
+    "embed_model": "",
 }
 
 
@@ -88,6 +90,20 @@ def _first_run_setup():
     config["gemini_api_key"] = _prompt(
         "  Google Gemini API key (leave blank to skip)", ""
     )
+
+    # ── Embeddings server ────────────────────────────────────────────
+    config["embed_url"] = _prompt(
+        "  Embeddings server URL (semantic matching)", config["embed_url"]
+    )
+
+    # Same port as chat? Then we need a model name for router-mode.
+    chat_port = urlparse(config["chat_url"]).port
+    embed_port = urlparse(config["embed_url"]).port
+    if chat_port and embed_port and chat_port == embed_port:
+        config["embed_model"] = _prompt(
+            "  Embedding model name (same port as chat; e.g. all-MiniLM-L6-v2)",
+            config.get("embed_model", ""),
+        )
 
     # ── Piper TTS voice ──────────────────────────────────────────────
     pip_cache = os.path.join(
@@ -170,6 +186,7 @@ def get_config():
         "whisper_url": os.getenv("WHISPER_URL"),
         "chat_url": os.getenv("CHAT_URL"),
         "embed_url": os.getenv("EMBED_URL"),
+        "embed_model": os.getenv("EMBED_MODEL"),
         "piper_model": os.getenv("PIPER_MODEL"),
         "piper_binary": os.getenv("PIPER_BINARY"),
         "piper_voice": os.getenv("PIPER_VOICE"),

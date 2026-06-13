@@ -32,6 +32,10 @@ WHISPER_MODEL_URL="${WHISPER_MODEL_URL:-https://huggingface.co/ggerganov/whisper
 LLM_MODEL="${LLM_MODEL:-qwen2.5-7b-q4_k_s.gguf}"
 LLM_MODEL_URL="${LLM_MODEL_URL:-https://huggingface.co/bartowski/Qwen2.5-7B-Instruct-GGUF/resolve/main/Qwen2.5-7B-Instruct-Q4_K_S.gguf}"
 
+# Embedding model (semantic command matching, optional)
+EMBED_MODEL="${EMBED_MODEL:-all-MiniLM-L6-v2.Q8_0.gguf}"
+EMBED_MODEL_URL="${EMBED_MODEL_URL:-https://huggingface.co/ChristianAzinn/all-MiniLM-L6-v2-Q8_0-GGUF/resolve/main/all-MiniLM-L6-v2.Q8_0.gguf}"
+
 # Pre-built binary versions
 WHISPER_VER="${WHISPER_VER:-v1.8.6}"
 LLAMA_VER="${LLAMA_VER:-b9585}"
@@ -163,6 +167,58 @@ else
     echo "  $LLM_MODEL already present, skipping."
 fi
 
+# Embedding model (optional, for semantic command matching)
+echo ""
+echo -n "  Download embedding model ${EMBED_MODEL} (~23 MB)? [y/N] "
+read -r dl_embed
+if [[ "$dl_embed" =~ ^(y|Y|yes)$ ]]; then
+    if [ ! -f "$MODELS_DIR/$EMBED_MODEL" ]; then
+        wget -q --show-progress \
+            "${EMBED_MODEL_URL}" \
+            -O "$MODELS_DIR/$EMBED_MODEL"
+        echo "  → $MODELS_DIR/$EMBED_MODEL"
+    else
+        echo "  $EMBED_MODEL already present, skipping."
+    fi
+fi
+
+# ── Write config.json ────────────────────────────────────────────────
+echo ""
+echo "── Writing config ──"
+EMBED_MODE="same-server"  # or "router"
+if [[ "$dl_embed" =~ ^(y|Y|yes)$ ]]; then
+    # We have a dedicated embedding model; ask how to serve it
+    echo ""
+    echo "  How would you like to serve the embedding model?"
+    echo "    1) Same server as chat (llama-server --embeddings — works with any model)"
+    echo "    2) Router mode (llama-server with models.ini — dedicated embed model)"
+    echo -n "  Choose [1]: "
+    read -r embed_choice
+    if [[ "$embed_choice" == "2" ]]; then
+        EMBED_MODE="router"
+    fi
+fi
+
+cat > "$CONFIG_DIR/config.json" <<-CONFIG
+{
+    "whisper_url": "http://${LLAMA_HOST}:${WHISPER_PORT}/inference",
+    "chat_url": "http://${LLAMA_HOST}:${LLAMA_PORT}/v1/chat",
+    "embed_url": "http://${LLAMA_HOST}:${LLAMA_PORT}/v1/embeddings",
+    "openai_api_key": "",
+    "openai_base_url": "",
+    "gemini_api_key": "",
+    "conversation_length": 9,
+    "audio_format": ".wav",
+    "debug": false,
+    "threshold": 0.45,
+    "piper_model": "",
+    "piper_binary": "",
+    "piper_voice": "en_US-libritts_r-medium",
+    "embed_model": "$([ "$EMBED_MODE" == "router" ] && echo "$EMBED_MODEL" || echo "")"
+}
+CONFIG
+echo "  → $CONFIG_DIR/config.json"
+
 # ── Optional: systemd service ────────────────────────────────────────
 echo ""
 echo "── Setup complete ──"
@@ -174,9 +230,34 @@ echo ""
 echo "  Run whisper-server:"
 echo "    whisper-server -l en -m \"$MODELS_DIR/$WHISPER_MODEL\" --convert --port $WHISPER_PORT"
 echo ""
-echo "  Run llama-server ($LLM_MODEL):"
-echo "    llama-server -m \"$MODELS_DIR/$LLM_MODEL\" -ngl $LLAMA_NGL -c $LLAMA_CONTEXT --port $LLAMA_PORT --host $LLAMA_HOST"
-echo ""
+if [[ "$EMBED_MODE" == "router" ]]; then
+    echo "  Create models.ini for router mode:"
+    echo "    cat > ${CONFIG_DIR}/models.ini << 'EOF'"
+    echo "    [*]"
+    echo "    jinja = true"
+    echo ""
+    echo "    [${EMBED_MODEL}]"
+    echo "    embedding = true"
+    echo "    load-on-startup = true"
+    echo "    sleep-idle-seconds = -1"
+    echo ""
+    echo "    [${LLM_MODEL}]"
+    echo "    fa = off"
+    echo "    ctx-size = ${LLAMA_CONTEXT}"
+    echo "    ub = ${LLAMA_CONTEXT}"
+    echo "    EOF"
+    echo ""
+    echo "  Run llama-server (router mode):"
+    echo "    llama-server --port ${LLAMA_PORT} --host ${LLAMA_HOST} \\"
+    echo "      --model \"${MODELS_DIR}/${LLM_MODEL}\" \\"
+    echo "      --model \"${MODELS_DIR}/${EMBED_MODEL}\""
+    echo ""
+else
+    echo "  Run llama-server (embeddings enabled):"
+    echo "    llama-server -m \"$MODELS_DIR/$LLM_MODEL\" -ngl $LLAMA_NGL -c $LLAMA_CONTEXT \\"
+    echo "      --port $LLAMA_PORT --host $LLAMA_HOST --embeddings"
+    echo ""
+fi
 echo "  Run the dictation client:"
 echo "    cd $(pwd) && ./whisper_cpp_client.py"
 echo ""
