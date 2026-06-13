@@ -54,8 +54,6 @@ chatting = False
 record_process = None
 running = True
 cam = None
-pending_cmd = None  # (handler_name, handler_code, proposal) for voice confirm
-pending_selection = None  # {"type": "provider"|"model", "items": [...], "provider_idx": N}
 _first_utterance = True  # skip first noisy transcription at startup
 
 logging.basicConfig(
@@ -362,25 +360,19 @@ def _load_piper_voice():
         return False
 
 
-def say(text):
-    """Speak *text* via piper-tts Python API, killing any utterance still playing."""
+def _speak_text(text):
+    """Synthesize and play raw text (no markdown stripping)."""
     global _piper_player
-    shutup()
-    if not _load_piper_voice():
+    if not text.strip():
         return
-    # Strip markdown formatting characters for speech (keep in printed output)
-    clean = re.sub(r"[*_#`~\[\]]", "", text)
     player_bin, player_name = _find_player()
     if not player_bin:
-        logging.warning("No audio player found (paplay/aplay/pw-play).")
         return
-    # Stream synthesized audio chunks to player subprocess
-    gen = _piper_voice.synthesize(clean)
+    gen = _piper_voice.synthesize(text)
     try:
         first = next(gen)
     except StopIteration:
         return
-    # aplay uses short flags (-t raw); paplay/pw-play use --raw (no -t)
     if player_name == "aplay":
         args = [player_bin, "-r", str(first.sample_rate), "-f", "S16_LE",
                 "-c", str(first.sample_channels), "-t", "raw"]
@@ -398,9 +390,37 @@ def say(text):
         player.stdin.close()
         player.wait()
     except BrokenPipeError:
-        pass  # killed by shutup()
+        pass
     finally:
-        _piper_player = None
+        if _piper_player == player:
+            _piper_player = None
+
+
+def say(text, chunked=False):
+    """Speak text via piper-tts.
+
+    With chunked=True, speaks only the first paragraph and asks the user
+    whether to continue with the rest via voice_dialog.
+    """
+    shutup()
+    if not _load_piper_voice():
+        return
+    clean = re.sub(r"[*_#`~\[\]]", "", text)
+    if chunked:
+        paragraphs = [p.strip() for p in re.split(r'\n\n+', clean) if p.strip()]
+        if len(paragraphs) > 1:
+            _speak_text(paragraphs[0])
+            remaining = '\n\n'.join(paragraphs[1:])
+            word_count = len(remaining.split())
+            response = voice_dialog(
+                f"I can say about {word_count} more words on this topic. "
+                "Do you want me to continue?",
+                options=["yes", "no"],
+            )
+            if response == "yes":
+                _speak_text(remaining)
+            return
+    _speak_text(clean)
 
 
 def shutup():
@@ -746,7 +766,7 @@ def generate_text(prompt: str):
         pyautogui.write(completion)
         listening = False
         chatting = True
-        say(completion)
+        say(completion, chunked=True)
         # Kill any still-running echo recording, drain it, then return to
         # dictation mode so remaining echo can't re-trigger the LLM.
         if record_process:
@@ -809,8 +829,27 @@ _SPOKEN_NUMBERS = {
 
 
 def _spoken_to_number(phrase):
-    """Return an int 1-10 if *phrase* is a number word/digit, else 0."""
-    return _SPOKEN_NUMBERS.get(phrase.strip().lower(), 0)
+    """Return an int 1-10 if *phrase* contains a number word/digit, else 0.
+
+    Handles full phrases like "oh one" or "number two" by extracting the
+    first recognized number token from the text.
+    """
+    phrase = phrase.strip().lower()
+    # Fast path: exact match
+    n = _SPOKEN_NUMBERS.get(phrase)
+    if n:
+        return n
+    # Slow path: split on non-alphanumeric and check each token
+    for word in re.split(r"[^a-z0-9]+", phrase):
+        if not word:
+            continue
+        # "oh" is "zero" — only match if it's the sole number word
+        if word == "oh":
+            continue  # not useful as a 1-10 selection
+        n = _SPOKEN_NUMBERS.get(word)
+        if n:
+            return n
+    return 0
 
 
 def _query_models(base_url):
@@ -831,9 +870,105 @@ def _query_models(base_url):
         return []
 
 
+def _match_dialog_response(spoken, options):
+    """Fuzzy-match spoken text against a list of options.
+
+    Returns the matched option string, None if no match, or '__CANCEL__'
+    if the user said a cancel/stop keyword.
+    """
+    spoken = spoken.strip().lower()
+    if not spoken:
+        return None
+    if re.search(r"^(cancel|never mind|forget it|stop|quit|dismiss|abort)\b", spoken):
+        return "__CANCEL__"
+    if not options:
+        return spoken
+    for opt in options:
+        if spoken == opt.lower():
+            return opt
+        if spoken.rstrip(",.!?") == opt.lower():
+            return opt
+    num = _spoken_to_number(spoken)
+    if num > 0:
+        num_str = str(num)
+        if num_str in options:
+            return num_str
+    if re.search(r"^(yes|yeah|yep|sure|okay?|do it|go ahead|confirm)\b", spoken):
+        for opt in options:
+            if opt.lower() in ("yes", "y", "yeah", "sure"):
+                return opt
+    if re.search(r"^(no|nope|cancel|never mind|forget it|stop|quit|dismiss)\b", spoken):
+        for opt in options:
+            if opt.lower() in ("no", "n", "nope"):
+                return opt
+    return None
+
+
+def voice_dialog(prompt, options=None, timeout=30):
+    """Speak a prompt, listen for a spoken response, return the matched option.
+
+    Temporarily takes over audio consumption from the transcription queue
+    so the function blocks until a response, timeout, or cancel.
+
+    Args:
+        prompt: Text to speak via TTS (the question or menu listing)
+        options: List of valid response strings to match against.
+                 Supports number word -> digit conversion (e.g. "three" -> "3")
+                 and yes/no fuzzy matching (e.g. "yeah" -> "yes", "nope" -> "no").
+                 If None, accepts any spoken text.
+        timeout: Max seconds to wait before returning None.
+
+    Returns:
+        The matched option string, or None if cancelled/timed out.
+    """
+    global listening
+    was_listening = listening
+    listening = False
+    time.sleep(1.5)
+    while True:
+        try:
+            f = audio_queue.get_nowait()
+            try:
+                os.remove(f)
+            except Exception:
+                pass
+        except queue.Empty:
+            break
+    listening = was_listening
+    shutup()
+    say(prompt)
+    start = time.time()
+    while time.time() - start < timeout:
+        try:
+            f = audio_queue.get(timeout=0.5)
+        except queue.Empty:
+            continue
+        txt = recognize_speech(f)
+        try:
+            os.remove(f)
+        except Exception:
+            pass
+        if not txt:
+            continue
+        txt = re.sub(r"(^|\n)\s", r"\1", txt)
+        if re.search(r"[\(\[\*]", txt):
+            txt = re.sub(r"[\*\[\(][^\]\)]*[\]\)\*]*\s*$", "", txt)
+        lower_case = txt.lower().strip()
+        print(bs + (txt.strip() or lower_case))
+        if not lower_case:
+            continue
+        matched = _match_dialog_response(lower_case, options)
+        if matched == "__CANCEL__":
+            return None
+        if matched:
+            return matched
+        say("I didn't understand. Please try again.")
+    return None
+
+
 def switch_provider(q=None):
     """List configured providers and wait for a number choice."""
-    global pending_selection, listening
+    global listening
     providers = cfg.get("providers", [])
     if not providers:
         say("No providers configured.")
@@ -841,13 +976,35 @@ def switch_provider(q=None):
     print("\nAvailable providers:")
     for i, p in enumerate(providers, 1):
         print(f"  {i}. {p['name']}  ({p['base_url']})")
-    say("Say a number to select a provider.")
-    pending_selection = {"type": "provider", "items": providers}
+    options = [str(i) for i in range(1, len(providers) + 1)]
+    response = voice_dialog("Say a number to select a provider.", options=options)
+    if not response:
+        return
+    provider = providers[int(response) - 1]
+    models = _query_models(provider["base_url"])
+    if not models:
+        say("No models found on that provider.")
+        return
+    print("\nAvailable models:")
+    for i, m in enumerate(models, 1):
+        print(f"  {i}. {m}")
+    options = [str(i) for i in range(1, len(models) + 1)]
+    response = voice_dialog("Say a number to select a model.", options=options)
+    if not response:
+        return
+    model = models[int(response) - 1]
+    global local_chat_url, chat_model, chat_api_key
+    base_url = provider["base_url"]
+    api_key = provider.get("api_key", "sk-no-key-required")
+    local_chat_url = base_url
+    chat_model = model
+    chat_api_key = api_key
+    update_config({"chat_url": base_url, "chat_model": model})
+    say(f"Switched to {model} on {provider['name']}.")
 
 
 def switch_model(q=None):
     """Fetch models from the current provider and wait for a number choice."""
-    global pending_selection, listening
     models = _query_models(local_chat_url)
     if not models:
         say("No models found on current provider.")
@@ -855,8 +1012,15 @@ def switch_model(q=None):
     print("\nAvailable models:")
     for i, m in enumerate(models, 1):
         print(f"  {i}. {m}")
-    say("Say a number to select a model.")
-    pending_selection = {"type": "model", "items": models}
+    options = [str(i) for i in range(1, len(models) + 1)]
+    response = voice_dialog("Say a number to select a model.", options=options)
+    if not response:
+        return
+    model = models[int(response) - 1]
+    global chat_model
+    chat_model = model
+    update_config({"chat_model": model})
+    say(f"Switched to {model}.")
 
 
 # Map handler names from commands_table.py → actual functions
@@ -916,7 +1080,7 @@ matcher = Matcher(
 
 
 def transcribe():
-    global listening, chatting, pending_cmd, pending_selection
+    global listening, chatting
     while True:
         try:
             # transcribe audio from queue
@@ -951,78 +1115,6 @@ def transcribe():
                 # strip txt unless we specifically say "new paragraph"
                 txt = txt.strip(" \n") + " "
                 print(bs + txt)  # print the text
-
-                # — Voice confirmation for pending command ——————
-                if pending_cmd:
-                    handler_name, handler_code, proposal = pending_cmd
-                    if re.search(r"^(yes|yeah|yep|sure|okay?|do it|go ahead|confirm)\b",
-                                 lower_case):
-                        # Register handler
-                        exec(handler_code, globals())
-                        HANDLER_MAP[handler_name] = globals()[handler_name]
-                        save_custom_command(
-                            proposal["intent"], handler_name,
-                            handler_code, None,
-                        )
-                        matcher.add_command(proposal["intent"], handler_name)
-                        say("okay")
-                        HANDLER_MAP[handler_name]()
-                        pending_cmd = None
-                        continue
-                    elif re.search(
-                        r"^(no|nope|cancel|never mind|forget it|stop|quit|dismiss)\b",
-                        lower_case,
-                    ):
-                        say("Cancelled.")
-                        pending_cmd = None
-                        continue
-                    else:
-                        say("Please say yes or no.")
-                        continue
-
-                # — Provider / model voice selection —————————————
-                if pending_selection:
-                    num = _spoken_to_number(lower_case)
-                    if num < 1 or num > len(pending_selection["items"]):
-                        say("Invalid number. Please try again.")
-                        continue
-                    sel_type = pending_selection["type"]
-                    items = pending_selection["items"]
-                    selected = items[num - 1]
-                    if sel_type == "provider":
-                        provider = selected
-                        # Query models on the selected provider
-                        models = _query_models(provider["base_url"])
-                        if not models:
-                            say("No models found on that provider.")
-                            pending_selection = None
-                            continue
-                        print("\nAvailable models:")
-                        for i, m in enumerate(models, 1):
-                            print(f"  {i}. {m}")
-                        say("Say a number to select a model.")
-                        pending_selection = {
-                            "type": "model",
-                            "items": models,
-                            "provider": provider,
-                        }
-                    elif sel_type == "model":
-                        provider = pending_selection.get("provider")
-                        base_url = provider["base_url"]
-                        api_key = provider.get("api_key", "sk-no-key-required")
-                        # Update globals
-                        global local_chat_url, chat_model, chat_api_key
-                        local_chat_url = base_url
-                        chat_model = selected
-                        chat_api_key = api_key
-                        # Persist
-                        update_config({
-                            "chat_url": base_url,
-                            "chat_model": selected,
-                        })
-                        say(f"Switched to {selected} on {provider['name']}.")
-                        pending_selection = None
-                    continue
 
                 # — Semantic command matching —
                 result = matcher.match(lower_case)
@@ -1066,8 +1158,19 @@ def transcribe():
                         print(f"\n[{proposal['desc']}]")
                         print(f"  Shell: {shell}")
                         print(f"  Intent: {proposal['intent']}")
-                        pending_cmd = (handler_name, handler_code, proposal)
-                        say("Run this command?")
+                        response = voice_dialog("Run this command?", options=["yes", "no"])
+                        if response == "yes":
+                            exec(handler_code, globals())
+                            HANDLER_MAP[handler_name] = globals()[handler_name]
+                            save_custom_command(
+                                proposal["intent"], handler_name,
+                                handler_code, None,
+                            )
+                            matcher.add_command(proposal["intent"], handler_name)
+                            say("okay")
+                            HANDLER_MAP[handler_name]()
+                        else:
+                            say("Cancelled.")
                         continue
 
                 # If a wake word was spoken but the LLM didn't propose
