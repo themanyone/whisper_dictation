@@ -133,7 +133,7 @@ def _embed_texts(texts: list, embed_url: str, model: str = "") -> list:
     except Exception as e:
         logging.info(
             f"To enable voice commands, add --embeddings to your llama-server:\n"
-            f"  llama-server -m /path/to/model.gguf -c 8192 --port 8888 --embeddings\n"
+            f"  llama-server -m /path/to/model.gguf -c 8192 --port 8080 --embeddings\n"
             f"(Connection to {embed_url} failed: {e})"
         )
         return []
@@ -175,7 +175,7 @@ class Matcher:
     to disk to avoid redundant API calls.
     """
 
-    def __init__(self, commands, embed_url="http://127.0.0.1:8888/v1/embeddings", threshold=0.45, embed_model=""):
+    def __init__(self, commands, embed_url="http://127.0.0.1:8080/v1/embeddings", threshold=0.45, embed_model=""):
         """
         Initialize the matcher with a command list.
 

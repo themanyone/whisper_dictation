@@ -35,7 +35,6 @@ else:
 import time
 import queue
 import re
-from openai import OpenAI
 
 import webbrowser
 import tempfile
@@ -47,7 +46,7 @@ from on_screen import camera, show_pictures
 from record import delayRecord
 from commands_table import COMMANDS
 from matcher import Matcher
-from config import get_config, first_run, CONFIG_PATH
+from config import get_config, first_run, CONFIG_PATH, update_config
 
 audio_queue = queue.Queue()
 listening = True
@@ -56,6 +55,8 @@ record_process = None
 running = True
 cam = None
 pending_cmd = None  # (handler_name, handler_code, proposal) for voice confirm
+pending_selection = None  # {"type": "provider"|"model", "items": [...], "provider_idx": N}
+_first_utterance = True  # skip first noisy transcription at startup
 
 logging.basicConfig(
     level=logging.INFO,
@@ -74,6 +75,7 @@ audio_format = cfg["audio_format"]
 conversation_length = cfg["conversation_length"]
 whisper_cpp = cfg["whisper_url"]
 local_chat_url = cfg["chat_url"]
+chat_model = cfg.get("chat_model", "gpt-3.5-turbo")
 debug = cfg.get("debug", False)
 
 # ── Persistent custom commands ────────────────────────────────────────
@@ -82,24 +84,12 @@ CUSTOM_COMMANDS_FILE = os.path.expanduser(
 )
 custom_command_entries = []  # populated at startup by load_custom_commands()
 
-gpt_key = cfg.get("openai_api_key") or os.getenv("OPENAI_API_KEY")
-gem_key = cfg.get("gemini_api_key") or os.getenv("GENAI_TOKEN")
-
-client = None
-if gpt_key:
-    kwargs = {"api_key": gpt_key}
-    if cfg.get("openai_base_url"):
-        kwargs["base_url"] = cfg["openai_base_url"]
-    client = OpenAI(**kwargs)
-else:
-    logging.debug("Export OPENAI_API_KEY if you prefer answers from ChatGPT.\n")
-if gem_key:
-    import google.generativeai as genai
-
-    genai.configure(api_key=gem_key)
-    model = genai.GenerativeModel("gemini-1.5-flash")
-else:
-    logging.debug("Export GENAI_TOKEN if you prefer answers from Gemini.\n")
+# Derive api_key from the provider matching chat_url
+chat_api_key = "sk-no-key-required"
+for p in cfg.get("providers", []):
+    if p.get("base_url", "").rstrip("/") == local_chat_url.rstrip("/"):
+        chat_api_key = p.get("api_key", "sk-no-key-required")
+        break
 
 # ── Handler functions for the command table ──────────────────────────
 # These are looked up by name in HANDLER_MAP when a command matches.
@@ -378,12 +368,14 @@ def say(text):
     shutup()
     if not _load_piper_voice():
         return
+    # Strip markdown formatting characters for speech (keep in printed output)
+    clean = re.sub(r"[*_#`~\[\]]", "", text)
     player_bin, player_name = _find_player()
     if not player_bin:
         logging.warning("No audio player found (paplay/aplay/pw-play).")
         return
     # Stream synthesized audio chunks to player subprocess
-    gen = _piper_voice.synthesize(text)
+    gen = _piper_voice.synthesize(clean)
     try:
         first = next(gen)
     except StopIteration:
@@ -603,7 +595,7 @@ def propose_command(utterance):
             base_url=local_chat_url, api_key="sk-no-key-required"
         )
         r = client.chat.completions.create(
-            model="gpt-3.5-turbo",
+            model=chat_model,
             messages=[
                 {
                     "role": "system",
@@ -708,56 +700,23 @@ messages = [
 
 
 def generate_text(prompt: str):
-    logging.debug(f"{bs}Asking ChatGPT")
+    logging.debug(f"{bs}Querying {local_chat_url}")
     global conversation_length, chatting, messages
-    global listening, gpt_key, gem_key, client
+    global listening
     messages.append({"role": "user", "content": prompt})
     completion = ""
-    # Try chatGPT
-    if gpt_key:
-        try:
-            completion = client.chat.completions.create(
-                model="gpt-3.5-turbo", messages=messages
-            )
-            completion = completion.choices[0].message.content
-        except Exception as e:
-            logging.warning("ChatGPT had a problem.")
-            logging.warning(e)
 
-    # Fallback to Google Gemini
-    elif gem_key and not completion:
-        logging.debug("Asking Gemini")
-        try:
-            chat = model.start_chat(
-                history=[
-                    {
-                        "role": "user" if x["role"] == "user" else "model",
-                        "parts": x["content"],
-                    }
-                    for x in messages
-                ]
-            )
-            response = chat.send_message(prompt)
-            completion = response.text
-        except Exception as e:
-            logging.warning("Gemini had a problem.")
-            logging.warning(e)
-
-    # Fallback to localhost
-    if not completion:
-        logging.debug(f"Querying {local_chat_url}")
-        # ref. llama.cpp/examples/server/README.md
-        try:
-            client = openai.OpenAI(
-                base_url=local_chat_url, api_key="sk-no-key-required"
-            )
-            completion = client.chat.completions.create(
-                model="gpt-3.5-turbo", messages=messages
-            )
-        except Exception as e:
-            logging.warning(f"Local Server Warning: {e}")
-            return "Sorry. I'm having some trouble accessing that."
-        completion = completion.choices[0].message.content
+    try:
+        local_client = openai.OpenAI(
+            base_url=local_chat_url, api_key=chat_api_key
+        )
+        resp = local_client.chat.completions.create(
+            model=chat_model, messages=messages
+        )
+        completion = resp.choices[0].message.content
+    except Exception as e:
+        logging.warning(f"Server Warning: {e}")
+        return "Sorry. I'm having some trouble accessing that."
 
     if completion:
         # remove '<|...|>' tags from completion
@@ -788,6 +747,18 @@ def generate_text(prompt: str):
         listening = False
         chatting = True
         say(completion)
+        # Kill any still-running echo recording, drain it, then return to
+        # dictation mode so remaining echo can't re-trigger the LLM.
+        if record_process:
+            record_process.stop_recording()
+        time.sleep(0.3)  # let the file land in the queue
+        while not audio_queue.empty():
+            try:
+                audio_queue.get_nowait()
+            except queue.Empty:
+                break
+        chatting = False
+        listening = True
         # add to conversation
         messages.append({"role": "assistant", "content": completion})
         if len(messages) > conversation_length:
@@ -824,6 +795,68 @@ def record_mp3():
     say(f"Recording saved to {rec.file_name}")
     time.sleep(1)
     listening = True
+
+
+# ── Provider / model voice selection ────────────────────────────────
+
+_SPOKEN_NUMBERS = {
+    "one": 1, "two": 2, "three": 3, "four": 4, "five": 5,
+    "six": 6, "seven": 7, "eight": 8, "nine": 9, "ten": 10,
+    "first": 1, "second": 2, "third": 3, "fourth": 4, "fifth": 5,
+    "1": 1, "2": 2, "3": 3, "4": 4, "5": 5,
+    "6": 6, "7": 7, "8": 8, "9": 9, "10": 10,
+}
+
+
+def _spoken_to_number(phrase):
+    """Return an int 1-10 if *phrase* is a number word/digit, else 0."""
+    return _SPOKEN_NUMBERS.get(phrase.strip().lower(), 0)
+
+
+def _query_models(base_url):
+    """Fetch model list from an OpenAI-compatible /v1/models endpoint."""
+    try:
+        r = requests.get(
+            base_url.rstrip("/") + "/models",
+            timeout=10,
+        )
+        r.raise_for_status()
+        data = r.json()
+        # OpenAI returns {"data": [{"id": "..."}, ...]}
+        # llama.cpp returns same format
+        models = [m["id"] for m in data.get("data", []) if "id" in m]
+        return sorted(models)
+    except Exception as e:
+        logging.warning(f"Failed to fetch models from {base_url}: {e}")
+        return []
+
+
+def switch_provider(q=None):
+    """List configured providers and wait for a number choice."""
+    global pending_selection, listening
+    providers = cfg.get("providers", [])
+    if not providers:
+        say("No providers configured.")
+        return
+    print("\nAvailable providers:")
+    for i, p in enumerate(providers, 1):
+        print(f"  {i}. {p['name']}  ({p['base_url']})")
+    say("Say a number to select a provider.")
+    pending_selection = {"type": "provider", "items": providers}
+
+
+def switch_model(q=None):
+    """Fetch models from the current provider and wait for a number choice."""
+    global pending_selection, listening
+    models = _query_models(local_chat_url)
+    if not models:
+        say("No models found on current provider.")
+        return
+    print("\nAvailable models:")
+    for i, m in enumerate(models, 1):
+        print(f"  {i}. {m}")
+    say("Say a number to select a model.")
+    pending_selection = {"type": "model", "items": models}
 
 
 # Map handler names from commands_table.py → actual functions
@@ -866,6 +899,8 @@ HANDLER_MAP = {
     "hotkey_page_down": hotkey_page_down,
     "hotkey_ls": hotkey_ls,
     "generate_text": generate_text,
+    "switch_provider": switch_provider,
+    "switch_model": switch_model,
 }
 
 # Load persisted custom commands (if any) into HANDLER_MAP
@@ -874,14 +909,14 @@ load_custom_commands()
 # Initialize semantic command matcher (built-in + custom entries)
 matcher = Matcher(
     COMMANDS + custom_command_entries,
-    embed_url=cfg.get("embed_url", "http://127.0.0.1:8888/v1/embeddings"),
+    embed_url=cfg.get("embed_url", "http://127.0.0.1:8080/v1/embeddings"),
     threshold=cfg.get("threshold", 0.45),
     embed_model=cfg.get("embed_model", ""),
 )
 
 
 def transcribe():
-    global listening, pending_cmd
+    global listening, chatting, pending_cmd, pending_selection
     while True:
         try:
             # transcribe audio from queue
@@ -894,6 +929,11 @@ def transcribe():
                     pass
                 if not txt:
                     continue
+                # skip first transcription (pipeline noise at startup)
+                global _first_utterance
+                if _first_utterance:
+                    _first_utterance = False
+                    continue
                 # filter space at beginning of lines
                 txt = re.sub(r"(^|\n)\s", r"\1", txt)
                 # print messages [BLANK_AUDIO], (swoosh), *barking*
@@ -901,8 +941,6 @@ def transcribe():
                     print(bs + txt.strip())
                     # filter it out
                     txt = re.sub(r"[\*\[\(][^\]\)]*[\]\)\*]*\s*$", "", txt)
-                if txt == " " or txt == "you " or txt == "Thanks for watching! ":
-                    continue  # ignoring you
                 # get lower-case spoken command string
                 lower_case = txt.lower().strip()
                 if not lower_case:
@@ -941,6 +979,50 @@ def transcribe():
                     else:
                         say("Please say yes or no.")
                         continue
+
+                # — Provider / model voice selection —————————————
+                if pending_selection:
+                    num = _spoken_to_number(lower_case)
+                    if num < 1 or num > len(pending_selection["items"]):
+                        say("Invalid number. Please try again.")
+                        continue
+                    sel_type = pending_selection["type"]
+                    items = pending_selection["items"]
+                    selected = items[num - 1]
+                    if sel_type == "provider":
+                        provider = selected
+                        # Query models on the selected provider
+                        models = _query_models(provider["base_url"])
+                        if not models:
+                            say("No models found on that provider.")
+                            pending_selection = None
+                            continue
+                        print("\nAvailable models:")
+                        for i, m in enumerate(models, 1):
+                            print(f"  {i}. {m}")
+                        say("Say a number to select a model.")
+                        pending_selection = {
+                            "type": "model",
+                            "items": models,
+                            "provider": provider,
+                        }
+                    elif sel_type == "model":
+                        provider = pending_selection.get("provider")
+                        base_url = provider["base_url"]
+                        api_key = provider.get("api_key", "sk-no-key-required")
+                        # Update globals
+                        global local_chat_url, chat_model, chat_api_key
+                        local_chat_url = base_url
+                        chat_model = selected
+                        chat_api_key = api_key
+                        # Persist
+                        update_config({
+                            "chat_url": base_url,
+                            "chat_model": selected,
+                        })
+                        say(f"Switched to {selected} on {provider['name']}.")
+                        pending_selection = None
+                    continue
 
                 # — Semantic command matching —
                 result = matcher.match(lower_case)
@@ -989,13 +1071,20 @@ def transcribe():
                         continue
 
                 # If a wake word was spoken but the LLM didn't propose
-                # a command, don't type it as dictation.
+                # a command, treat it as an AI chat query.
                 if has_wake:
-                    continue
+                    if not chatting:
+                        chatting = True
+                    lower_case = re.sub(r"^(peter|samantha|computer)[,\s]+",
+                                        "", lower_case, flags=re.I)
+                    # fall through to AI chat handler below
 
                 # — AI chat fallback —
                 if chatting:
                     generate_text(lower_case)
+                    # After LLM response, reset to dictation mode
+                    chatting = False
+                    listening = True
                     continue
                 # — Dictation —
                 if not listening:
@@ -1012,6 +1101,9 @@ def record_to_queue():
     global record_process
     global running
     while running:
+        if not listening:
+            time.sleep(0.05)
+            continue
         record_process = delayRecord(tempfile.mktemp() + audio_format)
         record_process.start()
         audio_queue.put(record_process.file_name)

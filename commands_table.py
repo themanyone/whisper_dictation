@@ -116,4 +116,11 @@ COMMANDS = [
         "handler": "generate_text",
         "argument": "remainder",
     },
+    # ── Provider / model selection ─────────────────────────────────────────
+    {"intent": "switch provider", "handler": "switch_provider", "argument": None},
+    {"intent": "change provider", "handler": "switch_provider", "argument": None},
+    {"intent": "choose provider", "handler": "switch_provider", "argument": None},
+    {"intent": "change model", "handler": "switch_model", "argument": None},
+    {"intent": "switch model", "handler": "switch_model", "argument": None},
+    {"intent": "choose model", "handler": "switch_model", "argument": None},
 ]

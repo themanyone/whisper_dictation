@@ -68,7 +68,7 @@ Then start both servers and the client:
 whisper-server -l en -m ~/models/ggml-tiny.en.bin --convert --port 7777
 
 # Terminal 2 — LLM agent with embeddings for semantic commands
-llama-server -m ~/models/qwen2.5-7b-q4_k_s.gguf -ngl 99 -c 4096 --port 8888 --embeddings
+llama-server -m ~/models/qwen2.5-7b-q4_k_s.gguf -ngl 99 -c 4096 --port 8080 --embeddings
 
 # Terminal 3 — dictation client
 ./whisper_cpp_client.py
@@ -82,13 +82,13 @@ Voice commands are matched semantically using `all-MiniLM-L6-v2` embeddings serv
 **Option A — enable embeddings with llama.cpp** (works with any model):
 
 ```shell
-llama-server -m ~/models/qwen2.5-7b-q4_k_s.gguf -ngl 99 -c 4096 --port 8888 --embeddings
+llama-server -m ~/models/qwen2.5-7b-q4_k_s.gguf -ngl 99 -c 4096 --port 8080 --embeddings
 ```
 
 Simply add `--embeddings` to your `llama-server` command. The embedding endpoint is
-available at `http://127.0.0.1:8888/v1/embeddings` alongside the chat endpoint.
+available at `http://127.0.0.1:8080/v1/embeddings` alongside the chat endpoint.
 
-Then set `embed_url` to `http://127.0.0.1:8888/v1/embeddings` in
+Then set `embed_url` to `http://127.0.0.1:8080/v1/embeddings` in
 `~/.config/whisper_dictation/config.json` or export `EMBED_URL`.
 
 The matcher pre-computes intent embeddings at startup and caches them to
@@ -116,7 +116,7 @@ ub = 16384
 Before blaming us, test your embeddings endpoint like so.
 
 ```shell
-curl -X POST "http://localhost:8888/v1/embeddings" -H "Content-Type: application/json" -d '{
+curl -X POST "http://localhost:8080/v1/embeddings" -H "Content-Type: application/json" -d '{
   "model": "all-MiniLM-L6-v2.Q8_0",
   "input": "This is some text to embed."
 }'
@@ -127,8 +127,9 @@ curl -X POST "http://localhost:8888/v1/embeddings" -H "Content-Type: application
 On first run, the client prompts for server URLs model names, and API keys — press Enter to accept defaults. Settings are saved to `~/.config/whisper_dictation/config.json`. Environment variables override file values at runtime:
 
 - `WHISPER_URL` — whisper.cpp server (default `http://127.0.0.1:7777/inference`)
-- `CHAT_URL` — LLM server (default `http://127.0.0.1:8888/v1/chat`)
-- `EMBED_URL` — embeddings endpoint (default `http://127.0.0.1:8888/v1/embeddings`)
+- `CHAT_MODEL` — model name sent to LLM (default `gpt-3.5-turbo`)
+- `CHAT_URL` — LLM server (default `http://127.0.0.1:8080/v1`)
+- `EMBED_URL` — embeddings endpoint (default `http://127.0.0.1:8080/v1/embeddings`)
 - `EMBED_MODEL` — embedding model name (required only in router mode)
 - `OPENAI_API_KEY` — optional OpenAI ChatGPT
 - `GENAI_TOKEN` — optional Google Gemini

@@ -15,7 +15,7 @@
 
 # Server ports
 WHISPER_PORT="${WHISPER_PORT:-7777}"
-LLAMA_PORT="${LLAMA_PORT:-8888}"
+LLAMA_PORT="${LLAMA_PORT:-8080}"
 LLAMA_HOST="${LLAMA_HOST:-127.0.0.1}"
 
 # GPU offload layers (-ngl). Set to 0 for CPU-only, 99 for full offload.
@@ -200,7 +200,7 @@ fi
 cat > "$CONFIG_DIR/config.json" <<-CONFIG
 {
     "whisper_url": "http://${LLAMA_HOST}:${WHISPER_PORT}/inference",
-    "chat_url": "http://${LLAMA_HOST}:${LLAMA_PORT}/v1/chat",
+    "chat_url": "http://${LLAMA_HOST}:${LLAMA_PORT}/v1",
     "embed_url": "http://${LLAMA_HOST}:${LLAMA_PORT}/v1/embeddings",
     "openai_api_key": "",
     "openai_base_url": "",
@@ -212,7 +212,8 @@ cat > "$CONFIG_DIR/config.json" <<-CONFIG
     "piper_model": "",
     "piper_binary": "",
     "piper_voice": "en_US-libritts_r-medium",
-    "embed_model": "$([ "$EMBED_MODE" == "router" ] && echo "$EMBED_MODEL" || echo "")"
+    "embed_model": "$([ "$EMBED_MODE" == "router" ] && echo "$EMBED_MODEL" || echo "")",
+    "chat_model": ""
 }
 CONFIG
 echo "  → $CONFIG_DIR/config.json"

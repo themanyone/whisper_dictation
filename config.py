@@ -39,8 +39,8 @@ CONFIG_PATH = os.path.join(CONFIG_DIR, "config.json")
 
 DEFAULT_CONFIG = {
     "whisper_url": "http://127.0.0.1:7777/inference",
-    "chat_url": "http://127.0.0.1:8888/v1/chat",
-    "embed_url": "http://127.0.0.1:8888/v1/embeddings",
+    "chat_url": "http://127.0.0.1:8080/v1",
+    "embed_url": "http://127.0.0.1:8080/v1/embeddings",
     "openai_api_key": "",
     "openai_base_url": "",
     "gemini_api_key": "",
@@ -52,6 +52,10 @@ DEFAULT_CONFIG = {
     "piper_binary": "",
     "piper_voice": "en_US-libritts_r-medium",
     "embed_model": "",
+    "chat_model": "gpt-3.5-turbo",
+    "providers": [
+        {"name": "llama.cpp", "base_url": "http://127.0.0.1:8080/v1", "api_key": "sk-no-key-required"},
+    ],
 }
 
 
@@ -187,6 +191,7 @@ def get_config():
         "chat_url": os.getenv("CHAT_URL"),
         "embed_url": os.getenv("EMBED_URL"),
         "embed_model": os.getenv("EMBED_MODEL"),
+        "chat_model": os.getenv("CHAT_MODEL"),
         "piper_model": os.getenv("PIPER_MODEL"),
         "piper_binary": os.getenv("PIPER_BINARY"),
         "piper_voice": os.getenv("PIPER_VOICE"),
