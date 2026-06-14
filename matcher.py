@@ -58,9 +58,15 @@ CONFIG_DIR = os.path.expanduser("~/.config/whisper_dictation")
 CACHE_PATH = os.path.join(CONFIG_DIR, "embeddings_cache.json")
 
 
-def _strip_wake_words(text: str) -> str:
-    """Remove wake words from the beginning of spoken text."""
-    return WAKE_WORDS_RE.sub("", text).strip()
+def _strip_wake_words(text: str):
+    """Remove wake words from the beginning of spoken text.
+
+    Returns:
+        (cleaned_text, had_wake_word) tuple.
+    """
+    cleaned = WAKE_WORDS_RE.sub("", text).strip()
+    had_wake = len(cleaned) < len(text)
+    return cleaned, had_wake
 
 
 def _extract_remainder(spoken: str, intent: str) -> str:
@@ -192,6 +198,7 @@ class Matcher:
         self.embed_url = embed_url
         self.embed_model = embed_model
         self.intent_texts = [c["intent"] for c in commands]
+        self.requires_wake = [c.get("requires_wake", True) for c in commands]
 
         # Try to load from cache
         cache = _load_cache()
@@ -227,7 +234,7 @@ class Matcher:
         """
         if threshold is None:
             threshold = self.default_threshold
-        cleaned = _strip_wake_words(text)
+        cleaned, had_wake = _strip_wake_words(text)
         if not cleaned:
             return None
 
@@ -252,6 +259,11 @@ class Matcher:
             return None
 
         entry = self.commands[best_idx]
+
+        # Enforce wake word for non-editing commands
+        if self.requires_wake[best_idx] and not had_wake:
+            return None
+
         arg = None
         if entry.get("argument") == "remainder":
             arg = _extract_remainder(cleaned, entry["intent"])
@@ -272,9 +284,10 @@ class Matcher:
         Returns:
             The new entry dict, or ``None`` if embedding failed.
         """
-        entry = {"intent": intent, "handler": handler, "argument": argument}
+        entry = {"intent": intent, "handler": handler, "argument": argument, "requires_wake": True}
         self.commands.append(entry)
         self.intent_texts.append(intent)
+        self.requires_wake.append(True)
 
         emb = _embed_texts([intent], self.embed_url, self.embed_model)
         if emb and emb[0]:
