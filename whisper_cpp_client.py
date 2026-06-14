@@ -689,7 +689,12 @@ def propose_command(utterance):
             text = text[text.index("{") : text.rindex("}") + 1]
         result = json.loads(text)
         if result.get("action"):
-            return result
+            if result["action"] in ("image_gen", "dalle.text2im"):
+                return result
+            # Shell command or other action — require intent and shell
+            if result.get("intent") and result.get("shell"):
+                return result
+            return None
     except Exception as e:
         logging.debug(f"Command proposal failed: {e}")
     return None
@@ -1108,7 +1113,9 @@ def transcribe():
                         handler_name = "custom_" + re.sub(
                             r"\W+", "_", proposal["intent"]
                         ).lower().strip("_")
-                        shell = proposal["shell"]
+                        shell = proposal.get("shell")
+                        if not shell:
+                            continue
                         handler_code = (
                             f"def {handler_name}(q=None):\n"
                             f'    subprocess.Popen({shell!r},\n'
