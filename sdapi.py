@@ -34,6 +34,9 @@ from PIL import Image
 # re. https://techtactician.com/stable-diffusion-low-vram-memory-errors-fix/
 # Start it with --api option, e.g.: webui.sh --api --medvram
 
+# Or stable-diffusion.cpp
+# see https://github.com/themanyone/whisper_dictation/issues/11
+
 url = "http://127.0.0.1:7860"
 
 

@@ -231,7 +231,7 @@ Commands are defined in `commands_table.py` — add your own or change existing 
 
 - **ChatGPT** — `export OPENAI_API_KEY=<key>`
 - **Google Gemini** — `export GENAI_TOKEN=<key>`; `pip install google-generativeai`
-- **Stable Diffusion** — start `webui.sh --api --medvram` on the server for image generation
+- **Stable Diffusion** — start `webui.sh --api --medvram` on the server for image generation or set up [stable-diffusion.cpp](https://github.com/leejet/stable-diffusion.cpp). Configure it by editing `sdapi.py` in this project (it's a small file).
 
 ## Voice responses
 
