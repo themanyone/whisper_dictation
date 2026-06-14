@@ -51,6 +51,7 @@ from config import (get_config, first_run, CONFIG_PATH, CUSTOM_COMMANDS_PATH,
                     update_config, update_provider_model, get_chat_api_key,
                     query_models, match_dialog_response,
                     resolve_provider_url, detect_provider_type)
+from system_info import _get_system_info
 
 audio_queue = queue.Queue()
 listening = True
@@ -634,6 +635,7 @@ def propose_command(utterance):
       {"action": true, "intent": ..., "shell": ...}    — run a shell command
       {"action": false}                                 — just dictation
     """
+    sys_info = _get_system_info()
     try:
         # Use the same OpenAI-compatible endpoint as generate_text
         client = openai.OpenAI(
@@ -646,6 +648,7 @@ def propose_command(utterance):
                     "role": "system",
                     "content": (
                         "You classify spoken utterances. Reply with JSON only.\n\n"
+                        f"The user is running {sys_info}.\n\n"
                         "You have agentic capabilities through a command template — "
                         "you can run shell commands on the user's computer by returning "
                         '{"action": true, "intent": ..., "shell": ..., "desc": ...}. '
