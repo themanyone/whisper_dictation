@@ -997,7 +997,7 @@ def transcribe():
                 txt = txt.strip(" \n") + " "
                 print(bs + txt)  # print the text
                 # filter out spurrious whisperisms: Thanks for watching!
-                if txt == "Thanks for watching! " or txt == "I'm gonna go get some water. " or txt == "Bye! ":
+                if txt == "Thanks for watching! " or txt == "I'm gonna go get some water. " or txt == "Bye! " or txt == "you ":
                     continue
                 # — Semantic command matching —
                 result = matcher.match(lower_case)
