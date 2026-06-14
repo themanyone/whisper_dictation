@@ -1124,13 +1124,20 @@ def transcribe():
                         if response == "yes":
                             exec(handler_code, globals())
                             HANDLER_MAP[handler_name] = globals()[handler_name]
-                            save_custom_command(
-                                proposal["intent"], handler_name,
-                                handler_code, None,
-                            )
-                            matcher.add_command(proposal["intent"], handler_name)
                             say("okay")
                             HANDLER_MAP[handler_name]()
+                            save_resp = voice_dialog(
+                                "Save this command for later?",
+                                options=["yes", "no"],
+                            )
+                            if save_resp == "yes":
+                                save_custom_command(
+                                    proposal["intent"], handler_name,
+                                    handler_code, None,
+                                )
+                                matcher.add_command(
+                                    proposal["intent"], handler_name
+                                )
                         else:
                             say("Cancelled.")
                         continue
