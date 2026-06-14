@@ -17,7 +17,7 @@ Transcript → semantic matcher → matched? → run tool (fast path)
 
 ## Preparation
 
-If setting up manually, run `pip install -r requirements.txt`
+If setting up manually, run `pip install -r requirements.txt` with or without [optional venv setup](https://python.land/virtual-environments/virtualenv).
 
 **Ubuntu / Debian** Install GStreamer and required plugins:
 

@@ -288,6 +288,32 @@ echo "    export MODELS_DIR=\"$MODELS_DIR\""
 echo "    export PATH=\"\$PATH:$BIN_DIR\""
 echo ""
 
+# ── Optional: symlink to ~/.local/bin ─────────────────────────────────
+echo -n "  Install a symlink to ~/.local/bin so you can run from anywhere? [Y/n] "
+read -r install_sym
+if [[ "$install_sym" =~ ^(y|Y|)$ ]]; then
+    echo -n "  Name the command [whisper_dictation]: "
+    read -r cmd_name
+    cmd_name="${cmd_name:-whisper_dictation}"
+    link_path="$BIN_DIR/$cmd_name"
+    script_path="$(pwd)/whisper_cpp_client.py"
+    if [ -e "$link_path" ]; then
+        echo -n "  $link_path already exists. Overwrite? [y/N] "
+        read -r overwrite
+        if [[ ! "$overwrite" =~ ^(y|Y|yes)$ ]]; then
+            echo "  Skipped."
+        else
+            rm -f "$link_path"
+            ln -s "$script_path" "$link_path"
+            echo "  → $link_path → $script_path"
+        fi
+    else
+        ln -s "$script_path" "$link_path"
+        echo "  → $link_path → $script_path"
+    fi
+    echo "  Make sure $BIN_DIR is in your \$PATH."
+fi
+
 # ── GStreamer check ───────────────────────────────────────────────────
 echo "── Checking GStreamer installation ──"
 
