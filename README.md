@@ -199,20 +199,41 @@ Edit or delete `~/.config/whisper_dictation/config.json` to reset.
 
 **Layout is subject to change** as development progresses. After updating, look to in `config.py` for `DEFAULT_CONFIG` or delete (regenerate) `default_config.json` from it to see what your `~/.config/whisper_dictation/config.json` should look like. Or delete `~/.config/whisper_dictation/config.json` and be prompted from the defaults.
 
-## Spoken commands
+## Spoken command usage
 
-Say **"Computer"**, **"Samantha"**, or **"Peter"** to trigger the agent. Built-in commands include:
+Say **"Computer"**, **"Samantha"**, or **"Peter"** as "wake words" to trigger the agent. Example commands:
 
 - Computer, open terminal / open a web browser / go to *website*
 - Computer, on screen / take a picture / off screen (webcam)
 - Computer, record audio
 - Computer, draw a picture of *subject* (stable-diffusion)
+  Computer, add a command to launch Thunderbird when I say 'check email.'"
+**Editing commands** do not require a wake word.
 - Copy that / Paste it / Undo that
 - Page up / Page down
 - New paragraph / Pause dictation / Resume dictation
 - Stop dictation (quits)
 
-Commands are defined in `commands_table.py` — add your own or change existing ones freely. Commands learned through the agent persist in `~/.config/whisper_dictation/custom_commands.json`.
+Types of built-in commands include
+* Mouse actions (editing  no wake word)
+* Launch apps (argument = which app to open)
+* Terminal
+* Navigation & window control
+* Web search (argument = search query)
+* Email (argument = recipient)
+* Image generation (argument = prompt)
+* Dictation control (no wake word)
+* Recording
+* Webcam
+* Keyboard shortcuts (editing - no wake word)
+* Provider / AI model selection
+* AI chat - "Computer, what's the capital of Zimbabwe?"
+* AI agent - "Computer, (perform some unknown command)"
+    Asks AI agent what to do.
+    Builds new command.
+    Gets permissionto run it.
+
+Commands are defined in `commands_table.py` — add your own or change existing ones freely. New commands learned by the agent persist in `~/.config/whisper_dictation/custom_commands.json`.
 
 ## Files
 
