@@ -207,7 +207,8 @@ Say **"Computer"**, **"Samantha"**, or **"Peter"** as "wake words" to trigger th
 - Computer, on screen / take a picture / off screen (webcam)
 - Computer, record audio
 - Computer, draw a picture of *subject* (stable-diffusion)
-  Computer, add a command to launch Thunderbird when I say 'check email.'"
+- Computer, add a command to launch Thunderbird when I say 'check email.'"
+
 **Editing commands** do not require a wake word.
 - Copy that / Paste it / Undo that
 - Page up / Page down
@@ -233,7 +234,9 @@ Types of built-in commands include
     Builds new command.
     Gets permissionto run it.
 
-Commands are defined in `commands_table.py` — add your own or change existing ones freely. New commands learned by the agent persist in `~/.config/whisper_dictation/custom_commands.json`.
+Commands are defined in [commands_table.py](commands_table.py) — add your own or change existing ones freely. New commands learned by the agent persist in [custom_commands.json](~/.config/whisper_dictation/custom_commands.json).
+
+If you want the agent to run system commands, you might want to [edit the system prompt](whisper_cpp_client.py) around line 655 to give it clues about what system you are using.
 
 ## Files
 
