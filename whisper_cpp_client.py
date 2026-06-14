@@ -621,10 +621,15 @@ def load_custom_commands():
 
 
 def propose_command(utterance):
-    """Ask the local LLM to turn an unrecognized utterance into a shell command.
+    """Ask the local LLM to classify an unrecognized utterance.
 
-    Returns a dict with keys (intent, shell, desc) or None if the LLM
+    Returns a dict with keys (action, ...) or None if the LLM
     thinks it's just dictation text.
+
+    Possible return formats:
+      {"action": "image_gen", "prompt": "..."}         — generate an image
+      {"action": true, "intent": ..., "shell": ...}    — run a shell command
+      {"action": false}                                 — just dictation
     """
     try:
         # Use the same OpenAI-compatible endpoint as generate_text
@@ -638,6 +643,8 @@ def propose_command(utterance):
                     "role": "system",
                     "content": (
                         "You classify spoken utterances. Reply with JSON only.\n\n"
+                        "If the user wants to draw, create, or generate an image, respond:\n"
+                        '{"action": "image_gen", "prompt": "detailed image description"}\n\n'
                         "If the user wants a system action (run, open, record, "
                         "create, adjust, take, play, search, send, etc.), respond:\n"
                         '{"action": true, "intent": "short intent phrase", '
@@ -646,6 +653,8 @@ def propose_command(utterance):
                         'If it is just dictation text to type, respond:\n'
                         '{"action": false}\n\n'
                         "Examples:\n"
+                        '"draw a picture of a cat wearing a hat"\n'
+                        '  → {"action": "image_gen", "prompt": "A whimsical illustration of a cat wearing a top hat, digital art style"}\n'
                         '"record a 30 second video"\n'
                         '  → {"action": true, "intent": "record video for 30 seconds", '
                         '"shell": "ffmpeg -f v4l2 -t 30 -i /dev/video0 '
@@ -658,10 +667,21 @@ def propose_command(utterance):
                 {"role": "user", "content": utterance},
             ],
             temperature=0.1,
-            max_tokens=200,
+            max_tokens=300,
         )
-        text = r.choices[0].message.content.strip()
-        # Extract JSON from response (the LLM may wrap it in markdown)
+        msg = r.choices[0].message
+
+        # Handle tool/function calling (e.g. dalle.text2im)
+        if msg.tool_calls:
+            for tc in msg.tool_calls:
+                if tc.function.name in ("dalle.text2im", "image_gen"):
+                    return {
+                        "action": tc.function.name,
+                        "action_input": tc.function.arguments,
+                    }
+
+        # Handle text-based JSON response
+        text = (msg.content or "").strip()
         if "{" in text:
             text = text[text.index("{") : text.rindex("}") + 1]
         result = json.loads(text)
@@ -749,7 +769,31 @@ def generate_text(prompt: str):
         resp = local_client.chat.completions.create(
             model=chat_model, messages=messages
         )
-        completion = resp.choices[0].message.content
+        msg = resp.choices[0].message
+        completion = msg.content
+
+        # Intercept tool calls (dalle.text2im) from LLM response
+        if msg.tool_calls:
+            for tc in msg.tool_calls:
+                if tc.function.name in ("dalle.text2im", "image_gen"):
+                    raw = tc.function.arguments
+                    payload = raw if isinstance(raw, dict) else json.loads(raw)
+                    draw_picture(payload.get("prompt", ""))
+                    messages.pop()  # remove the user message — tool handled
+                    return ""
+
+        # Also check if completion is an image-gen JSON string (text-mode LLMs)
+        if completion and 'dalle.text2im' in completion:
+            try:
+                j = json.loads(completion)
+                if j.get("action") == "dalle.text2im":
+                    raw = j.get("action_input", "{}")
+                    payload = raw if isinstance(raw, dict) else json.loads(raw)
+                    draw_picture(payload.get("prompt", ""))
+                    messages.pop()
+                    return ""
+            except (json.JSONDecodeError, KeyError, TypeError):
+                pass
     except Exception as e:
         logging.warning(f"Server Warning: {e}")
         return "Sorry. I'm having some trouble accessing that."
@@ -1026,6 +1070,15 @@ def transcribe():
                                "", lower_case, flags=re.I)
                     )
                     if proposal:
+                        if proposal.get("action") in ("image_gen", "dalle.text2im"):
+                            if proposal["action"] == "dalle.text2im":
+                                raw = proposal.get("action_input", "{}")
+                                payload = raw if isinstance(raw, dict) else json.loads(raw)
+                                prompt = payload.get("prompt", "")
+                            else:
+                                prompt = proposal.get("prompt", "")
+                            draw_picture(prompt)
+                            continue
                         handler_name = "custom_" + re.sub(
                             r"\W+", "_", proposal["intent"]
                         ).lower().strip("_")
