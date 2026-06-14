@@ -43,6 +43,7 @@ import requests
 import logging
 import shutil
 from on_screen import camera, show_pictures
+from sdapi import draw as sd_draw
 from record import delayRecord
 from commands_table import COMMANDS
 from matcher import Matcher
@@ -169,7 +170,8 @@ def send_email(q):
 
 
 def draw_picture(q):
-    os.popen(f'./sdapi.py "{q}"')
+    """Generate an image from a text prompt via sdapi.draw() in background."""
+    threading.Thread(target=sd_draw, args=(q,), daemon=True).start()
 
 
 def show_webcam(q=None):
@@ -771,6 +773,8 @@ def generate_text(prompt: str):
         )
         msg = resp.choices[0].message
         completion = msg.content
+        if completion:
+            logging.info(f"{bs}{completion} ")
 
         # Intercept tool calls (dalle.text2im) from LLM response
         if msg.tool_calls:
@@ -800,7 +804,6 @@ def generate_text(prompt: str):
     if completion:
         # remove '<|...|>' tags from completion
         completion = re.sub(r"<\|.*\|>", "", completion)
-        print(f"{bs}{completion} ")
         pyautogui.write(completion + ' ')
         listening = False
         chatting = True
