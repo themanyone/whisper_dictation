@@ -49,6 +49,7 @@ DEFAULT_CONFIG = {
     "audio_format": ".wav",
     "debug": False,
     "threshold": 0.45,
+    "agent_threshold": 0.60,
     "piper_model": "",
     "piper_binary": "",
     "piper_voice": "en_US-libritts_r-medium",
@@ -318,6 +319,7 @@ def get_config():
         "piper_model": os.getenv("PIPER_MODEL"),
         "piper_binary": os.getenv("PIPER_BINARY"),
         "piper_voice": os.getenv("PIPER_VOICE"),
+        "agent_threshold": os.getenv("AGENT_THRESHOLD"),
         "debug": (os.getenv("DEBUG", "").lower() in ("1", "true", "yes")),
     }
     for key, val in env_overrides.items():

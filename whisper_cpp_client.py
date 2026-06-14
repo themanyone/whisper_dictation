@@ -79,6 +79,7 @@ whisper_cpp = cfg["whisper_url"]
 local_chat_url = cfg["chat_url"]
 chat_model = cfg.get("chat_model", "gpt-3.5-turbo")
 debug = cfg.get("debug", False)
+agent_threshold = float(cfg.get("agent_threshold", 0.60))
 
 # Derive api_key from the provider matching chat_url
 chat_api_key = get_chat_api_key(cfg, local_chat_url)
@@ -1061,12 +1062,27 @@ def transcribe():
                         print(f"[DEBUG] matched '{handler_name}' (score={score:.3f})")
                     handler_fn = HANDLER_MAP.get(handler_name)
                     if handler_fn:
-                        if handler_name != "stop_dictation":
-                            say("okay")
-                        handler_fn(arg)
-                        if not running:
-                            break
-                        continue
+                        # When a wake word was used but the match score is
+                        # below agent_threshold, route to the LLM agent
+                        # instead of the matched handler. This prevents
+                        # "delete output.png" from triggering image gen
+                        # just because "png" is image-related.
+                        has_wake_match = re.search(
+                            r"^(peter|samantha|computer)[,\s]", lower_case
+                        )
+                        if (has_wake_match and score < agent_threshold
+                            and handler_name not in (
+                                "resume_dictation", "pause_dictation",
+                                "stop_dictation",
+                            )):
+                            pass  # fall through to LLM agent below
+                        else:
+                            if handler_name != "stop_dictation":
+                                say("okay")
+                            handler_fn(arg)
+                            if not running:
+                                break
+                            continue
 
                 # — LLM command proposal (unrecognized → ask LLM) —
                 # Only trigger when a wake word is used, so dictation
