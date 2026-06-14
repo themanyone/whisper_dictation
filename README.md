@@ -24,7 +24,7 @@ Private voice keyboard, AI chat, images, webcam, recordings, voice control in >=
 
 Say, "Computer, on screen." A window opens up showing the webcam. Say "Computer, take a picture". A picture, "webcam/image().jpg" is saved in a 'webcam' subdirectory of the current folder. Say, "Computer, search the web for places to eat". A browser opens up with a list of local restaurants. Say, "Computer, say hello to our guest". After a brief pause, there is a reply, either from your local machine, `ChatGPT`, or a local area chat server that you set up. A voice, `mimic3` says some variation of, "Hello. Pleased to meet you. Welcome to our shop. Let me know how I can be of assistance". It's unique each time. Say, "Computer, open terminal". A terminal window pops up. Say "Computer, draw a picture of a Klingon warship". An image of a warship appears with buttons to save, print, and navigate through previously-generated images.
 
-## Try our "next level" voice-operated agent with easy setup.
+## Try the unstable branch, with easy setup.
 
 Future development is progressing here: `git checkout nl`.
 
@@ -36,7 +36,7 @@ cd whisper_dictation
 ./setup.sh
 ```
 
-## Or continue with this deprecated, non-agentic branch
+## Or continue with this stable branch
 
 `git clone -b main --single-branch https://github.com/themanyone/whisper_dictation.git`
 
