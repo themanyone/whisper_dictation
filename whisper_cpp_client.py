@@ -1046,6 +1046,13 @@ def transcribe():
                 # filter out spurrious whisperisms: Thanks for watching!
                 if txt == "Thanks for watching! " or txt == "I'm gonna go get some water. " or txt == "Bye! " or txt == "you ":
                     continue
+                # — Paused: only "resume dictation" or "stop dictation" reactivates —
+                if not listening:
+                    if "resume dictation" in lower_case:
+                        resume_dictation()
+                    elif "stop dictation" in lower_case:
+                        stop_dictation()
+                    continue
                 # — Semantic command matching —
                 result = matcher.match(lower_case)
                 if result:
@@ -1143,9 +1150,6 @@ def record_to_queue():
     global record_process
     global running
     while running:
-        if not listening:
-            time.sleep(0.05)
-            continue
         record_process = delayRecord(tempfile.mktemp() + audio_format)
         record_process.start()
         audio_queue.put(record_process.file_name)
