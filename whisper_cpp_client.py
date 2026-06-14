@@ -646,6 +646,10 @@ def propose_command(utterance):
                     "role": "system",
                     "content": (
                         "You classify spoken utterances. Reply with JSON only.\n\n"
+                        "You have agentic capabilities through a command template — "
+                        "you can run shell commands on the user's computer by returning "
+                        '{"action": true, "intent": ..., "shell": ..., "desc": ...}. '
+                        "The user will be asked for permission before any command runs.\n\n"
                         "If the user wants to draw, create, or generate an image, respond:\n"
                         '{"action": "image_gen", "prompt": "detailed image description"}\n\n'
                         "If the user wants a system action (run, open, record, "
@@ -664,7 +668,11 @@ def propose_command(utterance):
                         '\\\\"$(date +%%s)\\\\".mp4", '
                         '"desc": "Record a 30-second video from webcam"}\n'
                         '"how are you today"\n'
-                        '  → {"action": false}'
+                        '  → {"action": false}\n\n'
+                        "When a user says something like 'run the update command when "
+                        "I say X' or 'save this as a command', that means they want a "
+                        "custom voice command saved. Return it as a shell action with "
+                        "the appropriate intent and shell command."
                     ),
                 },
                 {"role": "user", "content": utterance},
