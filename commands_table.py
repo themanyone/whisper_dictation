@@ -70,9 +70,13 @@ COMMANDS = [
     {"intent": "create an image", "handler": "draw_picture", "argument": "remainder"},
     # ── Dictation control ──────────────────────────────────────────────────
     {"intent": "resume dictation", "handler": "resume_dictation", "argument": None},
+    {"intent": "resume listening", "handler": "resume_dictation", "argument": None},
+    {"intent": "wake up", "handler": "resume_dictation", "argument": None},
     {"intent": "continue typing", "handler": "resume_dictation", "argument": None},
     {"intent": "pause dictation", "handler": "pause_dictation", "argument": None},
     {"intent": "pause listening", "handler": "pause_dictation", "argument": None},
+    {"intent": "go to sleep", "handler": "pause_dictation", "argument": None},
+    {"intent": "wait for further instructions", "handler": "pause_dictation", "argument": None},
     {"intent": "stop dictation", "handler": "stop_dictation", "argument": None},
     {"intent": "stop listening", "handler": "stop_dictation", "argument": None},
     # ── Recording ──────────────────────────────────────────────────────────
