@@ -451,6 +451,8 @@ def say(text, chunked=False):
                 if response == "yes":
                     _speak_text(remaining)
                     _drain_audio()
+                else:
+                    _speak_text("Ok.")
                 return
             _speak_text(remaining)
             _drain_audio()
@@ -1008,7 +1010,6 @@ def switch_provider(q=None):
     cfg["provider"] = provider["name"]
     update_config({"chat_url": resolved, "provider": provider["name"]})
     update_provider_model(provider["name"], model)
-    say(f"Switched to {model} on {provider['name']}.")
     say(f"Switched to {model} on {provider['name']}.")
 
 

@@ -115,7 +115,7 @@ DEFAULT_CONFIG = {
         },
         {
             "name": "DeepSeek",
-            "base_url": "https://api.deepseek.com/v1",
+            "base_url": "https://api.deepseek.com",
             "api_key": "",
             "provider_type": "openai",
         },
@@ -128,6 +128,12 @@ DEFAULT_CONFIG = {
         {
             "name": "Perplexity",
             "base_url": "https://api.perplexity.ai",
+            "api_key": "",
+            "provider_type": "openai",
+        },
+        {
+            "name": "Charm Hyper",
+            "base_url": "https://hyper.charm.land/v1/models",
             "api_key": "",
             "provider_type": "openai",
         },
@@ -492,7 +498,6 @@ def query_models(base_url, api_key=None):
             if api_key:
                 headers["Authorization"] = f"Bearer {api_key}"
             r = requests.get(url, headers=headers, timeout=10)
-            r.raise_for_status()
             data = r.json()
             models = [m["id"] for m in data.get("data", []) if "id" in m]
             if models:
@@ -511,7 +516,6 @@ def query_models(base_url, api_key=None):
                 resolved.rstrip("/") + "/models",
                 headers=headers, timeout=10,
             )
-            r.raise_for_status()
             data = r.json()
             models = [m["id"] for m in data.get("data", []) if "id" in m]
             if models:
@@ -519,6 +523,28 @@ def query_models(base_url, api_key=None):
         except requests.RequestException:
             pass
 
+    # If the API doesn't return models, fall back to well-known IDs for
+    # popular providers so the user isn't stuck with "No models found".
+    host = urlparse(base_url).netloc.lower()
+    known_models = {
+        "api.deepseek.com": ["deepseek-chat", "deepseek-reasoner"],
+        "api.openai.com": [
+            "gpt-4o", "gpt-4o-mini", "gpt-4-turbo",
+        ],
+        "api.anthropic.com": ["claude-sonnet-4-20250514"],
+        "api.groq.com": [
+            "llama-3.3-70b-versatile", "gemma2-9b-it",
+            "llama-3.1-8b-instant",
+        ],
+        "api.together.xyz": [
+            "meta-llama/Llama-3.3-70B-Instruct-Turbo",
+        ],
+        "api.fireworks.ai": [
+            "accounts/fireworks/models/llama-v3p1-70b-instruct",
+        ],
+    }
+    if host in known_models:
+        return known_models[host]
     return []
 
 
