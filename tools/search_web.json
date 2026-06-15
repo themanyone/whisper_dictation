@@ -1,0 +1,15 @@
+{
+  "name": "search_web",
+  "description": "Search the web for information. Opens a browser with the search query.",
+  "input_schema": {
+    "type": "object",
+    "properties": {
+      "query": {
+        "type": "string",
+        "description": "The search query to look up"
+      }
+    },
+    "required": ["query"]
+  },
+  "handler_code": "def handler(args):\n    import webbrowser\n    q = args.get('query', '').replace(' ', '%20')\n    webbrowser.open('https://duckduckgo.com/?q=' + q)\n    return f'Searching for {args.get(\"query\", \"\")}'"
+}
