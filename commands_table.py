@@ -125,6 +125,12 @@ COMMANDS = [
         "argument": "remainder",
         "requires_wake": True,
     },
+    # ── Project initialization ─────────────────────────────────────────────
+    {"intent": "initialize project", "handler": "initialize_project", "argument": None, "requires_wake": True},
+    {"intent": "initialize documentation", "handler": "initialize_project", "argument": None, "requires_wake": True},
+    {"intent": "scan project", "handler": "initialize_project", "argument": None, "requires_wake": True},
+    {"intent": "update project file", "handler": "initialize_project", "argument": None, "requires_wake": True},
+    {"intent": "set up project", "handler": "initialize_project", "argument": None, "requires_wake": True},
     # ── Provider / model selection ─────────────────────────────────────────
     {"intent": "switch provider", "handler": "switch_provider", "argument": None, "requires_wake": True},
     {"intent": "change provider", "handler": "switch_provider", "argument": None, "requires_wake": True},
