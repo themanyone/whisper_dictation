@@ -1,12 +1,12 @@
-# Whisper Dictation
+# Ship Commander
 
-**The Ship's Computer** - Private voice keyboard, AI agent, images, webcam, recordings, voice control in >= 4 GiB VRAM.
+**The Ship's Computer** - Private voice keyboard, AI agent, images, webcam, recordings, voice control with as little as 4 GiB VRAM.
 
-<img src="img/ss.png" alt="Dictation anywhere, even social media." width="300" align="right">
+<img src="img/ss.png" alt="Voice dictation anywhere, even social media." width="300" align="right">
 
 - **Dictation mode** — transcribed speech goes straight to text output (fast, no LLM)
-- **Agent mode** — speech routed through the LLM for chat, tool calling, or learning new commands
 - **Semantic fast-path** — embedding-based matcher (`all-MiniLM-L6-v2`) recognizes common commands in ~50ms with no LLM round trip
+- **Agent mode** — speech routed through the LLM for chat, tool calling, or learning new commands
 - **Updatesitself** — example; say *"Computer, record a 30 second video"* and the LLM proposes a shell command, asks for confirmation, then learns it. So next time you can just run it (with permission).
 
 ```
@@ -135,7 +135,7 @@ ctx-size = 16384
 ub = 16384
 ```
 
-**Testing** Manually start servers
+**Testing** Manually start servers. Model should support agentic tool calling if you want to use those capabilities.
 
 ```shell
 # Terminal 1 — speech-to-text
@@ -145,7 +145,7 @@ whisper-server -l en -m ~/models/ggml-tiny.en.bin --convert --port 7777
 llama-server -m ~/models/qwen2.5-7b-q4_k_s.gguf -ngl 99 -c 4096 --port 8080 --embeddings
 
 # Terminal 3 — test dictation client
-./whisper_cpp_client.py
+./ship_commander.py
 ```
 
 Before blaming us, test embeddings, chat endpoints like so.
@@ -208,6 +208,8 @@ Say **"Computer"**, **"Samantha"**, or **"Peter"** as "wake words" to trigger th
 - Computer, record audio
 - Computer, draw a picture of *subject* (stable-diffusion)
 - Computer, add a command to launch Thunderbird when I say 'check email.'"
+    Unnecessary. Saying launch [app name] already launches apps.
+    But you can create other commands this way.
 
 **Editing commands** do not require a wake word.
 - Copy that / Paste it / Undo that
@@ -236,13 +238,59 @@ Types of built-in commands include
 
 Commands are defined in [commands_table.py](commands_table.py) — add your own or change existing ones freely. New commands learned by the agent persist in [custom_commands.json](~/.config/whisper_dictation/custom_commands.json).
 
-If you want the agent to run system commands, you might want to [edit the system prompt](whisper_cpp_client.py) around line 655 to give it clues about what system you are using.
+If you want the agent to run system commands, you might want to [edit the system prompt](ship_commander.py) around line 655 to give it clues about what system you are using.
+
+## Tool calling
+
+Tools let the LLM perform actions (search, generate images, run scripts) via structured function calling. The system supports both **Claude format** (`name`, `description`, `input_schema`) and **OpenAI format** (`type: "function"`, `function: {name, parameters}`).
+
+**How it works**
+
+1. At startup, `tool_manager.py` scans `~/.config/whisper_dictation/tools/*.json`
+2. Each file is normalized and injected into the LLM's `tools` parameter
+3. When the LLM returns a function call, the tool routes it to the registered handler
+4. Results are spoken aloud via TTS
+
+### Adding tools
+
+Drop a `.json` file in `~/.config/whisper_dictation/tools/`:
+
+```json
+{
+  "name": "search_web",
+  "description": "Search the web for information",
+  "input_schema": {
+    "type": "object",
+    "properties": {
+      "query": {"type": "string", "description": "The search query"}
+    },
+    "required": ["query"]
+  },
+  "handler_code": "def handler(args):\n    import webbrowser\n    q = args['query'].replace(' ', '%20')\n    webbrowser.open('https://duckduckgo.com/?q=' + q)\n    return f'Searching for {args[\"query\"]}'"
+}
+```
+
+### Download example tools
+
+The repo ships with example tool definitions:
+
+```shell
+cp tools/*.json ~/.config/whisper_dictation/tools/
+```
+
+You can also symlink Claude-compatible tools from other directories (e.g., `~/.claude/commands/`, GitHub repos) — the normalizer recognizes both Claude format (`name`/`input_schema`) and OpenAI format (`type: "function"`) automatically.
+
+**Built-in tools** (`image_gen`, `dalle.text2im`) ship with the project and generate images via Stable Diffusion. Text-mode LLMs that can't do function calling can return `{"action": "image_gen", "action_input": {"prompt": "..."}}` as raw JSON.
+
+### Handler code
+
+The optional `handler_code` field contains inline Python defining a `handler(args: dict) -> str | None`. The return value is spoken by TTS. If omitted, you must register a handler via `tool_manager.register_handler(name, callable)` elsewhere.
 
 ## Files
 
 | File | Purpose |
 |---|---|
-| `whisper_cpp_client.py` | Main dictation loop, chat, voice commands |
+| `ship_commander.py` | Main dictation loop, chat, voice commands |
 | `commands_table.py` | User-editable command table (intent → handler) |
 | `matcher.py` | Semantic matching engine (all-MiniLM-L6-v2) |
 | `config.py` | First-run configuration prompts |
@@ -250,6 +298,7 @@ If you want the agent to run system commands, you might want to [edit the system
 | `on_screen.py` | Webcam viewer and capture |
 | `sdapi.py` | Stable Diffusion image generation client |
 | `input_backend.py` | Wayland input simulation (evdev) |
+| `tool_manager.py` | Load and dispatch Claude/OpenAI-format tools |
 
 ## Optional services
 

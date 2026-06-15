@@ -24,7 +24,7 @@ User-editable command table for semantic voice control.
 Each entry:
   intent:    A natural-language phrase describing the command.
              The semantic matcher compares spoken text against this.
-  handler:   Name of a function defined in whisper_cpp_client.py.
+  handler:   Name of a function defined in ship_commander.py.
              HANDLER_MAP is auto-built via globals()[handler] at startup.
   argument:  How to extract the query argument:
                None        — no argument expected

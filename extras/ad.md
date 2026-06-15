@@ -16,7 +16,7 @@ ln -s server ~/.local/bin/whisper_cpp_server # (just put it somewhere in $PATH)
 
 whisper_cpp_server -l en -m models/ggml-tiny.en.bin --port 7777
 cd whisper_dictation
-./whisper_cpp_client.py
+./ship_commander.py
 ```
 See [the docs](https://github.com/themanyone/whisper_dictation) for tips on integrating with llama.cpp server, enabling the computer to talk back, draw AI images, carry out voice commands, and other features.
 

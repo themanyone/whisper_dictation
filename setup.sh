@@ -253,7 +253,7 @@ else
     echo ""
 fi
 echo "  Run the dictation client:"
-echo "    cd $(pwd) && ./whisper_cpp_client.py"
+echo "    cd $(pwd) && ./ship_commander.py"
 echo ""
 
 # Offer systemd service setup for whisper-server
@@ -296,7 +296,7 @@ if [[ "$install_sym" =~ ^(y|Y|)$ ]]; then
     read -r cmd_name
     cmd_name="${cmd_name:-whisper_dictation}"
     link_path="$BIN_DIR/$cmd_name"
-    script_path="$(pwd)/whisper_cpp_client.py"
+    script_path="$(pwd)/ship_commander.py"
     if [ -e "$link_path" ]; then
         echo -n "  $link_path already exists. Overwrite? [y/N] "
         read -r overwrite
