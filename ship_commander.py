@@ -50,6 +50,7 @@ from commands_table import COMMANDS
 from matcher import Matcher
 from config import (get_config, first_run, CONFIG_PATH, CUSTOM_COMMANDS_PATH,
                     update_config, update_provider_model, get_chat_api_key,
+                    ensure_api_key,
                     query_models, match_dialog_response,
                     resolve_provider_url, detect_provider_type)
 from system_info import _get_system_info
@@ -88,6 +89,10 @@ agent_threshold = float(cfg.get("agent_threshold", 0.60))
 
 # Derive api_key from the provider matching chat_url
 chat_api_key = get_chat_api_key(cfg, local_chat_url)
+# Pull API key from env var if missing (e.g. DEEPSEEK_API_KEY, GEMINI_API_KEY)
+if cfg.get("providers") and cfg.get("provider"):
+    ensure_api_key(cfg["provider"], cfg["providers"])
+    chat_api_key = get_chat_api_key(cfg, local_chat_url)
 custom_command_entries = []  # populated at startup by load_custom_commands()
 
 # ── Handler functions for the command table ──────────────────────────
@@ -656,7 +661,7 @@ def propose_command(utterance):
     try:
         # Use the same OpenAI-compatible endpoint as generate_text
         client = openai.OpenAI(
-            base_url=local_chat_url, api_key="sk-no-key-required"
+            base_url=local_chat_url, api_key=chat_api_key
         )
         r = client.chat.completions.create(
             model=chat_model,
@@ -980,14 +985,15 @@ def switch_provider(q=None):
     if not response or response == str(cancel_num):
         return
     provider = providers[int(response) - 1]
-    # Auto-resolve URL and detect provider type
+    # Prompt for missing API key before probing
     base_url = provider.get("base_url", "")
     ptype = provider.get("provider_type") or detect_provider_type(base_url)
     resolved = resolve_provider_url(base_url, ptype)
-    models = query_models(resolved, api_key=provider.get("api_key"))
+    api_key = ensure_api_key(provider["name"], providers)
+    models = query_models(resolved, api_key=api_key)
     if not models:
         # Probe the unresolved URL as a fallback
-        models = query_models(base_url, api_key=provider.get("api_key"))
+        models = query_models(base_url, api_key=api_key)
     if not models:
         say("No models found on that provider.")
         return
@@ -1003,7 +1009,6 @@ def switch_provider(q=None):
         return
     model = models[int(response) - 1]
     global local_chat_url, chat_model, chat_api_key
-    api_key = provider.get("api_key", "sk-no-key-required")
     local_chat_url = resolved
     chat_model = model
     chat_api_key = api_key
@@ -1015,6 +1020,9 @@ def switch_provider(q=None):
 
 def switch_model(q=None):
     """Fetch models from the current provider and wait for a number choice."""
+    # Prompt for missing API key if needed
+    if cfg.get("provider") and cfg.get("providers"):
+        ensure_api_key(cfg["provider"], cfg["providers"])
     models = query_models(local_chat_url)
     if not models:
         say("No models found on current provider.")

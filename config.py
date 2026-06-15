@@ -133,7 +133,7 @@ DEFAULT_CONFIG = {
         },
         {
             "name": "Charm Hyper",
-            "base_url": "https://hyper.charm.land/v1/models",
+            "base_url": "https://hyper.charm.land/v1",
             "api_key": "",
             "provider_type": "openai",
         },
@@ -387,6 +387,7 @@ _KNOWN_PROVIDER_PATTERNS = [
     (re.compile(r"deepseek\.com", re.I), "openai"),
     (re.compile(r"mistral\.ai", re.I), "openai"),
     (re.compile(r"perplexity\.ai", re.I), "openai"),
+    (re.compile(r"charm\.land", re.I), "openai"),
     (re.compile(r"fireworks\.ai", re.I), "openai"),
     (re.compile(r"127\.0\.0\.1:[89]\d{3}", re.I), "llamacpp"),
     (re.compile(r"localhost:[89]\d{3}", re.I), "llamacpp"),
@@ -576,6 +577,59 @@ def update_provider_model(provider_name, model):
     with open(CONFIG_PATH, "w") as f:
         json.dump(cfg, f, indent=2)
     print(f"  Updated configuration: {CONFIG_PATH}")
+
+
+def ensure_api_key(provider_name, providers):
+    """If provider has no API key, check env var, then prompt and save.
+    """
+    _KEY_ENV = {
+        "OpenAI": "OPENAI_API_KEY",
+        "DeepSeek": "DEEPSEEK_API_KEY",
+        "Google Gemini": "GENAI_TOKEN",
+        "Anthropic Claude": "ANTHROPIC_API_KEY",
+        "Groq": "GROQ_API_KEY",
+        "Together AI": "TOGETHER_API_KEY",
+        "DeepInfra": "DEEPINFRA_API_KEY",
+        "OpenRouter": "OPENROUTER_API_KEY",
+        "xAI Grok": "XAI_API_KEY",
+        "Mistral AI": "MISTRAL_API_KEY",
+        "Perplexity": "PERPLEXITY_API_KEY",
+        "Charm Hyper": "HYPER_API_KEY",
+        "Fireworks AI": "FIREWORKS_API_KEY",
+        "AIHubMix": "AIHUBMIX_API_KEY",
+    }
+    # Fallback aliases
+    _KEY_ALIAS = {
+        "Google Gemini": ("GEMINI_API_KEY",),
+    }
+    for i, p in enumerate(providers):
+        if p.get("name") != provider_name:
+            continue
+        key = p.get("api_key", "")
+        if key and key != "sk-no-key-required":
+            return key
+        # Don't prompt for localhost providers
+        base_url = p.get("base_url", "")
+        if "localhost" in base_url or "127.0.0.1" in base_url or key == "sk-no-key-required":
+            return key
+        # Check known env vars
+        env_key = os.environ.get(_KEY_ENV.get(provider_name, ""))
+        if not env_key:
+            for alias in _KEY_ALIAS.get(provider_name, ()):
+                env_key = os.environ.get(alias)
+                if env_key:
+                    break
+        if env_key:
+            p["api_key"] = env_key
+            update_config({"providers": providers})
+            return env_key
+        new_key = _prompt(f"  API key for {provider_name}", "")
+        if new_key:
+            p["api_key"] = new_key
+            update_config({"providers": providers})
+            return new_key
+        return key
+    return ""
 
 
 def get_chat_api_key(config, chat_url):
