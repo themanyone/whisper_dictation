@@ -138,4 +138,9 @@ COMMANDS = [
     {"intent": "change model", "handler": "switch_model", "argument": None, "requires_wake": True},
     {"intent": "switch model", "handler": "switch_model", "argument": None, "requires_wake": True},
     {"intent": "choose model", "handler": "switch_model", "argument": None, "requires_wake": True},
+    # ── Custom command management ─────────────────────────────────────────
+    {"intent": "delete command", "handler": "delete_command", "argument": None, "requires_wake": True},
+    {"intent": "remove command", "handler": "delete_command", "argument": None, "requires_wake": True},
+    {"intent": "delete custom command", "handler": "delete_command", "argument": None, "requires_wake": True},
+    {"intent": "remove custom command", "handler": "delete_command", "argument": None, "requires_wake": True},
 ]

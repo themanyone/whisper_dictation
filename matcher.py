@@ -295,3 +295,21 @@ class Matcher:
             return entry
         self.embeddings.append(None)
         return None
+
+    def remove_command(self, handler_name):
+        """Remove all commands matching *handler_name*.
+
+        Returns the number of entries removed.
+        """
+        removed = 0
+        i = 0
+        while i < len(self.commands):
+            if self.commands[i]["handler"] == handler_name:
+                self.commands.pop(i)
+                self.intent_texts.pop(i)
+                self.embeddings.pop(i)
+                self.requires_wake.pop(i)
+                removed += 1
+            else:
+                i += 1
+        return removed

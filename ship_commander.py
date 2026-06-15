@@ -1044,6 +1044,42 @@ def switch_model(q=None):
     say(f"Switched to {model}.")
 
 
+def delete_command(q=None):
+    """List custom commands via voice dialog and delete the chosen one."""
+    global custom_command_entries
+    entries = custom_command_entries
+    if not entries:
+        say("No custom commands to delete.")
+        return
+    print("\nCustom commands:")
+    for i, cmd in enumerate(entries, 1):
+        print(f"  {i}. {cmd['intent']}")
+    cancel_num = len(entries) + 1
+    print(f"  {cancel_num}. Cancel")
+    options = [str(i) for i in range(1, cancel_num + 1)]
+    response = voice_dialog(
+        "Say a number to delete a command.", options=options
+    )
+    if not response or response == str(cancel_num):
+        say("Cancelled.")
+        return
+    idx = int(response) - 1
+    removed = entries.pop(idx)
+    matcher.remove_command(removed["handler"])
+    if removed["handler"] in HANDLER_MAP:
+        del HANDLER_MAP[removed["handler"]]
+    # Reload the full file, filter by handler name, save
+    try:
+        if os.path.exists(CUSTOM_COMMANDS_PATH):
+            with open(CUSTOM_COMMANDS_PATH) as f:
+                full = json.load(f)
+            full = [e for e in full if e.get("command", {}).get("handler") != removed["handler"]]
+            with open(CUSTOM_COMMANDS_PATH, "w") as f:
+                json.dump(full, f, indent=2)
+    except Exception as e:
+        logging.warning(f"Failed to update custom commands file: {e}")
+    say(f"Deleted {removed['intent']}.")
+
 # Auto-built from command tables — resolves handler names to functions
 HANDLER_MAP = {h: globals()[h] for h in set(
     cmd["handler"] for cmd in COMMANDS
@@ -1181,20 +1217,26 @@ def transcribe():
                             handler_code = (
                                 f"def {handler_name}(q=None):\n"
                                 f"    cmd = {shell!r}.replace('{{q}}', q or '')\n"
-                                f"    subprocess.Popen(cmd,\n"
+                                f"    p = subprocess.Popen(cmd,\n"
                                 f"        shell=True, start_new_session=True,\n"
                                 f"        stdin=subprocess.DEVNULL,\n"
-                                f"        stdout=subprocess.DEVNULL,\n"
-                                f"        stderr=subprocess.DEVNULL)\n"
+                                f"        stdout=subprocess.PIPE,\n"
+                                f"        stderr=subprocess.PIPE)\n"
+                                f"    out, err = p.communicate()\n"
+                                f"    if out: print(out.decode(errors='replace'))\n"
+                                f"    if err: print(err.decode(errors='replace'))\n"
                             )
                         else:
                             handler_code = (
                                 f"def {handler_name}(q=None):\n"
-                                f"    subprocess.Popen({shell!r},\n"
+                                f"    p = subprocess.Popen({shell!r},\n"
                                 f"        shell=True, start_new_session=True,\n"
                                 f"        stdin=subprocess.DEVNULL,\n"
-                                f"        stdout=subprocess.DEVNULL,\n"
-                                f"        stderr=subprocess.DEVNULL)\n"
+                                f"        stdout=subprocess.PIPE,\n"
+                                f"        stderr=subprocess.PIPE)\n"
+                                f"    out, err = p.communicate()\n"
+                                f"    if out: print(out.decode(errors='replace'))\n"
+                                f"    if err: print(err.decode(errors='replace'))\n"
                             )
                         print(f"\n[{proposal['desc']}]")
                         print(f"  Shell: {shell}")
