@@ -5,7 +5,7 @@
 <img src="img/ss.png" alt="Voice dictation anywhere, even social media." width="300" align="right">
 
 - **Dictation mode** — transcribed speech goes straight to text output (fast, no LLM)
-- **Semantic fast-path** — embedding-based matcher (`all-MiniLM-L6-v2`) recognizes common commands in ~50ms with no LLM round trip
+- **Semantic fast-path** — tiny, 250MB embedding-based matcher (`all-MiniLM-L6-v2`) recognizes common commands in ~50ms with no LLM round trip
 - **Agent mode** — speech routed through the LLM for chat, tool calling, or learning new commands
 - **Updatesitself** — example; say *"Computer, record a 30 second video"* and the LLM proposes a shell command, asks for confirmation, then learns it. So next time you can just run it (with permission).
 
@@ -17,7 +17,7 @@ Transcript → semantic matcher → matched? → run tool (fast path)
 
 ## Preparation
 
-If setting up manually, run `pip install -r requirements.txt` with or without [optional venv setup](https://python.land/virtual-environments/virtualenv).
+If setting up manually, run `pip install -r requirements.txt` with or without [optional venv setup](https://python.land/virtual-environments/virtualenv). We are using Python 3.14.5 but that shouldn't matter much.
 
 **Ubuntu / Debian** Install GStreamer and required plugins:
 
@@ -135,6 +135,12 @@ ctx-size = 16384
 ub = 16384
 ```
 
+To launch `llama-server` in router mode, see docs. Something like this might work. Change ports if you want. Just make sure they match your configuration.
+
+```shell
+llama-server --jinja --models-dir $MODELS_DIR --models-preset $MODELS_DIR/.models.ini --host 0.0.0.0 --port 8080 --no-warmup --models-max 1 --sleep-idle-seconds 420 -t 6 -fa on -np 1 --kv-unified --no-mmproj-offload
+```
+
 **Testing** Manually start servers. Model should support agentic tool calling if you want to use those capabilities.
 
 ```shell
@@ -168,7 +174,7 @@ curl -X POST "http://127.0.0.1:8080/v1/chat/completions" -H "Content-Type: appli
 
 ## Provider configuration
 
-The config file, `~/.config/whisper_dictation/config.json` stores available LLM backends and their API keys, embeddings endpoint, etc. You can edit `~/.config/whisper_dictation/config.json` or delete it and be prompted for new configurations. Switch providers anyt time by saying **"Switch provider"** — you'll be prompted to select one by number, then pick a model from that provider. You can also say, **"Switch model"**. This will modify your config.json for you.
+The config file, `~/.config/whisper_dictation/config.json` stores available LLM backends and their API keys, embeddings endpoint, etc. You can edit `~/.config/whisper_dictation/config.json` or delete it and be prompted for new configurations. Switch providers any time by saying **"Switch provider"** — you'll be prompted to select one by number, then pick a model from that provider. You can also say, **"Switch model"**. This will modify your config.json for you.
 
 Override the active provider with environment: `export PROVIDER=OpenAI`.
 
@@ -236,13 +242,11 @@ Types of built-in commands include
     Builds new command.
     Gets permissionto run it.
 
-Commands are defined in [commands_table.py](commands_table.py) — add your own or change existing ones freely. New commands learned by the agent persist in [custom_commands.json](~/.config/whisper_dictation/custom_commands.json).
-
-If you want the agent to run system commands, you might want to [edit the system prompt](ship_commander.py) around line 655 to give it clues about what system you are using.
+Commands are defined in [commands_table.py](commands_table.py) — add your own or change existing ones freely. New commands learned by the agent persist in [custom_commands.json](~/.config/whisper_dictation/custom_commands.json). To unlearn a command, say "Computer, remove command."
 
 ## Tool calling
 
-Tools let the LLM perform actions (search, generate images, run scripts) via structured function calling. The system supports both **Claude format** (`name`, `description`, `input_schema`) and **OpenAI format** (`type: "function"`, `function: {name, parameters}`).
+"Tools do stuff. Skills know stuff." Tools let the LLM perform actions (search, generate images, run scripts) via structured function calling. The system supports both **Claude format** (`name`, `description`, `input_schema`) and **OpenAI format** (`type: "function"`, `function: {name, parameters}`).
 
 **How it works**
 
@@ -272,15 +276,9 @@ Drop a `.json` file in `~/.config/whisper_dictation/tools/`:
 
 ### Download example tools
 
-The repo ships with example tool definitions:
+The repo ships with example tool definitions but you can put custom ones in `~/.config/whisper_dictation/tools/`
 
-```shell
-cp tools/*.json ~/.config/whisper_dictation/tools/
-```
-
-You can also symlink Claude-compatible tools from other directories (e.g., `~/.claude/commands/`, GitHub repos) — the normalizer recognizes both Claude format (`name`/`input_schema`) and OpenAI format (`type: "function"`) automatically.
-
-**Built-in tools** (`image_gen`, `dalle.text2im`) ship with the project and generate images via Stable Diffusion. Text-mode LLMs that can't do function calling can return `{"action": "image_gen", "action_input": {"prompt": "..."}}` as raw JSON.
+**Built-in tools** generate images via Stable Diffusion, search the web, edit files...
 
 ### Handler code
 
@@ -290,7 +288,7 @@ The optional `handler_code` field contains inline Python defining a `handler(arg
 
 Skills follow the [Agent Skills open standard](https://agentskills.io) — the same format used by Crush, Claude Code, and other agents. Skills give the LLM specialized instructions and domain knowledge on demand.
 
-Unlike **tools** (callable functions), **skills** are behavior context loaded only when needed — the LLM sees only a name and description at startup, then loads the full instructions via a `load_skill` function call when a task matches.
+Unlike **tools** (callable functions), **skills** tell the agent how to do things. Just say what you want to do and if the intent matches a skill, the LLM will review it for the session.
 
 ### Progressive disclosure
 
@@ -368,13 +366,19 @@ Full instructions for the LLM go here...
 | `ship_commander.py` | Main dictation loop, chat, voice commands |
 | `commands_table.py` | User-editable command table (intent → handler) |
 | `matcher.py` | Semantic matching engine (all-MiniLM-L6-v2) |
-| `config.py` | First-run configuration prompts |
+| `config.py` | Config loader, first-run prompts, provider discovery |
 | `record.py` | Sound-activated GStreamer audio recorder |
 | `on_screen.py` | Webcam viewer and capture |
 | `sdapi.py` | Stable Diffusion image generation client |
+| `browse_webcam.py` | Flask web gallery for captured webcam images |
 | `input_backend.py` | Wayland input simulation (evdev) |
 | `tool_manager.py` | Load and dispatch Claude/OpenAI-format tools |
 | `skill_manager.py` | Load and inject skills into the LLM system prompt |
+| `project_scanner.py` | Scan project directory and generate AGENTS.md |
+| `system_info.py` | OS/platform detection utility |
+| `setup.sh` | Quick-start installer (downloads binaries, creates service) |
+| `tools/search_web.json` | Example tool — web search via browser |
+| `tools/write_file.json` | Example tool — create or write files |
 
 ## Optional services
 
