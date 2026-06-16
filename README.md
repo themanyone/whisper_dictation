@@ -4,9 +4,12 @@ Private voice keyboard, AI chat, images, webcam, recordings, voice control in >=
 
 <img src="img/ss.png" alt="example pic" title="Dictation anywhere, even social media." width="300" align="right">
 
+**The ship's computer.** Inspired by the *Star Trek* television series. Talk to your computer. Have it answer back with clear, easy-to-understand speech. Network it throughout the ship. Use your voice to write Captain's Log entries when the internet is down, when satellites are busy, or in the far reaches of the galaxy, "where no man has gone before."
+
 - Hands-free recording with `record.py`
-- Speech to text conversion depends on `whisper.cpp`[Whisper.cpp](https://github.com/ggerganov/whisper.cpp)
+- Voice keyboard depends on `whisper.cpp`[Whisper.cpp](https://github.com/ggerganov/whisper.cpp)
 - LLM inference depends on [Llama.cpp](https://github.com/ggml-org/llama.cpp)
+- Agentic capabilities (unstable branch)
 - Translate various languages
 - Voice-controlled webcam, audio recorder
 - Launch & control apps, with `pyautogui`
@@ -16,25 +19,25 @@ Private voice keyboard, AI chat, images, webcam, recordings, voice control in >=
 
 **Freedoms and responsibilities** Free and open-source software comes with NO WARRANTIES. You have permission to copy and modify for individual needs in accordance with the included LICENSE.
 
-**The ship's computer.** Inspired by the *Star Trek* television series. Talk to your computer. Have it answer back with clear, easy-to-understand speech. Network it throughout the ship. Use your voice to write Captain's Log entries when the internet is down, when satellites are busy, or in the far reaches of the galaxy, "where no man has gone before."
-
 **Translation.** This app is optimized for dictation. It can do some translation into English. But that's not its primary task. To use it as a full-time translator, start `whisper.cpp` with `--translate` and language flags. Use `ggml-medium.bin` or larger language model in place of `ggml-tiny.en.bin`.
 
 **Voice control.** The bot responds to commands.
 
 Say, "Computer, on screen." A window opens up showing the webcam. Say "Computer, take a picture". A picture, "webcam/image().jpg" is saved in a 'webcam' subdirectory of the current folder. Say, "Computer, search the web for places to eat". A browser opens up with a list of local restaurants. Say, "Computer, say hello to our guest". After a brief pause, there is a reply, either from your local machine, `ChatGPT`, or a local area chat server that you set up. A voice, `mimic3` says some variation of, "Hello. Pleased to meet you. Welcome to our shop. Let me know how I can be of assistance". It's unique each time. Say, "Computer, open terminal". A terminal window pops up. Say "Computer, draw a picture of a Klingon warship". An image of a warship appears with buttons to save, print, and navigate through previously-generated images.
 
-## Try the unstable branch, with easy setup.
+## Try unstable dictation, assistant & agent, with easy setup.
 
-Future development is progressing here: `git checkout nl`.
+Future development is progressing here: `git checkout ship_commander`.
 
-Or to check out only that branch.
+Or, if you don't have it yet.
 
 ```shell
-git clone -b nl --single-branch https://github.com/themanyone/whisper_dictation.git
+git clone -b ship_commander --single-branch https://github.com/themanyone/whisper_dictation.git
 cd whisper_dictation
 ./setup.sh
 ```
+
+After switching branches, look at README.md again.
 
 ## Or continue with this stable branch
 
