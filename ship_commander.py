@@ -415,26 +415,44 @@ def _speak_text(text):
             _piper_player = None
 
 
-def _drain_audio(delay=1.0, remove_files=False):
-    """Stop any echo recording, let TTS echo land, and drain the audio queue."""
+def _mute_mic():
+    """Drop the valve so mic audio stops reaching the filesink during TTS speech."""
+    global record_process
     if record_process:
-        record_process.stop_recording()
-    time.sleep(delay)
+        try:
+            record_process.valve.set_property("drop", True)
+        except Exception:
+            pass
+
+
+def _unmute_mic():
+    """Restore the valve so mic audio flows to filesink again."""
+    global record_process
+    if record_process:
+        try:
+            record_process.valve.set_property("drop", False)
+        except Exception:
+            pass
+
+
+def _speak_and_drain(text, drain_delay=1.5):
+    """Mute mic, speak text, wait for TTS echo to land, drain the audio queue, unmute."""
+    _mute_mic()
+    time.sleep(drain_delay)
+    _speak_text(text)
+    time.sleep(drain_delay)
     while True:
         try:
-            f = audio_queue.get_nowait()
-            if remove_files:
-                try:
-                    os.remove(f)
-                except Exception:
-                    pass
+            audio_queue.get_nowait()
         except queue.Empty:
             break
+    _unmute_mic()
 
 
 def say(text, chunked=False):
     """Speak text via piper-tts.
 
+    Mutes the mic during speech to avoid recording TTS echo as input.
     With chunked=True, speaks only the first paragraph and asks the user
     whether to continue with the rest via voice_dialog.
     """
@@ -445,7 +463,7 @@ def say(text, chunked=False):
     if chunked:
         paragraphs = [p.strip() for p in re.split(r'\n\n+', clean) if p.strip()]
         if len(paragraphs) > 1:
-            _speak_text(paragraphs[0])
+            _speak_and_drain(paragraphs[0])
             remaining = '\n\n'.join(paragraphs[1:])
             word_count = len(remaining.split())
             if word_count > 50:
@@ -455,16 +473,13 @@ def say(text, chunked=False):
                     options=["yes", "no"],
                 )
                 if response == "yes":
-                    _speak_text(remaining)
-                    _drain_audio()
+                    _speak_and_drain(remaining)
                 else:
-                    _speak_text("Ok.")
+                    _speak_and_drain("Ok.")
                 return
-            _speak_text(remaining)
-            _drain_audio()
+            _speak_and_drain(remaining)
             return
-    _speak_text(clean)
-    _drain_audio()
+    _speak_and_drain(clean)
 
 
 def shutup():
@@ -916,29 +931,13 @@ def voice_dialog(prompt, options=None, timeout=30):
     Temporarily takes over audio consumption from the transcription queue
     so the function blocks until a response, timeout, or cancel.
 
-    Args:
-        prompt: Text to speak via TTS (the question or menu listing)
-        options: List of valid response strings to match against.
-                 Supports number word -> digit conversion (e.g. "three" -> "3")
-                 and yes/no fuzzy matching (e.g. "yeah" -> "yes", "nope" -> "no").
-                 If None, accepts any spoken text.
-        timeout: Max seconds to wait before returning None.
-
-    Returns:
-        The matched option string, or None if cancelled/timed out.
+    Instead of stopping the recording (which breaks the main loop), mutes
+    the mic during TTS speech and drains the queue of echo before listening.
     """
     global listening
     was_listening = listening
-    # Drain any lingering audio (TTS echo, previous utterance)
-    listening = False
-    _drain_audio(1.5, remove_files=True)
-    listening = True  # record during the wait loop
     shutup()
     say(prompt)
-    # Drain the echo of the prompt itself before listening for a response
-    listening = False
-    _drain_audio(1.5, remove_files=True)
-    listening = True  # record during the wait loop
     start = time.time()
     while time.time() - start < timeout:
         try:
@@ -967,10 +966,6 @@ def voice_dialog(prompt, options=None, timeout=30):
             listening = was_listening
             return matched
         say("I didn't understand. Please try again.")
-        # Drain the echo of that message before re-listening
-        listening = False
-        _drain_audio(1.5, remove_files=True)
-        listening = True
     listening = was_listening
     return None
 
