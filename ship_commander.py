@@ -852,13 +852,44 @@ def generate_text(prompt: str):
 
         # Route tool calls from LLM through the tool manager
         if msg.tool_calls:
+            # Add assistant message with tool_calls to conversation
+            messages.append(msg.model_dump())
+
             for tc in msg.tool_calls:
                 success, result = exec_tool(
                     tc.function.name, tc.function.arguments
                 )
-                if success and result:
-                    say(result)
-            messages.pop()  # tool handled — remove the user message
+                messages.append({
+                    "role": "tool",
+                    "tool_call_id": tc.id,
+                    "content": result or ("" if success else f"Error: {result}"),
+                })
+
+            # Re-call LLM with tool results in context
+            try:
+                local_client = openai.OpenAI(
+                    base_url=local_chat_url, api_key=chat_api_key, max_retries=0
+                )
+                kwargs = dict(model=chat_model, messages=messages)
+                if _openai_tools:
+                    kwargs["tools"] = _openai_tools
+                resp = local_client.chat.completions.create(**kwargs)
+                new_msg = resp.choices[0].message
+                completion = new_msg.content
+                if completion:
+                    logging.info(f"{bs}{completion} ")
+                    completion = re.sub(r"<\|.*\|>", "", completion)
+                    pyautogui.write(completion + " ")
+                    listening = False
+                    chatting = True
+                    say(completion, chunked=True)
+                    messages.append({"role": "assistant", "content": completion})
+                    if len(messages) > conversation_length:
+                        messages.remove(messages[1])
+                        messages.remove(messages[1])
+            except Exception as e:
+                logging.warning(f"Server Warning: {e}")
+                say("Sorry. I'm having some trouble accessing that.")
             return ""
 
         # Also check if completion is a JSON tool string (text-mode LLMs)
