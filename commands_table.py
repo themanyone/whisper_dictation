@@ -146,4 +146,9 @@ COMMANDS = [
     {"intent": "remove command", "handler": "delete_command", "argument": None, "requires_wake": True},
     {"intent": "delete custom command", "handler": "delete_command", "argument": None, "requires_wake": True},
     {"intent": "remove custom command", "handler": "delete_command", "argument": None, "requires_wake": True},
+    # ── Skills ────────────────────────────────────────────────────────────
+    {"intent": "list skills", "handler": "list_skills", "argument": None, "requires_wake": True},
+    {"intent": "show skills", "handler": "list_skills", "argument": None, "requires_wake": True},
+    {"intent": "what skills do I have", "handler": "list_skills", "argument": None, "requires_wake": True},
+    {"intent": "available skills", "handler": "list_skills", "argument": None, "requires_wake": True},
 ]

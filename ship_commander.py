@@ -1088,6 +1088,25 @@ def delete_command(q=None):
         logging.warning(f"Failed to update custom commands file: {e}")
     say(f"Deleted {removed['intent']}.")
 
+def list_skills(q=None):
+    """List available skills from the skills directory."""
+    skills_dir = os.path.expanduser("~/.config/whisper_dictation/skills")
+    if not os.path.isdir(skills_dir):
+        say("No skills directory found.")
+        return
+    skills = sorted(
+        d for d in os.listdir(skills_dir)
+        if os.path.isdir(os.path.join(skills_dir, d))
+    )
+    if not skills:
+        say("No skills installed.")
+        return
+    print("\nAvailable skills:")
+    for i, s in enumerate(skills, 1):
+        print(f"  {i}. {s}")
+    say(f"You have {len(skills)} skills. Listed on screen.")
+
+
 # Auto-built from command tables — resolves handler names to functions
 HANDLER_MAP = {h: globals()[h] for h in set(
     cmd["handler"] for cmd in COMMANDS
