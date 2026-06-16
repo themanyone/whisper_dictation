@@ -104,6 +104,27 @@ def _cosine_similarity(a: list, b: list) -> float:
     return dot / (norm_a * norm_b)
 
 
+def _detect_embed_model(embed_url: str) -> str:
+    """Auto-detect a loaded embedding model from the llama.cpp server."""
+    try:
+        # embed_url is like http://host:port/v1/embeddings; strip to base API path
+        parts = embed_url.rstrip("/").split("/")
+        # Remove trailing segments until we hit /v1 or similar prefix
+        while len(parts) > 3:
+            parts.pop()
+        base = "/".join(parts)
+        r = requests.get(base + "/models", timeout=5)
+        if r.status_code == 200:
+            for m in r.json().get("data", []):
+                if m.get("status", {}).get("value") == "loaded":
+                    args = m.get("status", {}).get("args", [])
+                    if "--embeddings" in args:
+                        return m["id"]
+    except Exception:
+        pass
+    return ""
+
+
 def _embed_texts(texts: list, embed_url: str, model: str = "") -> list:
     """
     Embed a list of texts via the llama.cpp embeddings endpoint.
@@ -111,6 +132,8 @@ def _embed_texts(texts: list, embed_url: str, model: str = "") -> list:
     Uses the OpenAI-compatible /v1/embeddings API.
     If *model* is non-empty it is sent in the request body so the
     router-mode llama-server can route to the correct embedding model.
+    When *model* is empty, auto-detects a loaded embedding model from
+    the server's /v1/models endpoint.
     Returns a list of embedding vectors (each a list of floats),
     or an empty list on failure.
     """
@@ -118,10 +141,10 @@ def _embed_texts(texts: list, embed_url: str, model: str = "") -> list:
         return []
 
     request_body = {"input": texts}
+    if not model:
+        model = _detect_embed_model(embed_url)
     if model:
         request_body["model"] = model
-    else:
-        request_body["model"] = "gpt-3.5-turbo"
 
     try:
         response = requests.post(
