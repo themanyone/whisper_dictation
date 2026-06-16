@@ -58,6 +58,7 @@ from modules.tool_manager import (load_from_disk, to_openai_format,
                           execute as exec_tool, register_handler,
                           add_to_matcher)
 from modules.skill_manager import load_skills, format_catalog, load_skill_body
+from modules.tui import TUI
 
 audio_queue = queue.Queue()
 listening = True
@@ -821,6 +822,11 @@ _catalog = format_catalog(_skills)
 if _skills:
     logging.info(f"Loaded {len(_skills)} skill(s): {', '.join(s['name'] for s in _skills)}")
 
+# ── TUI (agent UI) ───────────────────────────────────────────────
+tui = TUI()
+tui.set_skills(_skills)
+tui.set_model(chat_model)
+
 messages = [
     {
         "role": "system",
@@ -925,13 +931,13 @@ def resume_dictation(q=None):
     global chatting, listening
     chatting = False
     listening = True
-
+    tui.set_mode("dictating")
 
 def pause_dictation(q=None):
     """Echo text but don't simulate keystrokes."""
     global listening
     listening = False
-
+    tui.set_mode("paused")
 
 def stop_dictation(q=None):
     """Shut down the dictation system."""
@@ -1251,6 +1257,8 @@ def transcribe():
                 # strip txt unless we specifically say "new paragraph"
                 txt = txt.strip(" \n") + " "
                 print(bs + txt)  # print the text
+                tui.set_prompt(txt.strip()[:80])
+                tui.dictation(txt.strip()[:200])
                 # filter out spurrious whisperisms: Thanks for watching!
                 if txt.strip().lower().rstrip(".") in (
                     "thanks for watching!",
@@ -1272,6 +1280,7 @@ def transcribe():
                     handler_name, arg, score = result
                     if debug:
                         print(f"[DEBUG] matched '{handler_name}' (score={score:.3f})")
+                    tui.command(handler_name, score)
                     handler_fn = HANDLER_MAP.get(handler_name)
                     if handler_fn:
                         # When a wake word was used but the match score is
@@ -1377,6 +1386,7 @@ def transcribe():
 
                 # — AI chat fallback —
                 if chatting:
+                    tui.llm(lower_case[:120])
                     generate_text(lower_case)
                     # After LLM response, reset to dictation mode
                     chatting = False
@@ -1397,7 +1407,7 @@ def record_to_queue():
     global record_process
     global running
     while running:
-        record_process = delayRecord(tempfile.mktemp() + audio_format)
+        record_process = delayRecord(tempfile.mktemp() + audio_format, vu_callback=tui.set_vu)
         record_process.start()
         audio_queue.put(record_process.file_name)
 
@@ -1470,6 +1480,7 @@ def quit():
         pass
     logging.debug("\nFreeing system resources.\n")
     manage_whisper_service("stop")
+    tui.stop()
     discard_input()
     time.sleep(1.0)
     shutup()
@@ -1488,6 +1499,8 @@ if __name__ == "__main__":
 
     record_thread = threading.Thread(target=record_to_queue)
     manage_whisper_service("start")
+    tui.start()
+    tui.system("All systems ready.")
     record_thread.start()
     transcribe()
     quit()

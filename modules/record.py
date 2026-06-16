@@ -70,8 +70,9 @@ def unique_file_name(file_name):
 
 
 class delayRecord:
-    def __init__(self, file_name=""):
+    def __init__(self, file_name="", vu_callback=None):
         # set default options
+        self.vu_callback = vu_callback
         self.recording = False
         self.quiet_timer = self.sound_timer = time.time()  # start timers
         from_options = self.process_options()
@@ -123,6 +124,10 @@ class delayRecord:
         if math.isnan(rms):
             return True
         self.draw_meter(rms)
+        if self.vu_callback:
+            # Normalise to 0-1: rms is negative dB (0=quiet, -60+=loud)
+            normalised = max(0.0, min(1.0, (rms + 60.0) / 60.0))
+            self.vu_callback(normalised, rms)
         reset = time.time()
         seconds_of_quiet = reset - self.quiet_timer
         seconds_of_sound = reset - self.sound_timer
