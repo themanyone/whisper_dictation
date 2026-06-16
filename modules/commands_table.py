@@ -38,8 +38,8 @@ Add, remove, or reorder entries freely. The intent phrase is the only
 matching criterion — users can say variations naturally.
 
 The semantic matcher will pick the best match by cosine similarity.
-Set threshold in modules/matcher.py (default 0.45). Lower = more fuzzily match.
-"""
+Set threshold in ~/.config/whisper_dictation/config.json (default 0.45).
+Lower = more fuzzy matching."""
 
 COMMANDS = [
     # ── Mouse actions (editing — no wake word) ─────────────────────────────
@@ -116,10 +116,10 @@ COMMANDS = [
     {"intent": "go to end", "handler": "hotkey_end", "argument": None, "requires_wake": False},
     {"intent": "page up", "handler": "hotkey_page_up", "argument": None, "requires_wake": False},
     {"intent": "page down", "handler": "hotkey_page_down", "argument": None, "requires_wake": False},
-    {"intent": "show directory", "handler": "hotkey_ls", "argument": None, "requires_wake": False},
-    {"intent": "list directory", "handler": "hotkey_ls", "argument": None, "requires_wake": False},
-    {"intent": "show files", "handler": "hotkey_ls", "argument": None, "requires_wake": False},
-    {"intent": "list files", "handler": "hotkey_ls", "argument": None, "requires_wake": False},
+    {"intent": "show directory", "handler": "type_ls", "argument": None, "requires_wake": False},
+    {"intent": "list directory", "handler": "type_ls", "argument": None, "requires_wake": False},
+    {"intent": "show files", "handler": "type_ls", "argument": None, "requires_wake": False},
+    {"intent": "list files", "handler": "type_ls", "argument": None, "requires_wake": False},
     # ── AI chat (argument = prompt) ────────────────────────────────────────
     # Keep this last — it's the broadest catch-all intent.
     {

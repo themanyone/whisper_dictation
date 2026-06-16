@@ -34,6 +34,8 @@ from gi.repository import Gst
 
 # don't need an instance of camera to show pictures
 def show_pictures(dir="webcam"):
+    if not os.path.exists(dir):
+        os.mkdir(dir)
     images = os.listdir(dir)
     for i in images:
         img = Image.open(dir + os.sep + i)

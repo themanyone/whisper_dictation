@@ -69,7 +69,7 @@ _first_utterance = True  # skip first noisy transcription at startup
 
 logging.basicConfig(
     level=logging.INFO,
-    format="[%(levelname)s] %(lineno)d %(message)s",
+    format="%(asctime)s [%(levelname)s] %(lineno)d %(message)s",
     force=True,
     handlers=[
         # logging.FileHandler('/tmp/ship_commander.log'),
@@ -285,7 +285,7 @@ def hotkey_page_down(q=None):
     pyautogui.hotkey("pagedown")
 
 
-def hotkey_ls(q=None):
+def type_ls(q=None):
     pyautogui.write("ls\n")
 
 
@@ -784,7 +784,6 @@ def save_custom_command(intent, handler_name, handler_code, argument):
 
 
 def recognize_speech(f: str) -> str:
-    result = [""]
     if f and os.path.isfile(f):
         try:
             with open(f, "rb") as file:
@@ -1253,7 +1252,12 @@ def transcribe():
                 txt = txt.strip(" \n") + " "
                 print(bs + txt)  # print the text
                 # filter out spurrious whisperisms: Thanks for watching!
-                if txt == "Thanks for watching! " or txt == "I'm gonna go get some water. " or txt == "Bye! " or txt == "you ":
+                if txt.strip().lower().rstrip(".") in (
+                    "thanks for watching!",
+                    "i'm gonna go get some water.",
+                    "bye!",
+                    "you",
+                ):
                     continue
                 # — Paused: only "resume dictation" or "stop dictation" reactivates —
                 if not listening:

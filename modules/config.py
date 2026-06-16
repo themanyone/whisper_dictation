@@ -189,7 +189,14 @@ def _first_run_setup():
     )
 
     # Same port as chat? Then we need a model name for router-mode.
-    chat_port = urlparse("http://127.0.0.1:8080/v1").port
+    active_name = config.get("provider", "")
+    chat_base = "http://127.0.0.1:8080/v1"
+    if active_name:
+        for p in config.get("providers", []):
+            if p.get("name") == active_name and p.get("base_url"):
+                chat_base = p["base_url"]
+                break
+    chat_port = urlparse(chat_base).port
     embed_port = urlparse(config["embed_url"]).port
     if chat_port and embed_port and chat_port == embed_port:
         config["embed_model"] = _prompt(

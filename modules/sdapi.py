@@ -1,6 +1,6 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
-## Usage: sdapi.py [prompt] [output image]
+## sdapi.py
 ##
 ## Copyright (C) 2026 Henry Kroll III <nospam@thenerdshow.com>
 ##
@@ -37,7 +37,7 @@ url = "http://127.0.0.1:7860"
 
 
 def draw(prompt, output="output.png"):
-    payload = {"prompt": prompt, "steps": 1, "cfg_scale": 1}
+    payload = {"prompt": prompt, "steps": 4, "cfg_scale": 3}
     try:
         response = requests.post(url=f"{url}/sdapi/v1/txt2img", json=payload)
 
@@ -55,7 +55,7 @@ if __name__ == "__main__":
     #  Draw an image from a prompt supplied on the command line.
     if len(sys.argv) == 2:
         draw(sys.argv[1])
-    if len(sys.argv) == 3:  # Provide a name for the image.
+    elif len(sys.argv) == 3:  # Provide a name for the image.
         draw(sys.argv[1], sys.argv[2])
     else:
         sys.stderr.write(
