@@ -22,7 +22,11 @@ import gi
 import os
 import time
 from PIL import Image
-from record import unique_file_name
+try:
+    from modules.record import unique_file_name
+except ImportError:
+    # When run as modules/on_screen.py directly
+    from record import unique_file_name
 
 gi.require_version("Gst", "1.0")
 from gi.repository import Gst

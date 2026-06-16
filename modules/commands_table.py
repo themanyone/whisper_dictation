@@ -38,7 +38,7 @@ Add, remove, or reorder entries freely. The intent phrase is the only
 matching criterion — users can say variations naturally.
 
 The semantic matcher will pick the best match by cosine similarity.
-Set threshold in matcher.py (default 0.45). Lower = more fuzzily match.
+Set threshold in modules/matcher.py (default 0.45). Lower = more fuzzily match.
 """
 
 COMMANDS = [

@@ -26,7 +26,7 @@ import sys
 
 # Session detection for X11/Wayland compatibility
 if os.environ.get("XDG_SESSION_TYPE") == "wayland":
-    from input_backend import InputSimulator
+    from modules.input_backend import InputSimulator
 
     pyautogui = InputSimulator()
 else:
@@ -42,22 +42,22 @@ import threading
 import requests
 import logging
 import shutil
-from on_screen import camera, show_pictures
-from sdapi import draw as sd_draw
-from project_scanner import initialize_project as _scan_project
-from record import delayRecord
-from commands_table import COMMANDS
-from matcher import Matcher
-from config import (get_config, first_run, CONFIG_PATH, CUSTOM_COMMANDS_PATH,
+from modules.on_screen import camera, show_pictures
+from modules.sdapi import draw as sd_draw
+from modules.project_scanner import initialize_project as _scan_project
+from modules.record import delayRecord
+from modules.commands_table import COMMANDS
+from modules.matcher import Matcher
+from modules.config import (get_config, first_run, CONFIG_PATH, CUSTOM_COMMANDS_PATH,
                     update_config, update_provider_model, get_chat_api_key,
                     ensure_api_key,
                     query_models, match_dialog_response,
                     resolve_provider_url, detect_provider_type)
-from system_info import _get_system_info
-from tool_manager import (load_from_disk, to_openai_format,
+from modules.system_info import _get_system_info
+from modules.tool_manager import (load_from_disk, to_openai_format,
                           execute as exec_tool, register_handler,
                           add_to_matcher)
-from skill_manager import load_skills, format_catalog, load_skill_body
+from modules.skill_manager import load_skills, format_catalog, load_skill_body
 
 audio_queue = queue.Queue()
 listening = True
@@ -105,14 +105,14 @@ APPS_LINUX = {
     "terminal": "xterm -bg gray20 -fg gray80 -fa 'Liberation Sans Mono' -fs 12 -rightbar&",
     "browser": "htmlview&",
     "web browser": "htmlview&",
-    "webcam": "./on_screen.py",
+    "webcam": "./modules/on_screen.py",
 }
 APPS_WINDOWS = {
     "file manager": "start explorer",
     "terminal": "start cmd",
     "browser": "start iexplore",
     "web browser": "start iexplore",
-    "webcam": "on_screen.py",
+    "webcam": "modules/on_screen.py",
 }
 
 

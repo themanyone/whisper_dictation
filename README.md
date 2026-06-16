@@ -203,7 +203,7 @@ Settings are saved to `~/.config/whisper_dictation/config.json`. Environment var
 
 Edit or delete `~/.config/whisper_dictation/config.json` to reset.
 
-**Layout is subject to change** as development progresses. After updating, look to in `config.py` for `DEFAULT_CONFIG` or delete (regenerate) `default_config.json` from it to see what your `~/.config/whisper_dictation/config.json` should look like. Or delete `~/.config/whisper_dictation/config.json` and be prompted from the defaults.
+**Layout is subject to change** as development progresses. After updating, look to in `modules/config.py` for `DEFAULT_CONFIG` or delete (regenerate) `default_config.json` from it to see what your `~/.config/whisper_dictation/config.json` should look like. Or delete `~/.config/whisper_dictation/config.json` and be prompted from the defaults.
 
 ## Spoken command usage
 
@@ -364,18 +364,18 @@ Full instructions for the LLM go here...
 | File | Purpose |
 |---|---|
 | `ship_commander.py` | Main dictation loop, chat, voice commands |
-| `commands_table.py` | User-editable command table (intent → handler) |
-| `matcher.py` | Semantic matching engine (all-MiniLM-L6-v2) |
-| `config.py` | Config loader, first-run prompts, provider discovery |
-| `record.py` | Sound-activated GStreamer audio recorder |
-| `on_screen.py` | Webcam viewer and capture |
-| `sdapi.py` | Stable Diffusion image generation client |
-| `browse_webcam.py` | Flask web gallery for captured webcam images |
-| `input_backend.py` | Wayland input simulation (evdev) |
-| `tool_manager.py` | Load and dispatch Claude/OpenAI-format tools |
-| `skill_manager.py` | Load and inject skills into the LLM system prompt |
-| `project_scanner.py` | Scan project directory and generate AGENTS.md |
-| `system_info.py` | OS/platform detection utility |
+| `modules/commands_table.py` | User-editable command table (intent → handler) |
+| `modules/matcher.py` | Semantic matching engine (all-MiniLM-L6-v2) |
+| `modules/config.py` | Config loader, first-run prompts, provider discovery |
+| `modules/record.py` | Sound-activated GStreamer audio recorder |
+| `modules/on_screen.py` | Webcam viewer and capture |
+| `modules/sdapi.py` | Stable Diffusion image generation client |
+| `modules/browse_webcam.py` | Flask web gallery for captured webcam images |
+| `modules/input_backend.py` | Wayland input simulation (evdev) |
+| `modules/tool_manager.py` | Load and dispatch Claude/OpenAI-format tools |
+| `modules/skill_manager.py` | Load and inject skills into the LLM system prompt |
+| `modules/project_scanner.py` | Scan project directory and generate AGENTS.md |
+| `modules/system_info.py` | OS/platform detection utility |
 | `setup.sh` | Quick-start installer (downloads binaries, creates service) |
 | `tools/search_web.json` | Example tool — web search via browser |
 | `tools/write_file.json` | Example tool — create or write files |
