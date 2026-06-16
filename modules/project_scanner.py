@@ -61,7 +61,7 @@ def is_text_file(path):
 
 def find_text_files(root, max_depth=2):
     """Walk non-hidden dirs up to *max_depth* and return text file paths."""
-    skip_dirs = {".git", "__pycache__", ".ruff_cache", ".repo",
+    skip_dirs = {".git", "__pycache__", ".ruff_cache",
                  ".github"}
     result = []
     root_len = len(os.path.normpath(root).split(os.sep))
@@ -86,7 +86,7 @@ def build_file_tree(root):
     """Build an ASCII directory tree of the project."""
     lines = []
     lines.append(os.path.basename(root) + "/\n")
-    skip_dirs = {".git", "__pycache__", ".ruff_cache", ".repo"}
+    skip_dirs = {".git", "__pycache__", ".ruff_cache"}
     entries = sorted(os.listdir(root))
     for i, entry in enumerate(entries):
         full = os.path.join(root, entry)
