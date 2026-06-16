@@ -123,11 +123,12 @@ class delayRecord:
         # peak = message.get_structure().get_value('peak')[0]
         if math.isnan(rms):
             return True
-        self.draw_meter(rms)
+        # When a TUI callback is registered, skip built-in VU print
         if self.vu_callback:
-            # Normalise to 0-1: rms is negative dB (0=quiet, -60+=loud)
             normalised = max(0.0, min(1.0, (rms + 60.0) / 60.0))
             self.vu_callback(normalised, rms)
+        else:
+            self.draw_meter(rms)
         reset = time.time()
         seconds_of_quiet = reset - self.quiet_timer
         seconds_of_sound = reset - self.sound_timer

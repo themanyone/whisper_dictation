@@ -61,6 +61,7 @@ from modules.skill_manager import load_skills, format_catalog, load_skill_body
 from modules.tui import TUI
 
 audio_queue = queue.Queue()
+text_queue = queue.Queue()
 listening = True
 chatting = False
 record_process = None
@@ -1221,10 +1222,147 @@ if _skills:
 _openai_tools = to_openai_format(_tool_defs)
 
 
+def _route_text(txt: str) -> None:
+    """Route a text string through: semantic match → LLM → chat → dictation."""
+    global listening, chatting
+    lower_case = txt.lower().strip()
+    if not lower_case:
+        return
+    txt = txt.strip() + " "
+    # — Paused: only "resume dictation" or "stop dictation" reactivates —
+    if not listening:
+        if "resume dictation" in lower_case:
+            resume_dictation()
+        elif "stop dictation" in lower_case:
+            stop_dictation()
+        return
+    # — Semantic command matching —
+    result = matcher.match(lower_case)
+    if result:
+        handler_name, arg, score = result
+        if debug:
+            print(f"[DEBUG] matched '{handler_name}' (score={score:.3f})")
+        tui.command(handler_name, score)
+        handler_fn = HANDLER_MAP.get(handler_name)
+        if handler_fn:
+            has_wake_match = re.search(
+                r"^(peter|samantha|computer)[,\s]", lower_case
+            )
+            if (has_wake_match and score < agent_threshold
+                and handler_name not in (
+                    "resume_dictation", "pause_dictation",
+                    "stop_dictation",
+                )):
+                pass  # fall through to LLM agent below
+            else:
+                if handler_name != "stop_dictation":
+                    say("okay")
+                handler_fn(arg)
+                if not running:
+                    return
+                return
+
+    # — LLM command proposal —
+    has_wake = re.search(r"^(peter|samantha|computer)[,\s]", lower_case)
+    if not chatting and has_wake:
+        proposal = propose_command(
+            re.sub(r"^(peter|samantha|computer)[,\s]+",
+                   "", lower_case, flags=re.I)
+        )
+        if proposal:
+            if proposal.get("action") in ("image_gen", "dalle.text2im"):
+                if proposal["action"] == "dalle.text2im":
+                    raw = proposal.get("action_input", "{}")
+                    payload = raw if isinstance(raw, dict) else json.loads(raw)
+                    prompt = payload.get("prompt", "")
+                else:
+                    prompt = proposal.get("prompt", "")
+                draw_picture(prompt)
+                return
+            handler_name = "custom_" + re.sub(
+                r"\W+", "_", proposal["intent"]
+            ).lower().strip("_")
+            shell = proposal.get("shell")
+            if not shell:
+                return
+            if proposal.get("argument") == "remainder":
+                handler_code = (
+                    f"def {handler_name}(q=None):\n"
+                    f"    cmd = {shell!r}.replace('{{q}}', q or '')\n"
+                    f"    subprocess.Popen(cmd,\n"
+                    f"        shell=True, start_new_session=True,\n"
+                    f"        stdin=subprocess.DEVNULL,\n"
+                    f"        stderr=subprocess.DEVNULL)\n"
+                )
+            else:
+                handler_code = (
+                    f"def {handler_name}(q=None):\n"
+                    f"    subprocess.Popen({shell!r},\n"
+                    f"        shell=True, start_new_session=True,\n"
+                    f"        stdin=subprocess.DEVNULL,\n"
+                    f"        stderr=subprocess.DEVNULL)\n"
+                )
+            print(f"\n[{proposal['desc']}]")
+            print(f"  Shell: {shell}")
+            print(f"  Intent: {proposal['intent']}")
+            response = voice_dialog("Run this command?", options=["yes", "no"])
+            if response == "yes":
+                exec(handler_code, globals())
+                HANDLER_MAP[handler_name] = globals()[handler_name]
+                say("okay")
+                HANDLER_MAP[handler_name]()
+                save_resp = voice_dialog(
+                    "Save this command for later?",
+                    options=["yes", "no"],
+                )
+                if save_resp == "yes":
+                    save_custom_command(
+                        proposal["intent"], handler_name,
+                        handler_code, proposal.get("argument"),
+                    )
+                    matcher.add_command(
+                        proposal["intent"], handler_name,
+                        argument=proposal.get("argument"),
+                    )
+            else:
+                say("Cancelled.")
+            return
+
+    # If a wake word was spoken but the LLM didn't propose a command
+    if has_wake:
+        if not chatting:
+            chatting = True
+        lower_case = re.sub(r"^(peter|samantha|computer)[,\s]+",
+                            "", lower_case, flags=re.I)
+
+    # — AI chat fallback —
+    if chatting:
+        tui.llm(lower_case[:120])
+        generate_text(lower_case)
+        chatting = False
+        listening = True
+        return
+    # — Dictation — type into external window via pyautogui
+    if not listening:
+        return
+    if len(txt) > 1:
+        tui.dictation(txt.strip()[:200])
+        pyautogui.write(txt.replace("\n", " "))
+        return
+
+
 def transcribe():
     global listening, chatting
     while True:
         try:
+            # Check for typed input from TUI (non-blocking)
+            try:
+                typed = text_queue.get_nowait()
+                if typed:
+                    _route_text(typed)
+                    continue
+            except queue.Empty:
+                pass
             # transcribe audio from queue
             if f := audio_queue.get():
                 txt = recognize_speech(f)
@@ -1244,7 +1382,7 @@ def transcribe():
                 txt = re.sub(r"(^|\n)\s", r"\1", txt)
                 # print messages [BLANK_AUDIO], (swoosh), *barking*
                 if re.search(r"[\(\[\*]", txt):
-                    print(bs + txt.strip())
+#                    print(bs + txt.strip())
                     # filter it out
                     txt = re.sub(r"[\*\[\(][^\]\)]*[\]\)\*]*\s*$", "", txt)
                 # get lower-case spoken command string
@@ -1256,147 +1394,8 @@ def transcribe():
                     lower_case = lower_case[: match.start()]  # remove punctuation
                 # strip txt unless we specifically say "new paragraph"
                 txt = txt.strip(" \n") + " "
-                print(bs + txt)  # print the text
-                tui.set_prompt(txt.strip()[:80])
-                tui.dictation(txt.strip()[:200])
-                # filter out spurrious whisperisms: Thanks for watching!
-                if txt.strip().lower().rstrip(".") in (
-                    "thanks for watching!",
-                    "i'm gonna go get some water.",
-                    "bye!",
-                    "you",
-                ):
-                    continue
-                # — Paused: only "resume dictation" or "stop dictation" reactivates —
-                if not listening:
-                    if "resume dictation" in lower_case:
-                        resume_dictation()
-                    elif "stop dictation" in lower_case:
-                        stop_dictation()
-                    continue
-                # — Semantic command matching —
-                result = matcher.match(lower_case)
-                if result:
-                    handler_name, arg, score = result
-                    if debug:
-                        print(f"[DEBUG] matched '{handler_name}' (score={score:.3f})")
-                    tui.command(handler_name, score)
-                    handler_fn = HANDLER_MAP.get(handler_name)
-                    if handler_fn:
-                        # When a wake word was used but the match score is
-                        # below agent_threshold, route to the LLM agent
-                        # instead of the matched handler. This prevents
-                        # "delete output.png" from triggering image gen
-                        # just because "png" is image-related.
-                        has_wake_match = re.search(
-                            r"^(peter|samantha|computer)[,\s]", lower_case
-                        )
-                        if (has_wake_match and score < agent_threshold
-                            and handler_name not in (
-                                "resume_dictation", "pause_dictation",
-                                "stop_dictation",
-                            )):
-                            pass  # fall through to LLM agent below
-                        else:
-                            if handler_name != "stop_dictation":
-                                say("okay")
-                            handler_fn(arg)
-                            if not running:
-                                break
-                            continue
-
-                # — LLM command proposal (unrecognized → ask LLM) —
-                # Only trigger when a wake word is used, so dictation
-                # text doesn't hit the LLM on every utterance.
-                has_wake = re.search(r"^(peter|samantha|computer)[,\s]",
-                                     lower_case)
-                if not chatting and has_wake:
-                    # Strip wake word before sending to LLM
-                    proposal = propose_command(
-                        re.sub(r"^(peter|samantha|computer)[,\s]+",
-                               "", lower_case, flags=re.I)
-                    )
-                    if proposal:
-                        if proposal.get("action") in ("image_gen", "dalle.text2im"):
-                            if proposal["action"] == "dalle.text2im":
-                                raw = proposal.get("action_input", "{}")
-                                payload = raw if isinstance(raw, dict) else json.loads(raw)
-                                prompt = payload.get("prompt", "")
-                            else:
-                                prompt = proposal.get("prompt", "")
-                            draw_picture(prompt)
-                            continue
-                        handler_name = "custom_" + re.sub(
-                            r"\W+", "_", proposal["intent"]
-                        ).lower().strip("_")
-                        shell = proposal.get("shell")
-                        if not shell:
-                            continue
-                        if proposal.get("argument") == "remainder":
-                            handler_code = (
-                                f"def {handler_name}(q=None):\n"
-                                f"    cmd = {shell!r}.replace('{{q}}', q or '')\n"
-                                f"    subprocess.Popen(cmd,\n"
-                                f"        shell=True, start_new_session=True,\n"
-                                f"        stdin=subprocess.DEVNULL,\n"
-                                f"        stderr=subprocess.DEVNULL)\n"
-                            )
-                        else:
-                            handler_code = (
-                                f"def {handler_name}(q=None):\n"
-                                f"    subprocess.Popen({shell!r},\n"
-                                f"        shell=True, start_new_session=True,\n"
-                                f"        stdin=subprocess.DEVNULL,\n"
-                                f"        stderr=subprocess.DEVNULL)\n"
-                            )
-                        print(f"\n[{proposal['desc']}]")
-                        print(f"  Shell: {shell}")
-                        print(f"  Intent: {proposal['intent']}")
-                        response = voice_dialog("Run this command?", options=["yes", "no"])
-                        if response == "yes":
-                            exec(handler_code, globals())
-                            HANDLER_MAP[handler_name] = globals()[handler_name]
-                            say("okay")
-                            HANDLER_MAP[handler_name]()
-                            save_resp = voice_dialog(
-                                "Save this command for later?",
-                                options=["yes", "no"],
-                            )
-                            if save_resp == "yes":
-                                save_custom_command(
-                                    proposal["intent"], handler_name,
-                                    handler_code, proposal.get("argument"),
-                                )
-                                matcher.add_command(
-                                    proposal["intent"], handler_name,
-                                    argument=proposal.get("argument"),
-                                )
-                        else:
-                            say("Cancelled.")
-                        continue
-
-                # If a wake word was spoken but the LLM didn't propose
-                # a command, treat it as an AI chat query.
-                if has_wake:
-                    if not chatting:
-                        chatting = True
-                    lower_case = re.sub(r"^(peter|samantha|computer)[,\s]+",
-                                        "", lower_case, flags=re.I)
-                    # fall through to AI chat handler below
-
-                # — AI chat fallback —
-                if chatting:
-                    tui.llm(lower_case[:120])
-                    generate_text(lower_case)
-                    # After LLM response, reset to dictation mode
-                    chatting = False
-                    listening = True
-                    continue
-                # — Dictation —
-                if not listening:
-                    continue
-                if len(txt) > 1:
-                    pyautogui.write(txt.replace("\n", " "))
+#                print(bs + txt)  # print the text
+                _route_text(txt)
             # continue looping
         except KeyboardInterrupt:
             say("Goodbye.")
@@ -1497,10 +1496,14 @@ if __name__ == "__main__":
             if resp in ("", "y", "yes"):
                 manage_whisper_service("install")
 
+    # ── Text from TUI input (prompt_toolkit handles keyboard) ──
+    tui.on_submit(text_queue.put)
+
     record_thread = threading.Thread(target=record_to_queue)
     manage_whisper_service("start")
-    tui.start()
     tui.system("All systems ready.")
     record_thread.start()
-    transcribe()
+    transcribe_thread = threading.Thread(target=transcribe, daemon=True)
+    transcribe_thread.start()
+    tui.start()  # blocks until Ctrl-C
     quit()
