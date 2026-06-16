@@ -1,0 +1,18 @@
+{
+  "name": "write_file",
+  "description": "Create or write a new file with the given content. Prompts the user via voice to confirm overwrites. The filename can be relative to the current working directory or absolute. Use this when the user asks to create, save, or write a file.",
+  "input_schema": {
+    "type": "object",
+    "properties": {
+      "filename": {
+        "type": "string",
+        "description": "Path to the file (relative or absolute)"
+      },
+      "content": {
+        "type": "string",
+        "description": "Content to write to the file"
+      }
+    },
+    "required": ["filename", "content"]
+  }
+}
