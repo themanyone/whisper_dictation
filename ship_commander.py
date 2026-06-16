@@ -1152,6 +1152,30 @@ matcher = Matcher(
 
 # ── Tool definitions (Claude/OpenAI format) ──────────────────────────
 # Built-in: image generation
+# ── File write tool ───────────────────────────────────────────────
+def _write_file(args):
+    """Write content to a file. Accepts ``filename`` + ``content``."""
+    path = args.get("filename", "")
+    content = args.get("content", "")
+    if not path:
+        return "No filename provided."
+    path = os.path.expanduser(path)
+    if os.path.isfile(path):
+        response = voice_dialog(
+            f"File {path} already exists. Overwrite it?",
+            options=["yes", "no"],
+        )
+        if response != "yes":
+            return "Write cancelled."
+    os.makedirs(os.path.dirname(os.path.abspath(path)) or ".", exist_ok=True)
+    with open(path, "w") as f:
+        f.write(content)
+    logging.info(f"Wrote {len(content)} bytes to {path}")
+    return f"Wrote {len(content)} bytes to {path}."
+
+register_handler("write_file", _write_file)
+
+
 def _img_tool(args):
     draw_picture(args.get("prompt", ""))
 

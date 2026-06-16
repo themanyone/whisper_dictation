@@ -36,6 +36,7 @@ import logging
 import os
 import glob
 
+PROJECT_TOOLS_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "tools")
 TOOLS_DIR = os.path.expanduser("~/.config/whisper_dictation/tools")
 
 # Registry: tool_name -> callable that takes (args: dict) and returns str | None
@@ -53,36 +54,45 @@ def get_handler(name):
 
 
 def load_from_disk():
-    """Scan TOOLS_DIR for .json files, return list of normalized tool dicts.
+    """Load tool definitions from project tools/ then user tools/.
 
-    Each returned dict has keys: name, description, input_schema.
+    Project tools are scanned first; user tools with the same name
+    override them. Returns a list of normalized tool dicts.
+
     If a file includes ``handler_code`` the handler is compiled and
     registered automatically.
     """
-    if not os.path.isdir(TOOLS_DIR):
-        return []
+    seen = set()
     tools = []
-    for path in sorted(glob.glob(os.path.join(TOOLS_DIR, "*.json"))):
-        try:
-            with open(path) as f:
-                data = json.load(f)
-        except Exception as e:
-            logging.warning(f"Failed to load tool {path}: {e}")
-            continue
 
-        tool = _normalize(data)
-        if not tool:
-            logging.warning(f"Unrecognised tool format in {path}")
-            continue
+    def _scan(base):
+        if not os.path.isdir(base):
+            return
+        for path in sorted(glob.glob(os.path.join(base, "*.json"))):
+            try:
+                with open(path) as f:
+                    data = json.load(f)
+            except Exception as e:
+                logging.warning(f"Failed to load tool {path}: {e}")
+                continue
+            tool = _normalize(data)
+            if not tool:
+                logging.warning(f"Unrecognised tool format in {path}")
+                continue
+            if tool["name"] in seen:
+                continue  # user tool overrides project tool
+            seen.add(tool["name"])
+            # Compile inline handler code if present and no handler registered yet
+            handler_code = data.get("handler_code") or (
+                data.get("handler", {}).get("handler_code")
+            )
+            if handler_code and tool["name"] not in _tool_handlers:
+                _compile_handler(tool["name"], handler_code)
+            # Skip tools that already have a handler registered in code
+            tools.append(tool)
 
-        # Compile inline handler code if present and no handler registered yet
-        handler_code = data.get("handler_code") or (
-            data.get("handler", {}).get("handler_code")
-        )
-        if handler_code and tool["name"] not in _tool_handlers:
-            _compile_handler(tool["name"], handler_code)
-
-        tools.append(tool)
+    _scan(PROJECT_TOOLS_DIR)
+    _scan(TOOLS_DIR)
     return tools
 
 
