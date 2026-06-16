@@ -1268,26 +1268,18 @@ def transcribe():
                             handler_code = (
                                 f"def {handler_name}(q=None):\n"
                                 f"    cmd = {shell!r}.replace('{{q}}', q or '')\n"
-                                f"    p = subprocess.Popen(cmd,\n"
+                                f"    subprocess.Popen(cmd,\n"
                                 f"        shell=True, start_new_session=True,\n"
                                 f"        stdin=subprocess.DEVNULL,\n"
-                                f"        stdout=subprocess.PIPE,\n"
-                                f"        stderr=subprocess.PIPE)\n"
-                                f"    out, err = p.communicate()\n"
-                                f"    if out: print(out.decode(errors='replace'))\n"
-                                f"    if err: print(err.decode(errors='replace'))\n"
+                                f"        stderr=subprocess.DEVNULL)\n"
                             )
                         else:
                             handler_code = (
                                 f"def {handler_name}(q=None):\n"
-                                f"    p = subprocess.Popen({shell!r},\n"
+                                f"    subprocess.Popen({shell!r},\n"
                                 f"        shell=True, start_new_session=True,\n"
                                 f"        stdin=subprocess.DEVNULL,\n"
-                                f"        stdout=subprocess.PIPE,\n"
-                                f"        stderr=subprocess.PIPE)\n"
-                                f"    out, err = p.communicate()\n"
-                                f"    if out: print(out.decode(errors='replace'))\n"
-                                f"    if err: print(err.decode(errors='replace'))\n"
+                                f"        stderr=subprocess.DEVNULL)\n"
                             )
                         print(f"\n[{proposal['desc']}]")
                         print(f"  Shell: {shell}")
