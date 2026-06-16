@@ -286,6 +286,38 @@ You can also symlink Claude-compatible tools from other directories (e.g., `~/.c
 
 The optional `handler_code` field contains inline Python defining a `handler(args: dict) -> str | None`. The return value is spoken by TTS. If omitted, you must register a handler via `tool_manager.register_handler(name, callable)` elsewhere.
 
+## Skills
+
+Skills are Markdown instruction files — like Crush SKILL.md files — that give the LLM additional context about how to handle certain tasks. Unlike **tools** (which are callable functions), **skills** are behavior context injected into the system prompt.
+
+Drop `.md` files into `~/.config/whisper_dictation/skills/` and they're appended to the LLM's system prompt at startup:
+
+```shell
+mkdir -p ~/.config/whisper_dictation/skills
+cp /path/to/a-crush-skill/SKILL.md ~/.config/whisper_dictation/skills/
+ln -s ~/.config/crush/skills/my-skill/SKILL.md ~/.config/whisper_dictation/skills/
+```
+
+Symlinked Crush skill files work as-is. On startup you'll see:
+
+```
+Loaded 2 skill(s): claude-api, pdf
+```
+
+Each skill becomes a section in the system prompt:
+
+```
+## Skill: claude-api
+
+<content of the SKILL.md goes here>
+```
+
+This means the LLM assistant can reference those instructions during chat — useful for specialized knowledge, API conventions, or project-specific guidelines.
+
+**File** | **Purpose**
+---|---
+`skill_manager.py` | Load and format skills from `~/.config/whisper_dictation/skills/*.md`
+
 ## Files
 
 | File | Purpose |
@@ -299,6 +331,7 @@ The optional `handler_code` field contains inline Python defining a `handler(arg
 | `sdapi.py` | Stable Diffusion image generation client |
 | `input_backend.py` | Wayland input simulation (evdev) |
 | `tool_manager.py` | Load and dispatch Claude/OpenAI-format tools |
+| `skill_manager.py` | Load and inject skills into the LLM system prompt |
 
 ## Optional services
 

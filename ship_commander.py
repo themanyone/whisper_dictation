@@ -57,6 +57,7 @@ from system_info import _get_system_info
 from tool_manager import (load_from_disk, to_openai_format,
                           execute as exec_tool, register_handler,
                           add_to_matcher)
+from skill_manager import load_skills, format_skills
 
 audio_queue = queue.Queue()
 listening = True
@@ -800,10 +801,17 @@ print("Text should appear in the window you are working in.")
 print('Say "Stop listening." or press CTRL-C to stop.')
 say("All systems ready.")
 
+# ── Load skills from ~/.config/whisper_dictation/skills/ ────────────
+_skills = load_skills()
+_skills_content = format_skills(_skills)
+if _skills:
+    logging.info(f"Loaded {len(_skills)} skill(s): {', '.join(n for n, _ in _skills)}")
+
 messages = [
     {
         "role": "system",
-        "content": "In this conversation between `user:` and `assistant:`, play the role of assistant. Reply as a helpful assistant.",
+        "content": "In this conversation between `user:` and `assistant:`, play the role of assistant. Reply as a helpful assistant."
+        + _skills_content,
     },
 ]
 

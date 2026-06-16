@@ -116,7 +116,10 @@ COMMANDS = [
     {"intent": "go to end", "handler": "hotkey_end", "argument": None, "requires_wake": False},
     {"intent": "page up", "handler": "hotkey_page_up", "argument": None, "requires_wake": False},
     {"intent": "page down", "handler": "hotkey_page_down", "argument": None, "requires_wake": False},
-    {"intent": "type directory listing", "handler": "hotkey_ls", "argument": None, "requires_wake": False},
+    {"intent": "show directory", "handler": "hotkey_ls", "argument": None, "requires_wake": False},
+    {"intent": "list directory", "handler": "hotkey_ls", "argument": None, "requires_wake": False},
+    {"intent": "show files", "handler": "hotkey_ls", "argument": None, "requires_wake": False},
+    {"intent": "list files", "handler": "hotkey_ls", "argument": None, "requires_wake": False},
     # ── AI chat (argument = prompt) ────────────────────────────────────────
     # Keep this last — it's the broadest catch-all intent.
     {
