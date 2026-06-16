@@ -288,35 +288,78 @@ The optional `handler_code` field contains inline Python defining a `handler(arg
 
 ## Skills
 
-Skills are Markdown instruction files — like Crush SKILL.md files — that give the LLM additional context about how to handle certain tasks. Unlike **tools** (which are callable functions), **skills** are behavior context injected into the system prompt.
+Skills follow the [Agent Skills open standard](https://agentskills.io) — the same format used by Crush, Claude Code, and other agents. Skills give the LLM specialized instructions and domain knowledge on demand.
 
-Drop `.md` files into `~/.config/whisper_dictation/skills/` and they're appended to the LLM's system prompt at startup:
+Unlike **tools** (callable functions), **skills** are behavior context loaded only when needed — the LLM sees only a name and description at startup, then loads the full instructions via a `load_skill` function call when a task matches.
 
-```shell
-mkdir -p ~/.config/whisper_dictation/skills
-cp /path/to/a-crush-skill/SKILL.md ~/.config/whisper_dictation/skills/
-ln -s ~/.config/crush/skills/my-skill/SKILL.md ~/.config/whisper_dictation/skills/
+### Progressive disclosure
+
+1. **Catalog**: At startup, the LLM sees each skill's name + description (~50-100 tokens each)
+2. **Activation**: When the LLM calls `load_skill("skill-name")`, the full SKILL.md body is loaded into context
+3. **Resources**: Scripts, references, and assets in the skill directory are available when the instructions reference them
+
+### Where skills live
+
+Two scan paths are checked (first path wins for name collisions):
+
+| Path | Purpose |
+|---|---|
+| `~/.agents/skills/` | Cross-client standard (shared with any Agent Skills-compatible client) |
+| `~/.config/whisper_dictation/skills/` | Client-specific |
+
+Each skill is a **subdirectory** containing a `SKILL.md` file:
+
+```
+~/.agents/skills/
+├── pdf-processing/
+│   ├── SKILL.md          ← YAML frontmatter + Markdown instructions
+│   ├── scripts/          ← Optional executable code
+│   ├── references/       ← Optional reference docs
+│   └── assets/           ← Optional templates/resources
+└── data-analysis/
+    └── SKILL.md
 ```
 
-Symlinked Crush skill files work as-is. On startup you'll see:
+### Installing skills
+
+Symlink or copy existing Crush/Claude skills (their `SKILL.md` files work as-is):
+
+```shell
+mkdir -p ~/.agents/skills
+ln -s ~/.config/crush/skills/claude-api ~/.agents/skills/
+cp -r ~/.config/crush/skills/pdf ~/.agents/skills/
+```
+
+On startup you'll see:
 
 ```
 Loaded 2 skill(s): claude-api, pdf
 ```
 
-Each skill becomes a section in the system prompt:
+### SKILL.md format
 
+Each `SKILL.md` has YAML frontmatter (between `---` delimiters) with at least `name` and `description`, followed by the Markdown instructions:
+
+```yaml
+---
+name: pdf-processing
+description: Extract PDF text, fill forms, merge files. Use when handling PDFs.
+---
+
+Full instructions for the LLM go here...
 ```
-## Skill: claude-api
 
-<content of the SKILL.md goes here>
-```
-
-This means the LLM assistant can reference those instructions during chat — useful for specialized knowledge, API conventions, or project-specific guidelines.
+| Field | Required | Description |
+|---|---|---|
+| `name` | Yes | Identifies the skill. Lowercase, hyphens, max 64 chars. |
+| `description` | Yes | Non-empty, max 1024 chars. When to activate this skill. |
+| `license` | No | License reference. |
+| `compatibility` | No | Environment requirements. |
+| `metadata` | No | Arbitrary key-value pairs. |
 
 **File** | **Purpose**
 ---|---
-`skill_manager.py` | Load and format skills from `~/.config/whisper_dictation/skills/*.md`
+`skill_manager.py` | Discover, parse, and activate skills via the Agent Skills standard
 
 ## Files
 

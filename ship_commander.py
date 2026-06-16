@@ -57,7 +57,7 @@ from system_info import _get_system_info
 from tool_manager import (load_from_disk, to_openai_format,
                           execute as exec_tool, register_handler,
                           add_to_matcher)
-from skill_manager import load_skills, format_skills
+from skill_manager import load_skills, format_catalog, load_skill_body
 
 audio_queue = queue.Queue()
 listening = True
@@ -801,17 +801,17 @@ print("Text should appear in the window you are working in.")
 print('Say "Stop listening." or press CTRL-C to stop.')
 say("All systems ready.")
 
-# ── Load skills from ~/.config/whisper_dictation/skills/ ────────────
+# ── Load skills (Agent Skills format, progressive disclosure) ──────
 _skills = load_skills()
-_skills_content = format_skills(_skills)
+_catalog = format_catalog(_skills)
 if _skills:
-    logging.info(f"Loaded {len(_skills)} skill(s): {', '.join(n for n, _ in _skills)}")
+    logging.info(f"Loaded {len(_skills)} skill(s): {', '.join(s['name'] for s in _skills)}")
 
 messages = [
     {
         "role": "system",
         "content": "In this conversation between `user:` and `assistant:`, play the role of assistant. Reply as a helpful assistant."
-        + _skills_content,
+        + _catalog,
     },
 ]
 
@@ -1115,6 +1115,35 @@ register_handler("dalle.text2im", _img_tool)
 
 # Load user-installed tool definitions from ~/.config/whisper_dictation/tools/
 _tool_defs = load_from_disk()
+
+# ── Skill activation tool (progressive disclosure) ─────────────────
+if _skills:
+    def _load_skill(args):
+        body = load_skill_body(_skills, args.get("name", ""))
+        if body:
+            logging.info(f"Activated skill: {args['name']}")
+            return body
+        return f"Skill '{args.get('name')}' not found."
+
+    register_handler("load_skill", _load_skill)
+    _tool_defs.append({
+        "name": "load_skill",
+        "description": (
+            "Load the full instructions for a skill. Call this when a task "
+            "matches a skill's description from the Available Skills list."
+        ),
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "name": {
+                    "type": "string",
+                    "description": "The name of the skill to load",
+                }
+            },
+            "required": ["name"],
+        },
+    })
+
 _openai_tools = to_openai_format(_tool_defs)
 
 

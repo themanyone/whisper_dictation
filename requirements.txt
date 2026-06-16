@@ -6,3 +6,4 @@ PyGObject>=3.42.0
 Requests>=2.31.0
 google.generativeai>=0.7.2
 piper-tts>=1.2.0
+PyYAML>=6.0
