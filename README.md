@@ -407,6 +407,8 @@ Or override at runtime: `export PIPER_VOICE=en_US-amy-medium`.
 - GitHub https://github.com/themanyone
 - YouTube https://www.youtube.com/themanyone
 - Mastodon https://mastodon.social/@themanyone
+- Linkedin https://www.linkedin.com/in/henry-kroll-iii-93860426/
+- Buy me a coffee https://buymeacoffee.com/isreality
 - [TheNerdShow.com](http://thenerdshow.com/)
 
 Copyright (C) 2023-2026 Henry Kroll III, www.thenerdshow.com.
